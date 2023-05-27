@@ -170,7 +170,6 @@ private:
         {
             const KeyT&  key = m_keys[value_idx];
             Bucket bucket = NextWhileLess(key);
-
             // we know for certain that key has not yet been inserted, so no need to check it.
             PlaceAndShiftUp({bucket.distAndFingerprint, value_idx}, bucket.valueIdx);
         }
@@ -178,6 +177,7 @@ private:
 
     void IncreaseSize()
     {
+        ax_assert(m_max_bucket_capacity != MaxSize());
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // DeallocateBuckets(); AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();

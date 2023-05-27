@@ -177,6 +177,7 @@ private:
 
     void IncreaseSize()
     {
+        ax_assert(m_max_bucket_capacity != MaxSize()); 
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();
