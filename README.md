@@ -1,6 +1,7 @@
 # ASTL
 
-Work in progress. I havent used any C++ headers except thread and atomic.<br>
+Work in progress. This library is composition of lots of paper, research and development <br>
+I havent used any C++ headers except thread and atomic.<br>
 Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>
 We have Hash functions and Random number generators in Random.hpp. <br>
 Matrix4 and Vector4 uses SIMD extensions(SSE3)<br>
@@ -29,7 +30,8 @@ float length =  ToVector2f(x).Length();
 <br>
 Container examples, HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>
 RedBlackTree, ScopedPtr, and SharedPtr coming soon.<br>
-Array<T> instead of std::vector<T> <br>
+I have Array<T> instead of std::vector<T> <br>
+also you can use Bitset521, Bitset256(SIMD optimized) or Bitset<1234> instead of std::bitset <br>
 Queue and Stack will be fixed soon. Here is code examples
 
 ```cpp
@@ -83,10 +85,8 @@ for (const auto&[key, value] : testMap)
 
 HashSet<int> testSet{};
 testSet.insert(213444590);
-PassingToConstFunction(testSet);
 HashMap<int, String> ourMap = testMap;
 TestMap("ourMap", ourMap);
-PassingToConstFunction(ourMap);
 String num = ourMap[4];
 
 bool finded1 = ourMap.Find(5ull) != ourMap.end();
@@ -101,5 +101,5 @@ contains1 = ourMap.Contains(33ull);
 ourMap.Insert(33, "33ull");
 contains1 = ourMap.Contains(33ull);
 ```
-
+also you can use BVH algorithm(Jacco Bikker's but optimized with SIMD) for Ray casting to the 3d scene <br>
 I haven't touched multi threading code for a while
