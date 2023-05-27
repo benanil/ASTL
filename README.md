@@ -30,7 +30,8 @@ float length =  ToVector2f(x).Length();
 Container examples, HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>
 RedBlackTree, ScopedPtr, and SharedPtr coming soon.<br>
 Array<T> instead of std::vector<T> <br>
-Queue and Stack will be fixed soon. Here is code examples<br>
+Queue and Stack will be fixed soon. Here is code examples
+
 ```cpp
 String testStr = "floating test: ";
 testStr += 1234.567f;
@@ -100,4 +101,5 @@ contains1 = ourMap.Contains(33ull);
 ourMap.Insert(33, "33ull");
 contains1 = ourMap.Contains(33ull);
 ```
+
 I haven't touched multi threading code for a while
