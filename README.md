@@ -1,6 +1,10 @@
 # ASTL
 
-Work in progress. Matrix4 and Vector4 uses SIMD extensions(faster) Math code examples:
+Work in progress. I havent used any C++ headers except thread and atomic.<br>
+Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>
+We have Hash functions and Random number generators in Random.hpp. <br>
+Matrix4 and Vector4 uses SIMD extensions(SSE3)<br>
+math library is combination of glm and DirectX Math. examples:
 ```cpp
 static float f = 1.0f; f += 0.01f;
 constexpr float distance = 3.14159265f; // this is distance from cube but I did use pi anyways 
@@ -22,8 +26,11 @@ record.normal = Vector3f::Normalize((n0 * baryCentrics.x) + (n1 * baryCentrics.y
 Vector2i x = Vector2i(1, 1) + Vector2(2, 2);
 float length =  ToVector2f(x).Length();
 ```
-
-Container examples, HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)
+<br>
+Container examples, HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>
+RedBlackTree, ScopedPtr, and SharedPtr coming soon.<br>
+Array<T> instead of std::vector<T> <br>
+Queue and Stack will be fixed soon. Here is code examples<br>
 ```cpp
 String testStr = "floating test: ";
 testStr += 1234.567f;
@@ -93,3 +100,4 @@ contains1 = ourMap.Contains(33ull);
 ourMap.Insert(33, "33ull");
 contains1 = ourMap.Contains(33ull);
 ```
+I haven't touched multi threading code for a while

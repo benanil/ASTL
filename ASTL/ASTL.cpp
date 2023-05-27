@@ -66,14 +66,6 @@ void PassingToConstFunction(const HashMap<int, String>& hashMap)
     printf("ours %s the test\n", containsAll ? "passed" : "failed");
 }
 
-
-int numberOfArrayAllocs = 0;
-int numberOfArrayDelete = 0;
-
-int numberOfStringAllocs = 0;
-int numberOfStringDelete = 0;
-int numStringCopy = 0;
-
 int ints[13] { 23, 456, 789, 42,
                8675309, 555, 999,
                314159, 271828, 777, 
