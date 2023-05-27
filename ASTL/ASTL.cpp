@@ -1,4 +1,4 @@
-#ifdef __HashMapTest
+#ifndef __HashMapTest
 
 #include "HashMap.hpp"
 #include "HashSet.hpp"
@@ -76,7 +76,7 @@ void PassingToConstFunction( HashSet<int>& testSet)
     bool allExist = true;
     for (int i = 0; i < 13; ++i)
     {
-        testSet.insert(ints[i]);
+        testSet.Insert(ints[i]);
     }
 
     for (int i = 0; i < 13; ++i)
@@ -145,7 +145,7 @@ int main()
     ax_assert(testMap[99999] == String("monkey"));
     
     HashSet<int> testSet{};
-    testSet.insert(213444590);
+    testSet.Insert(213444590);
     
     PassingToConstFunction(testSet);
     
@@ -182,7 +182,7 @@ int main()
 #endif
 
 
-#ifndef __NOTHING
+#ifdef __NOTHING
 
 /* Genetic algorithm to explore xorshift-multiply-xorshift hashes.
  */

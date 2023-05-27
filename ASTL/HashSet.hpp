@@ -59,9 +59,8 @@ class HashSet
     static constexpr uint8_t initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
     static constexpr float default_max_load_factor = 0.8F;
 
-    // todo use custom allocator and our vector
     Array<KeyT, AllocatorT> m_keys{};
-    Array<Bucket, MallocAllocator<Bucket>> m_buckets(16);
+    Array<Bucket, MallocAllocator<Bucket>> m_buckets {16u};
     uint32 m_num_buckets = 0;
     uint32 m_max_bucket_capacity = 0;
     float m_max_load_factor = default_max_load_factor;
@@ -179,7 +178,6 @@ private:
 
     void IncreaseSize()
     {
-        ax_assert(AX_UNLIKELY(m_max_bucket_capacity) == MaxSize() && "bucket overflow");
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // DeallocateBuckets(); AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();
@@ -465,7 +463,7 @@ public:
         if (shifts != m_shifts)
         {
             m_shifts = shifts;
-            ReallocateBuckets();
+            ReallocateBuckets(CalcNumBuckets(m_shifts));
             ClearAndFillBucketsFromValues();
         }
     }
@@ -478,7 +476,7 @@ public:
         
         if (0 == m_num_buckets || shifts < m_shifts) {
             m_shifts = shifts;
-            ReallocateBuckets();
+            ReallocateBuckets(CalcNumBuckets(m_shifts));
             ClearAndFillBucketsFromValues();
         }
     }

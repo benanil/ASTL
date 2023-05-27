@@ -177,7 +177,6 @@ private:
 
     void IncreaseSize()
     {
-        ax_assert(AX_UNLIKELY(m_max_bucket_capacity) == MaxSize() && "bucket overflow");
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();
@@ -492,7 +491,7 @@ public:
         if (shifts != m_shifts)
         {
             m_shifts = shifts;
-            ReallocateBuckets();
+            ReallocateBuckets(CalcNumBuckets(m_shifts));
             ClearAndFillBucketsFromValues();
         }
     }
@@ -505,7 +504,7 @@ public:
         
         if (0 == m_num_buckets || shifts < m_shifts) {
             m_shifts = shifts;
-            ReallocateBuckets();
+            ReallocateBuckets(CalcNumBuckets(m_shifts));
             ClearAndFillBucketsFromValues();
         }
     }

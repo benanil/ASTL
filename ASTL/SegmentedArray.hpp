@@ -1,5 +1,5 @@
 #pragma once
-#include "Memory.hpp"
+#include "Array.hpp"
 
 // Very much like std::deque, but faster for indexing (in most cases). As of now this doesn't implement the full std::vector
 // API, but merely what's necessary to work as an underlying container for ankerl::unordered_dense::{map, set}.
@@ -7,13 +7,12 @@
 // block to the back of m_blocks, and doesn't double its size like an std::vector. The disadvantage is that memory is not
 // linear and thus there is one more indirection necessary for indexing.
 /*
-template<typename T, typename AllocatorT = Allocator<T>, size_t MaxSegmentSizeBytes = 4096>
+template<typename T, typename  = Allocator<T>, size_t MaxSegmentSizeBytes = 4096>
 class SegmentedVector
 {
 private:
-    // todo use our array
     // todo custom allocator
-    std::vector<T*> m_blocks{};
+    Array<T*, AllocatorT> m_blocks{};
     size_t m_size{};
 
     static constexpr size_t NumBitsClosest(size_t maxVal, size_t s)

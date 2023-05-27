@@ -111,3 +111,7 @@ struct MallocAllocator
     return (T*)realloc(ptr, sizeof(T) * count);
   }
 };
+
+// todo add ScopedPtr
+// todo add ScopedFn
+// todo SharedPtr in different hpp file 

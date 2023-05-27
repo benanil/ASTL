@@ -78,7 +78,8 @@
 #    define AX_UNLIKELY(x) (x) 
 #endif
 
-#ifdef DEBUG
+// https://nullprogram.com/blog/2022/06/26/
+#ifdef _DEBUG
 #  if __GNUC__
 #    define ax_assert(c) if (!(c)) __builtin_trap()
 #  elif _MSC_VER
@@ -123,7 +124,7 @@
 // https://gist.github.com/boxmein/7d8e5fae7febafc5851e
 // https://en.wikipedia.org/wiki/CPUID
 // example usage:
-// void get_cpu_model(char *cpu_model) {
+// void get_cpu_model(char *cpu_model) { // return example: "AMD Ryzen R5 1600"
 //     int* cpumdl = (int*)cpu_model;
 //     AX_CPUID(0x80000002, cpumdl); cpumdl += 4;
 //     AX_CPUID(0x80000003, cpumdl); cpumdl += 4;
@@ -253,8 +254,8 @@ template<typename T>
 inline uint PointerDistance(const T* begin, const T* end)
 {
     uint result = 0;
-	while (begin++ < end) result++;
-	return result;
+    while (begin++ < end) result++;
+	  return result;
 }
 
 /*for qsort*/ template<typename T>

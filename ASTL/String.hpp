@@ -91,7 +91,8 @@ public:
     bool operator != (const String& b) const { return !Compare(*this, b); }
     bool operator == (const char* b)   const { return !strcmp(ptr, b); }
     bool operator != (const char* b)   const { return  strcmp(ptr, b); }
-    char operator[](int index)         const { return ptr[index]; }
+    char operator[](int index)         const { ax_assert(index < size && index > 0); return ptr[index]; }
+    char& operator[](int index)              { ax_assert(index < size && index > 0); return ptr[index]; }
 
     char* begin() { return ptr; }
     char* end() { return ptr + size; }
@@ -485,7 +486,8 @@ public:
 
     bool operator == (const WString& b) { return  Compare(*this, b); }
     bool operator != (const WString& b) { return !Compare(*this, b); }
-    wchar_t operator[](int index) const { return ptr[index]; }
+    wchar_t operator[](int index) const { ax_assert(index < size && index > 0); return ptr[index]; }
+    wchar_t& operator[](int index)      { ax_assert(index < size && index > 0); return ptr[index]; }
 
     wchar_t* begin() { return ptr; }
     wchar_t* end() { return ptr + size; }

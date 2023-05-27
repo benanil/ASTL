@@ -150,8 +150,8 @@ AX_ALIGNED(16) struct Matrix4
 	const __m128& operator [] (int index) const { return r[index]; }
 	__m128& operator [] (int index) { return r[index]; }
 	
-	Vector4 VECTORCALL  operator *  (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
-	Vector4 VECTORCALL  operator *  (const Vector4& v)   noexcept { return Vector4Transform(v, *this); };
+	Vector4f VECTORCALL  operator *  (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
+	Vector4f VECTORCALL  operator *  (const Vector4f& v)   noexcept { return Vector4Transform(v, *this); };
 
 	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(*this, M); };
 	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(*this, M); return *this; };
@@ -241,7 +241,7 @@ AX_ALIGNED(16) struct Matrix4
 	{
 		const float rad = fov;
 		const float h = Cos(0.5f * rad) / Sin(0.5f * rad);
-		const float w = h * height / width; ///todo max(width , Height) / min(width , Height)?
+		const float w = h * height / width; /// max(width , Height) / min(width , Height)?
 		Matrix4 M(ForceInit);
 		M.m[0][0] = w;
 		M.m[1][1] = h;
@@ -645,7 +645,7 @@ AX_ALIGNED(16) struct Matrix4
 		return vResult;
 	}
 
-	FINLINE static Vector4 VECTORCALL Vector4Transform(Vector4 v, const Matrix4& m)
+	FINLINE static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
 	{
 		__m128 v0 = _mm_mul_ps(m.r[0], _mm_permute_ps(v.vec, _mm_shuffle(0, 0, 0, 0)));
 		__m128 v1 = _mm_mul_ps(m.r[1], _mm_permute_ps(v.vec, _mm_shuffle(1, 1, 1, 1)));
@@ -678,6 +678,246 @@ FINLINE void InitializeMatrix4(Matrix4& mat, float s)
 FINLINE void VECTORCALL InitializeMatrix4(Matrix4& r, __m128 x, __m128 y, const __m128& z, const __m128& w)
 {
 	r[0] = x; r[1] = y; r[2] = z; r[3] = w;
+}
+
+#else // sse is not supported
+
+AX_ALIGNED(16) struct Matrix4
+{
+	struct
+	{
+		float m[4][4];
+	};
+
+	const __m128& operator [] (int index) const { return r[index]; }
+	__m128& operator [] (int index) { return r[index]; }
+	
+	Vector4f VECTORCALL  operator *  (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
+	Vector4f VECTORCALL  operator *  (const Vector4f& v)   noexcept { return Vector4Transform(v, *this); };
+
+	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(*this, M); };
+	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(*this, M); return *this; };
+
+	Matrix4() {}
+	explicit Matrix4(EForceInit) 
+	{
+		r[0] = g_XMIdentityR0;
+		r[1] = g_XMIdentityR1;
+		r[2] = g_XMIdentityR2;
+		r[3] = g_XMIdentityR3;
+	}
+
+	explicit Matrix4(float s)
+	{
+		r[0] = r[1] = r[2] = r[3] = _mm_set_ps1(s);
+	}
+
+	FINLINE static Matrix4 Identity()
+	{
+		Matrix4 M;
+		M.r[0] = g_XMIdentityR0;
+		M.r[1] = g_XMIdentityR1;
+		M.r[2] = g_XMIdentityR2;
+		M.r[3] = g_XMIdentityR3;
+		return M;
+	}
+
+	FINLINE static Matrix4 FromPosition(const float x, const float y, const float z)
+	{
+		Matrix4 M;
+		M.r[0] = g_XMIdentityR0;
+		M.r[1] = g_XMIdentityR1;
+		M.r[2] = g_XMIdentityR2;
+		M.r[3] = _mm_set_ps(1.0f, z, y, x);
+		return M;
+	}
+
+	FINLINE static Matrix4 FromPosition(const Vector3f& vec3)
+	{
+		return FromPosition(vec3.x, vec3.y, vec3.z);
+	}
+
+	FINLINE static Matrix4 CreateScale(const float ScaleX, const float ScaleY, const float ScaleZ)
+	{
+		Matrix4 M;
+		M.r[0] = _mm_set_ps(0.0f, 0.0f, 0.0f, ScaleX);
+		M.r[1] = _mm_set_ps(0.0f, 0.0f, ScaleY, 0.0f);
+		M.r[2] = _mm_set_ps(0.0f, ScaleZ, 0.0f, 0.0f);
+		M.r[3] = g_XMIdentityR3;
+		return M;
+	}
+
+	FINLINE static Matrix4 CreateScale(const Vector3f& vec3)
+	{
+		return CreateScale(vec3.x, vec3.y, vec3.z);
+	}
+
+	// please assign normalized vectors, returns view matrix
+	FINLINE static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
+	{
+		return ;
+	}
+
+	FINLINE static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
+	{
+		return M;
+	}
+
+	inline Matrix4 static VECTORCALL InverseTransform(const Matrix4 inM) noexcept
+	{
+		return out;
+	}
+
+	inline Matrix4 static VECTORCALL Inverse(const Matrix4 inM) noexcept
+	{
+		return out;
+	}
+
+	inline Matrix4 static VECTORCALL Multiply(const Matrix4 in1, const Matrix4& in2)
+	{
+		return out;
+	}
+
+	FINLINE static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
+	{
+		Matrix4 result(ForceInit);
+		result *= FromPosition(position);
+		result *= FromQuaternion(rotation);
+		result *= CreateScale(position);
+		return result;
+	}
+
+	FINLINE static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
+	{
+		return res;
+	}
+
+	FINLINE static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) noexcept
+	{
+		return Vector3f(SSEVectorLengthf(matrix.r[0]), SSEVectorLengthf(matrix.r[2]), SSEVectorLengthf(matrix.r[1]));
+	}
+
+	FINLINE static Matrix4 RotationX(float angleRadians) {
+		Matrix4 out_matrix(ForceInit);
+		float s, c;
+		SinCos(angleRadians, &s, &c);
+		
+		out_matrix.m[1][1] = c;
+		out_matrix.m[1][2] = s;
+		out_matrix.m[2][1] = -s;
+		out_matrix.m[2][2] = c;
+		return out_matrix;
+	}
+
+	FINLINE static Matrix4 RotationY(float angleRadians) {
+		Matrix4 out_matrix(ForceInit);
+		float s, c;
+		SinCos(angleRadians, &s, &c);
+		out_matrix.m[0][0] = c;
+		out_matrix.m[0][2] = -s;
+		out_matrix.m[2][0] = s;
+		out_matrix.m[2][2] = c;
+		return out_matrix;
+	}
+	
+	FINLINE static Matrix4 RotationZ(float angleRadians) {
+		Matrix4 out_matrix(ForceInit);
+		float s, c;
+		SinCos(angleRadians, &s, &c);
+		out_matrix.m[0][0] = c;
+		out_matrix.m[0][1] = s;
+		out_matrix.m[1][0] = -s;
+		out_matrix.m[1][1] = c;
+		return out_matrix;
+	}
+
+	FINLINE static Matrix4 RotationFromEuler(Vector3f eulerRadians) {
+		return RotationX(eulerRadians.x) * RotationY(eulerRadians.y) * RotationZ(eulerRadians.z);
+	}
+
+	FINLINE Matrix4 static VECTORCALL LookAt(Vector3f eyePosition, Vector3f focusPosition, Vector3f upDirection) noexcept
+	{
+		return M;
+	}
+
+	static Matrix3 VECTORCALL ConvertToMatrix3(const Matrix4 M)
+	{
+		Matrix3 result;
+		SSEStoreVector3(&result.x.x, M.r[0]);
+		SSEStoreVector3(&result.y.x, M.r[1]);
+		SSEStoreVector3(&result.z.x, M.r[2]);
+		return result;
+	}
+
+	static Quaternion VECTORCALL ExtractRotation(const Matrix4 M, bool rowNormalize = true) noexcept
+	{
+		int i, j, k = 0;
+		float root, trace = M.m[0][0] + M.m[1][1] + M.m[2][2];
+		Quaternion Orientation;
+
+		if (trace > 0.0f)
+		{
+			root = Sqrt(trace + 1.0f);
+			Orientation.w = 0.5f * root;
+			root = 0.5f / root;
+			Orientation.x = root * (M.m[1][2] - M.m[2][1]);
+			Orientation.y = root * (M.m[2][0] - M.m[0][2]);
+			Orientation.z = root * (M.m[0][1] - M.m[1][0]);
+		}
+		else
+		{
+			static int Next[3] = { 1, 2, 0 };
+			i = 0;
+			if (M.m[1][1] > M.m[0][0]) i = 1;
+			if (M.m[2][2] > M.m[i][i]) i = 2;
+			j = Next[i];
+			k = Next[j];
+
+			root = Sqrt(M.m[i][i] - M.m[j][j] - M.m[k][k] + 1.0f);
+
+			Orientation[i] = 0.5f * root;
+			root = 0.5f / root;
+			Orientation[j] = root * (M.m[i][j] + M.m[j][i]);
+			Orientation[k] = root * (M.m[i][k] + M.m[k][i]);
+			Orientation.w  = root * (M.m[j][k] - M.m[k][j]);
+		} 
+		return Orientation;
+	}
+
+	static Matrix4 VECTORCALL FromQuaternion(const Quaternion quaternion)
+	{
+		return M;
+	}
+
+	FINLINE static Matrix4 VECTORCALL Transpose(const Matrix4 M)
+	{
+		return mResult;
+	}
+
+	FINLINE static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M) noexcept
+	{
+		return vResult;
+	}
+
+	FINLINE static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
+	{
+		return a2;
+	}
+};
+ 
+FINLINE static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
+{
+	return a2;
+}
+
+FINLINE void InitializeMatrix4(Matrix4& mat, float s) 
+{
+
+}
+
+FINLINE void InitializeMatrix4(Matrix4& mat, Vector4f a, Vector4f b, Vector4f c, Vector4f d) 
+{
+
 }
 
 #endif // AX_SUPPORT_SSE2

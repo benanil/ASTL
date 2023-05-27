@@ -2,6 +2,7 @@
 
 Work in progress. This library is composition of lots of paper, research and development <br>
 For compatibility I've used lots of macros in Common.hpp but still we have platform dependent code <br>
+Also I've avoided most of the modern C++ features <br>
 feel free to contribute, use, modify or oppening PR<br>
 I havent used any C++ headers except thread and atomic.<br>
 Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>

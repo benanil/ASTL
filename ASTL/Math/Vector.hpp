@@ -143,7 +143,7 @@ struct Vector3
 		return a / Sqrt(Vector3::Dot(a, a));
 	}
 
-	Vector3 operator - () { return Vector3f(-x, -y, -z); }
+	Vector3 operator - () { return Vector3(-x, -y, -z); }
 	Vector3 operator + (const Vector3& other) const { return Vector3(x + other.x, y + other.y, z + other.z); }
 	Vector3 operator * (const Vector3& other) const { return Vector3(x * other.x, y * other.y, z * other.z); }
 	Vector3 operator / (const Vector3& other) const { return Vector3(x / other.x, y / other.y, z / other.z); }

@@ -78,7 +78,7 @@ AX_ALIGNED(16) struct Quaternion
 	{
 		const __m128 T = _mm_set_ps1(t);
 		// Result = Q0 * sin((1.0 - t) * Omega) / sin(Omega) + Q1 * sin(t * Omega) / sin(Omega)
-		static const Vector4 OneMinusEpsilon = { { { 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f } } };
+		static const Vector4f OneMinusEpsilon = { { { 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f } } };
 		static const Vector4UI SignMask2 = { 0x80000000, 0x00000000, 0x00000000, 0x00000000 };
 
 		__m128 CosOmega = _mm_dp_ps(Q0.vec, Q1.vec, 0xff);

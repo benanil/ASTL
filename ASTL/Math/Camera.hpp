@@ -111,7 +111,7 @@ struct Camera
 		Vector2f coord(pos.x / (float)viewportSize.x, pos.y / (float)viewportSize.y);
 		coord.y = 1.0f - coord.y;
 		coord = coord * 2.0f - 1.0f;
-		Vector4 target = Matrix4::Vector4Transform(Vector4(coord.x, coord.y, 1.0f, 1.0f), inverseProjection);
+		Vector4f target = Matrix4::Vector4Transform(Vector4f(coord.x, coord.y, 1.0f, 1.0f), inverseProjection);
 		target /= target.w;
 		target = Matrix4::Vector4Transform(target, inverseView);
 		Vector3f rayDir = Vector3f::Normalize(target.xyz());
@@ -123,7 +123,7 @@ struct Camera
 		Vector2f coord(pos.x / (float)viewportSize.x, pos.y / (float)viewportSize.y);
 		coord.y = 1.0f - coord.y;
 		coord = coord * 2.0f - 1.0f;
-		Vector4 target = Matrix4::Vector4Transform(Vector4(coord.x, coord.y, 1.0f, 1.0f), inverseProjection);
+		Vector4f target = Matrix4::Vector4Transform(Vector4f(coord.x, coord.y, 1.0f, 1.0f), inverseProjection);
 		target /= target.w;
 		target = Matrix4::Vector4Transform(target, inverseView);
 		Vector3f rayDir = Vector3f::Normalize(target.xyz());
