@@ -1,6 +1,8 @@
 # ASTL
 
 Work in progress. This library is composition of lots of paper, research and development <br>
+For compatibility I've used lots of macros in Common.hpp but still we have platform dependent code <br>
+feel free to contribute, use, modify or oppening PR<br>
 I havent used any C++ headers except thread and atomic.<br>
 Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>
 We have Hash functions and Random number generators in Random.hpp. <br>
@@ -28,11 +30,11 @@ Vector2i x = Vector2i(1, 1) + Vector2(2, 2);
 float length =  ToVector2f(x).Length();
 ```
 <br>
-Container examples, HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>
-RedBlackTree, ScopedPtr, and SharedPtr coming soon.<br>
+HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>
+Todo: RedBlackTree, ScopedPtr, and SharedPtr. coming soon.<br>
 I have Array<T> instead of std::vector<T> <br>
-also you can use Bitset521, Bitset256(SIMD optimized) or Bitset<1234> instead of std::bitset <br>
-Queue and Stack will be fixed soon. Here is code examples
+also you can use Bitset1024, Bitset512, Bitset256(SIMD optimized) or Bitset<1234> instead of std::bitset <br>
+Queue and Stack will be fixed soon. Here is examples
 
 ```cpp
 String testStr = "floating test: ";
@@ -101,5 +103,6 @@ contains1 = ourMap.Contains(33ull);
 ourMap.Insert(33, "33ull");
 contains1 = ourMap.Contains(33ull);
 ```
-also you can use BVH algorithm(Jacco Bikker's but optimized with SIMD) for Ray casting to the 3d scene <br>
-I haven't touched multi threading code for a while
+also you can use BVH algorithm(Jacco Bikker's but optimized with SIMD) for Ray casting to the 3d scene<br>
+it will return mesh index, hit position hit color etc.<br>
+note: I haven't touched multi threading code for a while
