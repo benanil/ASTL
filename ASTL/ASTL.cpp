@@ -98,108 +98,93 @@ void PassingToConstFunction( HashSet<int>& testSet)
 
 int main()
 {
-    {
-        String testStr = "floating test: ";
-        testStr += 1234.567f;
-        printf("%s\n", testStr.c_str());
-
-        String testStr1 = "int test: ";
-        testStr1 += 1234567;
-        printf("%s\n", testStr1.c_str());
-        
-        static const KeyValuePair<int, String> testMapInitializer[13] =
-        {
-            { 23     , "apple"    },
-            { 456    , "banana"   },
-            { 789    , "cherry"   },
-            { 42     , "dog"      },
-            { 8675309, "elephant" },
-            { 555    , "frog"     },
-            { 999    , "guitar"   },
-            { 314159 , "house"    },
-            { 271828 , "igloo"    },
-            { 777    , "jigsaw"   },
-            { 888    , "kangaroo" },
-            { 666    , "lemon"    },
-            { 99999  , "monkey"   }
-        };
-        
-        static HashMap<int, String> testMap(testMapInitializer, 13);
-                
-        testMap[4] = "no its five";
-
-        String strings[13] = {
-            "apple", "banana", "cherry", "dog", "elephant", "frog", "guitar",
-            "house", "igloo", "jigsaw", "kangaroo", "lemon", "monkey"
-        };       
-
-        Array<String> strs{};
-
-        for (int i = 0; i < 13; ++i)
-        {
-            strs.Add(strings[i]);
-        }
-
-        strs.RemoveAt(3, 3);
-
-        for (int i = 0; i < strs.Size(); ++i)
-        {
-            printf("%s \n", strs[i].c_str());
-        }
-
-        for (const auto&[key, value] : testMap)
-        {
-            printf("%i, %s\n", key, value.CStr());
-        }
-        assert(testMap[99999] == String("monkey"));
-        
-        HashSet<int> testSet{};
-        testSet.insert(213444590);
-        
-        PassingToConstFunction(testSet);
-        
-        HashMap<int, String> ourMap = testMap;
-        
-        TestMap("ourMap", ourMap);
-        
-        PassingToConstFunction(ourMap);
-        
-        String num = ourMap[4];
-        assert(num == String("no its five"));
-        bool finded1 = ourMap.Find(5ull) != ourMap.end();
-        assert(finded1 == false);
-        
-        String val1 = ourMap.At(4);
-        assert(val1 == String("no its five"));
-        
-        ourMap.TryEmplace(33, "33ull");
-        
-        bool contains1 = ourMap.Contains(33);
-        assert(contains1);
-        ourMap.Erase(33);
-        
-        contains1 = ourMap.Contains(33ull);
-        assert(!contains1);
-        
-        ourMap.Insert(33, "33ull");
-        contains1 = ourMap.Contains(33ull);
-        assert(contains1);
-    }
-
-    printf("number of array:  alloc=%i, dealloc:%i\n", numberOfArrayAllocs, numberOfArrayDelete);
-    printf("number of string: alloc=%i, dealloc:%i, copy:%i", numberOfStringAllocs, numberOfStringDelete, numStringCopy);
+    String testStr = "floating test: ";
+    testStr += 1234.567f;
+    printf("%s\n", testStr.c_str());
     
-    /*
-    insert speed:  speed ms: 45.068000
-    numContains: 90000
-    contains speed:  speed ms: 2.143000
-    key sum: 514765142, value sum: 270077
-    Iteration speed:  speed ms: 0.348000
-    Erase speed:  speed ms: 6.692000
-    ourMap END
-    total speed:  speed ms: 55.498000
-    */
-
+    String testStr1 = "int test: ";
+    testStr1 += 1234567;
+    printf("%s\n", testStr1.c_str());
+    
+    static const KeyValuePair<int, String> testMapInitializer[13] =
+    {
+        { 23     , "apple"    },
+        { 456    , "banana"   },
+        { 789    , "cherry"   },
+        { 42     , "dog"      },
+        { 8675309, "elephant" },
+        { 555    , "frog"     },
+        { 999    , "guitar"   },
+        { 314159 , "house"    },
+        { 271828 , "igloo"    },
+        { 777    , "jigsaw"   },
+        { 888    , "kangaroo" },
+        { 666    , "lemon"    },
+        { 99999  , "monkey"   }
+    };
+    
+    static HashMap<int, String> testMap(testMapInitializer, 13);
+            
+    testMap[4] = "no its five";
+    
+    String strings[13] = {
+        "apple", "banana", "cherry", "dog", "elephant", "frog", "guitar",
+        "house", "igloo", "jigsaw", "kangaroo", "lemon", "monkey"
+    };       
+    
+    Array<String> strs{};
+    
+    for (int i = 0; i < 13; ++i)
+    {
+        strs.Add(strings[i]);
+    }
+    
+    strs.RemoveAt(3, 3);
+    
+    for (int i = 0; i < strs.Size(); ++i)
+    {
+        printf("%s \n", strs[i].c_str());
+    }
+    
+    for (const auto&[key, value] : testMap)
+    {
+        printf("%i, %s\n", key, value.CStr());
+    }
+    ax_assert(testMap[99999] == String("monkey"));
+    
+    HashSet<int> testSet{};
+    testSet.insert(213444590);
+    
+    PassingToConstFunction(testSet);
+    
+    HashMap<int, String> ourMap = testMap;
+    
+    TestMap("ourMap", ourMap);
+    
+    PassingToConstFunction(ourMap);
+    
+    String num = ourMap[4];
+    ax_assert(num == String("no its five"));
+    bool finded1 = ourMap.Find(5ull) != ourMap.end();
+    ax_assert(finded1 == false);
+    
+    String val1 = ourMap.At(4);
+    ax_assert(val1 == String("no its five"));
+    
+    ourMap.TryEmplace(33, "33ull");
+    
+    bool contains1 = ourMap.Contains(33);
+    ax_assert(contains1);
+    ourMap.Erase(33);
+    
+    contains1 = ourMap.Contains(33ull);
+    ax_assert(!contains1);
+    
+    ourMap.Insert(33, "33ull");
+    contains1 = ourMap.Contains(33ull);
+    ax_assert(contains1);
+    // printf("number of array:  alloc=%i, dealloc:%i\n", numberOfArrayAllocs, numberOfArrayDelete);
+    // printf("number of string: alloc=%i, dealloc:%i, copy:%i", numberOfStringAllocs, numberOfStringDelete, numStringCopy);
     return 1;
 }
 #endif

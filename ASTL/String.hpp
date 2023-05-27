@@ -30,10 +30,6 @@ enum class StrResult : int
     IndexOutOfArray = 2                 // errors
 };
 
-extern int numberOfStringAllocs;
-extern int numberOfStringDelete;
-extern int numStringCopy;
-
 class String
 {
 public:
@@ -45,22 +41,18 @@ public:
             ptr = nullptr;  
             size = 0; 
             capacity = 0; 
-            numberOfStringDelete++;
         }
     }
 
     String(int _size) : size(0), capacity(_size + 1)
     {
         ptr = (char*)calloc(capacity, sizeof(char));
-        numberOfStringAllocs++;
     }
     // copy constructor
     String(const String& other) : size(other.size), capacity(other.capacity)
     {
         ptr = (char*)calloc(capacity, sizeof(char));
         memcpy(ptr, other.ptr, size);
-        numberOfStringAllocs++;
-        numStringCopy++;
     }
     // move constructor 
     String(String&& other) noexcept : size(other.size), capacity(other.capacity), ptr(other.ptr)
@@ -71,7 +63,6 @@ public:
     String() : size(0), capacity(32)
     {
         ptr = (char*)calloc(capacity, 1);
-        numberOfStringAllocs++;
     }
 
     String(const char* _ptr) : size(StrLen(_ptr))
@@ -79,7 +70,6 @@ public:
         capacity = size + 32;
         ptr = (char*)calloc(capacity, 1);
         memcpy(ptr, _ptr, size);
-        numberOfStringAllocs++;
     }
 
     String(char* _ptr) : size(StrLen(_ptr))
@@ -87,7 +77,6 @@ public:
         capacity = size + 32;
         ptr = (char*)calloc(capacity, 1);
         memcpy(ptr, _ptr, size);
-        numberOfStringAllocs++;
     }
     // asign operator
     String& operator = (const String& right)

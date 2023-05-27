@@ -200,7 +200,7 @@ HitRecord CPU_RayCast(RaySSE ray)
 	
 	if (besthit.distance == RayacastMissDistance) {
 		union u { uint color; RGB8 rgb; } us;
-		float3 v3;
+		Vector3f v3;
 		SSEStoreVector3(&v3.x, ray.direction);
 		us.rgb = m_data.TexturePixels[SampleSkyboxPixel(v3, m_data.Textures[2])];
 		record.color = us.color; // convert skybox color to uint32sa
@@ -210,12 +210,12 @@ HitRecord CPU_RayCast(RaySSE ray)
 	MeshInstance hitInstance = m_data.MeshInstances[hitInstanceIndex];
 	Tri& triangle = m_data.Triangles[hitOut.triIndex];
 	Material material = m_data.Materials[hitInstance.materialStart + triangle.materialIndex];
-	float3 baryCentrics = float3(1.0f - hitOut.u - hitOut.v, hitOut.u, hitOut.v);
+	Vector3f baryCentrics = Vector3f(1.0f - hitOut.u - hitOut.v, hitOut.u, hitOut.v);
 	Matrix3 inverseMat3 = Matrix4::ConvertToMatrix3(hitInstance.inverseTransform);
 			
-	float3 n0 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal0x));
-	float3 n1 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal1x));
-	float3 n2 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal2x));
+	Vector3f n0 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal0x));
+	Vector3f n1 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal1x));
+	Vector3f n2 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal2x));
 	        
 	record.normal = Vector3f::Normalize((n0 * baryCentrics.x) + (n1 * baryCentrics.y) + (n2 * baryCentrics.z));
 

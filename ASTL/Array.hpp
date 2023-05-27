@@ -2,9 +2,6 @@
 #include "Memory.hpp"
 #include "Algorithms.hpp"
 
-extern int numberOfArrayAllocs;
-extern int numberOfArrayDelete;
-
 template<typename ValueT,
          typename AllocatorT = Allocator<ValueT>>
 class Array
@@ -24,7 +21,6 @@ private:
 public:
 	Array()
 	{
-		numberOfArrayAllocs++;
 	    arr = allocator.Allocate(m_capacity);
 	}
 	
@@ -36,7 +32,6 @@ public:
 			count = 0;
 			m_capacity = InitialSize;
 			arr = nullptr;
-			numberOfArrayDelete++;
 		}
 	}
 	
