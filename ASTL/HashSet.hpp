@@ -52,7 +52,7 @@ class HashSet
     {
         static constexpr uint32_t DistInc = 1U << 8U;             // skip 1 byte fingerprint
         static constexpr uint32_t FingerprintMask = DistInc - 1u; // mask for 1 byte of fingerprint
-        uint32_t distAndFingerprint; // upper 3 byte: distance to original bucket. lower byte: fingerprint from hash
+        uint32_t distAndFingerprint;  // upper 3 byte: distance to original bucket. lower byte: fingerprint from hash
         uint32_t valueIdx;            // index into the m_values vector.
     };
 
@@ -61,10 +61,11 @@ class HashSet
 
     Array<KeyT, AllocatorT> m_keys{};
     Array<Bucket, MallocAllocator<Bucket>> m_buckets {16u};
-    uint32 m_num_buckets = 0;
+ 
+    uint32 m_num_buckets         = 0;
     uint32 m_max_bucket_capacity = 0;
-    float m_max_load_factor = default_max_load_factor;
-    uint8_t m_shifts = initial_shifts;
+    float m_max_load_factor      = default_max_load_factor;
+    uint8_t m_shifts             = initial_shifts;
 
 private:
     uint32 Next(uint bucketIdx) const {
@@ -86,9 +87,9 @@ private:
     
     Bucket NextWhileLess(const KeyT& key) const
     {
-        uint64 hash = HasherT::Hash(key);
+        uint64 hash               = HasherT::Hash(key);
         uint32 distAndFingerprint = DistAndFingerprintFromHash(hash);
-        uint32 bucketIdx= BucketIdxFromHash(hash);
+        uint32 bucketIdx          = BucketIdxFromHash(hash);
 
         while (distAndFingerprint < BucketAt(bucketIdx).distAndFingerprint)
         {
@@ -177,7 +178,7 @@ private:
 
     void IncreaseSize()
     {
-        ax_assert(m_max_bucket_capacity != MaxSize());
+        Assert(m_max_bucket_capacity != MaxSize());
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // DeallocateBuckets(); AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();
@@ -186,7 +187,7 @@ private:
     void DoErase(uint32 bucketIdx)
     {
         uint32 valueIdxToRemove = m_buckets[bucketIdx].valueIdx;
-        uint32 nextBucketIdx = Next(bucketIdx);
+        uint32 nextBucketIdx    = Next(bucketIdx);
 
         while (BucketAt(nextBucketIdx).distAndFingerprint >= Bucket::DistInc * 2u)
         {
@@ -221,10 +222,10 @@ private:
             IncreaseSize();
 
         KeyT key(Forward<Args>(args)...);
-        uint64 hash = HasherT::Hash(key);
+        uint64 hash             = HasherT::Hash(key);
         uint32 distAndFootprint = DistAndFingerprintFromHash(hash);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
-        Bucket bucket = BucketAt(bucketIdx);
+        uint32 bucketIdx        = BucketIdxFromHash(hash);
+        Bucket bucket           = BucketAt(bucketIdx);
 
         while (distAndFootprint <= bucket.distAndFootprint)
         {
@@ -248,9 +249,9 @@ private:
         if (AX_UNLIKELY(IsFull())) 
             IncreaseSize();
     
-        uint64 hash = HasherT::Hash(key);
+        uint64 hash             = HasherT::Hash(key);
         uint32 distAndFootprint = DistAndFingerprintFromHash(hash);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
+        uint32 bucketIdx        = BucketIdxFromHash(hash);
     
         while (true)
         {
@@ -277,11 +278,11 @@ private:
         if (AX_UNLIKELY(IsEmpty()))
             return cend();
 
-        uint64 mh = HasherT::Hash(key);
+        uint64 mh                 = HasherT::Hash(key);
         uint32 distAndFingerPrint = DistAndFingerprintFromHash(mh);
-        uint32 bucketIdx = BucketIdxFromHash(mh);
+        uint32 bucketIdx          = BucketIdxFromHash(mh);
+        const Bucket* bucket      = &BucketAt(bucketIdx);
         
-        const Bucket* bucket = &BucketAt(bucketIdx);
         if (distAndFingerPrint == bucket->distAndFingerprint &&
                                   key == m_keys[bucket->valueIdx]) {
           return cbegin() + bucket->valueIdx;
@@ -350,9 +351,9 @@ public:
     HashSet& operator = (HashSet const& other) {
         if (&other != this) {
             ReallocateBuckets(other.m_num_buckets); // deallocate before m_values is set (might have another allocator)
-            m_keys = other.m_keys;
+            m_keys            = other.m_keys;
             m_max_load_factor = other.m_max_load_factor;
-            m_shifts = initial_shifts;
+            m_shifts          = initial_shifts;
             CopyBuckets(other);
         }
         return *this;
@@ -362,12 +363,12 @@ public:
     {
         if (&other != this) {
             ReallocateBuckets(other.m_num_buckets); // deallocate before m_values is set (might have another allocator)
-            m_keys = Move(other.m_keys);
-            m_buckets = Move(other.m_buckets);
-            m_num_buckets = other.m_num_buckets;
+            m_keys                = Move(other.m_keys);
+            m_buckets             = Move(other.m_buckets);
+            m_num_buckets         = other.m_num_buckets;
             m_max_bucket_capacity = other.m_max_bucket_capacity;
-            m_max_load_factor = other.m_max_load_factor;
-            m_shifts = other.m_shifts;
+            m_max_load_factor     = other.m_max_load_factor;
+            m_shifts              = other.m_shifts;
             other.Clear();
         }
         return *this;
@@ -407,8 +408,8 @@ public:
 
     ConstIterator Erase(ConstIterator it)
     {
-        uint64 hash = HasherT::Hash(it->key);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
+        uint64 hash             = HasherT::Hash(it->key);
+        uint32 bucketIdx        = BucketIdxFromHash(hash);
         uint32 valueIdxToRemove = uint32(PointerDistance(cbegin(), it));
 
         while (BucketAt(bucketIdx).valueIdx != valueIdxToRemove) {
@@ -422,10 +423,9 @@ public:
     {
         if (IsEmpty()) return 0u;
     
-        const Bucket bucket = NextWhileLess(key);
-    
+        const Bucket bucket       = NextWhileLess(key);
         uint32 distAndFingerprint = bucket.distAndFingerprint;
-        uint32 bucketIdx = bucket.valueIdx;
+        uint32 bucketIdx          = bucket.valueIdx;
     
         while (distAndFingerprint == BucketAt(bucketIdx).distAndFingerprint &&
                               key != m_keys[BucketAt(bucketIdx).valueIdx])

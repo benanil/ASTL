@@ -6,26 +6,6 @@
 
 #include "Math/Math.hpp"
 
-constexpr FINLINE uint FNVHash(const void* ptr, uint64 length) {
-	const char* str = (const char*)ptr;
-	uint hash = 2166136261u;
-	
-	for (uint i = 0; i < length; str++, i++) {
-		hash *= 16777619u; hash ^= *str;
-	}
-	return hash;
-}
-
-constexpr FINLINE uint64 FNVHash64(const void* ptr, uint64 length) {
-	const char* str = (const char*)ptr;
-	uint64 hash = 14695981039346656037ull;
-	
-	for (uint64 i = 0; i < length; str++, i++) {
-		hash *= 1099511628211ULL; hash ^= *str;
-	}
-	return hash;
-}
-
 // Not WangHash actually we can say skeeto hash.
 // developed and highly optimized by Chris Wellons
 // https://github.com/skeeto/hash-prospector https://nullprogram.com/blog/2018/07/31/
@@ -71,26 +51,24 @@ constexpr FINLINE uint64 MurmurHashInverse(uint64 x) {
 	return x ^ (x >> 30ULL ^ x >> 60ULL);
 }
 
-// #include <immintrin.h>
-extern int __cdecl _rdseed32_step(unsigned int *);
-#if defined(_M_X64)
-extern int __cdecl _rdseed64_step(unsigned __int64 *);
-#endif /* defined (_M_X64) */
+// todo find way of random seed generation
+#ifndef _MSCVER
+#include <immintrin.h> // intrin.h is included defaultly with msvc
+#endif
 
 namespace Random
 {
 	// these random seeds slower than PCG and MTwister but good choice for random seed
 	// also seeds are cryptographic 
-	// todo make seeds platform independent
 	FINLINE uint Seed32() {
 		uint32 result;
-		_rdseed32_step(&result);
+		_rdseed32_step(&result); // or faster __rdtsc
 		return result;
 	}
 
 	FINLINE uint64 Seed64() {
 		uint64 result;
-		_rdseed64_step(&result);
+		_rdseed64_step(&result);// or faster __rdtsc
 		return result;
 	}
 
@@ -99,7 +77,7 @@ namespace Random
 	}
 	
 	FINLINE	float RepatMinMax(uint32 next, float min, float max) {
-		return min + (NextFloat01(next) * FAbs(min - max));
+		return min + (NextFloat01(next) * Abs(min - max));
 	}
 	
 	FINLINE double NextDouble01(uint64 next) {
@@ -107,7 +85,7 @@ namespace Random
 	}
 	
 	FINLINE double RepatMinMax(uint64 next, double min, double max) {
-		return min + (NextDouble01(next) * FAbs(min - max));
+		return min + (NextDouble01(next) * Abs(min - max));
 	}
 	
 	FINLINE uint32 RepatMinMax(uint32 next, uint32 min, uint32 max) { return min + (next % (max - min)); }

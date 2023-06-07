@@ -62,24 +62,30 @@ struct Allocator
 {
     T* Allocate(int count)
     {
-        return new T[count];
+        return new T[count]{};
     }
     
     T* AllocateUninitialized(int count)
     {
-        return new T[count];
+        // for now I close uninitialized 
+        // return (T*)::operator new(sizeof(T) * count);
+        return new T[count]{};
     }
     
-    void Deallocate(T* ptr, size_t count)
+    void Deallocate(T* ptr, int count)
     {
-        delete [] ptr;
+        ::operator delete(ptr, count * sizeof(T));
     }
     
-    T* Reallocate(T* ptr, size_t oldCount, size_t count)
+    T* Reallocate(T* ptr, int oldCount, int count)
     {
         T* old = ptr;
         T* _new = new T[count];
-        for (int i = 0; i < Min(oldCount, count); ++i)
+        while (--oldCount > count) // delete remaining memory if new count is less than count (reduced)
+        {
+            old[oldCount].~T();
+        }
+        for (int i = 0; i < Min(count, oldCount); ++i)
         {
             _new[i] = Forward<T>(old[i]);
         }
@@ -93,20 +99,20 @@ struct MallocAllocator
 {
   T* Allocate(int count)
   {
-    return (T*)malloc(sizeof(T) * count);
+    return (T*)calloc(sizeof(T) * count);
   }
     
   T* AllocateUninitialized(int count)
   {
-    return (T*)calloc(sizeof(T) * count);
+    return (T*)malloc(sizeof(T) * count);
   }
     
-  void Deallocate(T* ptr, size_t count)
+  void Deallocate(T* ptr, int count)
   {
     free(ptr);
   }
     
-  T* Reallocate(T* ptr, size_t oldCount, size_t count)
+  T* Reallocate(T* ptr, int oldCount, int count)
   {
     return (T*)realloc(ptr, sizeof(T) * count);
   }

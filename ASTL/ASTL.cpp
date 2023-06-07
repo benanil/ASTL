@@ -1,4 +1,5 @@
-#ifndef __HashMapTest
+
+#ifdef __HashMapTest
 
 #include "HashMap.hpp"
 #include "HashSet.hpp"
@@ -142,7 +143,7 @@ int main()
     {
         printf("%i, %s\n", key, value.CStr());
     }
-    ax_assert(testMap[99999] == String("monkey"));
+    ASSERT(testMap[99999] == String("monkey"));
     
     HashSet<int> testSet{};
     testSet.Insert(213444590);
@@ -156,32 +157,74 @@ int main()
     PassingToConstFunction(ourMap);
     
     String num = ourMap[4];
-    ax_assert(num == String("no its five"));
+    ASSERT(num == String("no its five"));
     bool finded1 = ourMap.Find(5ull) != ourMap.end();
-    ax_assert(finded1 == false);
+    ASSERT(finded1 == false);
     
     String val1 = ourMap.At(4);
-    ax_assert(val1 == String("no its five"));
+    ASSERT(val1 == String("no its five"));
     
     ourMap.TryEmplace(33, "33ull");
     
     bool contains1 = ourMap.Contains(33);
-    ax_assert(contains1);
+    ASSERT(contains1);
     ourMap.Erase(33);
     
     contains1 = ourMap.Contains(33ull);
-    ax_assert(!contains1);
+    ASSERT(!contains1);
     
     ourMap.Insert(33, "33ull");
     contains1 = ourMap.Contains(33ull);
-    ax_assert(contains1);
+    ASSERT(contains1);
     // printf("number of array:  alloc=%i, dealloc:%i\n", numberOfArrayAllocs, numberOfArrayDelete);
     // printf("number of string: alloc=%i, dealloc:%i, copy:%i", numberOfStringAllocs, numberOfStringDelete, numStringCopy);
     return 1;
 }
 #endif
 
+#include "Queue.hpp"
+#include "Stack.hpp"
+#include "String.hpp"
+#include <stdio.h>
 
+void main()
+{
+    Stack<uint64_t> stack{};
+    uint64_t xoro[2];
+    Random::Xoroshiro128PlusInit(xoro);
+    char chr[9]{};
+
+    for (int i = 0; i < 10001; ++i)
+    {
+        uint64_t x = Random::Xoroshiro128Plus(xoro);
+        stack.Push(x & ((1 << 15)-1));
+    }
+
+    while (stack.Any())
+    {
+        printf("%llu\n", stack.Pop());
+    }
+
+    printf("\n\n");
+
+    Queue<uint64> queue(33);
+    for (int i = 0; i < 33; ++i)
+        queue.Enqueue(i);
+
+    queue.Enqueue(97);
+    queue.Enqueue(98);
+    queue.Enqueue(98);
+    queue.Enqueue(98);
+    queue.Enqueue(98);
+
+    for (int i = 0; i < 10; i++)
+        queue.Dequeue();
+
+    for (Queue<uint64>::ConstIterator it = queue.cbegin();
+        it != queue.cend(); it++)
+       printf("%llu\n", *it);
+}
+  
 #ifdef __NOTHING
 
 /* Genetic algorithm to explore xorshift-multiply-xorshift hashes.

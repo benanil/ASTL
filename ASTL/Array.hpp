@@ -1,27 +1,30 @@
 #pragma once
+
 #include "Memory.hpp"
 #include "Algorithms.hpp"
 
-template<typename ValueT,
-         typename AllocatorT = Allocator<ValueT>>
+template<typename ValueT, 
+	     typename AllocatorT = Allocator<ValueT>>
 class Array
 {
+ public:
 	using Iterator = ValueT*;
 	using ConstIterator = const ValueT*;
-	using iterator = ValueT*; // stl compatible
-	using const_iterator = const ValueT*;
 
-	static constexpr int InitialSize = 8;
-
-private:
-	ValueT* arr = nullptr;
-	int count = 0;
+    // we don't want to use same initial size for all data types because we want 
+	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
+	// if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
+	static constexpr int InitialSize = 384 / Min((int)sizeof(ValueT), 128);//  1         384
+							                                               //  2         192
+private:                                                                   //  4         96
+	ValueT* arr    = nullptr;                                              //  8         48
+	int m_count    = 0;
 	int m_capacity = InitialSize;
 	AllocatorT allocator{};
 public:
 	Array()
 	{
-	    arr = allocator.Allocate(m_capacity);
+	    arr = allocator.AllocateUninitialized(m_capacity);
 	}
 	
 	~Array()
@@ -29,49 +32,49 @@ public:
 		if (arr != nullptr)
 		{
 			allocator.Deallocate(arr, m_capacity);
-			count = 0;
+			m_count    = 0;
 			m_capacity = InitialSize;
-			arr = nullptr;
+			arr        = nullptr;
 		}
 	}
 	
 	explicit Array(const AllocatorT& _allocator) : allocator(_allocator)
 	{
-		arr = allocator.Allocate(m_capacity);
+		arr = allocator.AlglocateUninitialized(m_capacity);
 	}
 	
 	explicit Array(Array const& other) : Array(other.Data(), other.Size()) {}
 	
 	explicit Array(uint _capacity) : m_capacity(_capacity)
 	{
-		arr = allocator.Allocate(m_capacity);
+		arr = allocator.AllocateUninitialized(m_capacity);
 	}
 	
 	Array(uint _capacity, uint _count) 
-	: m_capacity(_capacity), count(_count)
+	: m_capacity(_capacity), m_count(_count)
 	{
 		arr = allocator.Allocate(m_capacity);
 	}
 	
 	Array(uint _count, const ValueT& val) 
-	: m_capacity(_count + (_count / 2)), count(_count)
+	: m_capacity(_count + (_count / 2)), m_count(_count)
 	{
 		arr = allocator.AllocateUninitialized(m_capacity);
-		FillN(arr, val, count);
+		FillN(arr, val, m_count);
 	}
 	
 	Array(ConstIterator _begin, ConstIterator _end)
 	{
-		count = PointerDistance(_begin, _end);
-		m_capacity  = count + (count / 2);
-		arr = allocator.Allocate(m_capacity);
-		Copy(arr, _begin, count);
+		m_count    = PointerDistance(_begin, _end);
+		m_capacity = m_count + (m_count / 2);
+		arr        = allocator.AllocateUninitialized(m_capacity);
+		Copy(arr, _begin, m_count);
 	}
 	
 	Array(ConstIterator _begin, int _size) 
-	  : count(_size), m_capacity(_size + (_size / 2))
+	  : m_count(_size), m_capacity(_size + (_size / 2))
 	{
-		arr = allocator.Allocate(m_capacity);
+		arr = allocator.AllocateUninitialized(m_capacity);
 		Copy(arr, _begin, _size);
 	}
 	
@@ -81,21 +84,23 @@ public:
 		{
 			GrowIfNecessary(other.Size());
 			Copy(arr, other.arr, other.Size());
-			count = other.Size();
-	  }
-	  return *this;
+			m_count = other.Size();
+		}
+		return *this;
 	}
 	
 	Array& operator = (Array&& other) noexcept
 	{
 		if (&other != this)
 		{
-			arr = other.arr;
-			count = other.Size();
-			m_capacity = other.m_capacity;
+		    if (arr != nullptr)
+		    	allocator.Deallocate(arr, m_capacity);
+			arr              = other.arr;
+			m_count          = other.Size();
+			m_capacity       = other.m_capacity;
 			other.m_capacity = InitialSize;
-			other.count = 0;
-			other.arr = nullptr;
+			other.m_count    = 0;
+			other.arr        = nullptr;
 		}
 		return *this;
 	}
@@ -120,47 +125,35 @@ public:
 
 	ValueT& operator[](int index) 
 	{
-		ax_assert(index >= 0 && index < count);
+		ASSERT(index >= 0 && index < m_count);
 		return arr[index]; 
 	}
 	
 	const ValueT& operator[](int index) const 
 	{
-		ax_assert(index >= 0 && index < count);
+		ASSERT(index >= 0 && index < m_count);
 		return arr[index]; 
 	}
 
-	Array operator+(const ValueT& other)
-	{
-		Array _new = *this;
-		_new.Add(other);
-		return _new;
-	}
+	Array  operator + (const ValueT& other) const { Array _new = *this; _new.Add(other); return _new; }
 
-	Array& operator+=(const ValueT& type)
-	{
-		Add(type);
-		return *this;
-	}
+	Array& operator += (const ValueT& type)  { Add(type);                           return *this; } 
 
-	Array& operator+=(const Array& other)
-	{
-		Add(other.cbegin(), other.Size());
-		return *this;
-	}
+	Array& operator += (const Array& other)  { Add(other.cbegin(), other.Size());   return *this; }
 
 	void Add(const ValueT& value)
 	{
-		GrowIfNecessary(count + 1);
-		arr[count++] = value;
+		GrowIfNecessary(m_count + 1);
+		arr[m_count++] = value;
 	}
 
 	void Add(ConstIterator _begin, int _size)
 	{
-		GrowIfNecessary(count + _size);
+		ASSERT(m_count > INT32_MAX - _size); // array max size reached
+		GrowIfNecessary(m_count + _size);
 		for (int i = 0; i < _size; i++)
 		{
-			arr[count++] = *_begin++;
+			arr[m_count++] = *_begin++;
 		}
 	}
 
@@ -195,8 +188,8 @@ public:
 
 	void InsertUnordered(int index, const ValueT& value)
 	{
-		GrowIfNecessary(count + 1);
-		int end = count + 1;
+		GrowIfNecessary(m_count + 1);
+		int end = m_count + 1;
 		arr[end] = Forward<ValueT>(arr[index]);
 		arr[index] = value;
 	}
@@ -208,25 +201,25 @@ public:
 		int freeIndex = 0;   // the first free slot in items array
 
 		// Find the first item which needs to be removed.
-		while (freeIndex < count && match(arr[freeIndex]) == false) freeIndex++;
-		if (freeIndex >= count) return 0;
+		while (freeIndex < m_count && match(arr[freeIndex]) == false) freeIndex++;
+		if (freeIndex >= m_count) return 0;
 
 		int current = freeIndex + 1;
-		while (current < count)
+		while (current < m_count)
 		{
 			// Find the first item which needs to be kept.
-			while (current < count && match(arr[current]) == true) current++;
+			while (current < m_count && match(arr[current]) == true) current++;
 
-			if (current < count)
+			if (current < m_count)
 			{
 				// copy item to the free slot.
 				arr[freeIndex++] = Forward<ValueT>(arr[current++]);
 			}
 		}
 
-		int numCleared = count - freeIndex;
+		int numCleared = m_count - freeIndex;
 		ClearN(arr + freeIndex, numCleared);
-		count = freeIndex;
+		m_count = freeIndex;
 		return numCleared; // removed item count
 	}
 
@@ -234,7 +227,7 @@ public:
 	ValueT& EmplaceAt(int index, Args&&... args)
 	{
 		OpenSpace(index, 1);
-		arr[count].~ValueT();
+		arr[m_count].~ValueT();
 		new(&arr[index]) ValueT(Forward<Args>(args)...);
 		return arr[index];
 	}
@@ -242,10 +235,10 @@ public:
 	template<typename... Args>
 	ValueT& EmplaceBack(Args&&... args)
 	{
-		GrowIfNecessary(count + 1);
-		arr[count].~ValueT();
-		new(&arr[count]) ValueT(Forward<Args>(args)...);
-		return arr[count++];
+		GrowIfNecessary(m_count + 1);
+		arr[m_count].~ValueT();
+		new(&arr[m_count]) ValueT(Forward<Args>(args)...);
+		return arr[m_count++];
 	}
 
 	template<typename... Args>
@@ -271,7 +264,7 @@ public:
 
 	void Remove(const ValueT& val)
 	{
-		int index = IndexOf(arr, val, count);
+		int index = IndexOf(arr, val, m_count);
 		if (index != -1)
 		{
 			RemoveSpace(index, 1);
@@ -282,7 +275,7 @@ public:
 	void RemoveUnordered(int index)
 	{
 		arr[index].~ValueT();
-		SwapPrimitive(arr[index], arr[--count]);
+		SwapPrimitive(arr[index], arr[--m_count]);
 	}
 
 	void Resize(int _size) 
@@ -293,54 +286,60 @@ public:
 		}
 		else if (_size < m_capacity)
 		{
-			for (int i = count - 1; i >= _size; --i)
+			for (int i = m_count - 1; i >= _size; --i)
 			{
 				arr[i].~ValueT();
 			}
 			ReduceIfNecessary(_size);
 		}
-		count = _size;
+		m_count = _size;
 	}
 
 	// you can use this function after removing elements in the array, this will reduct the amount of memory used
 	void ShrinkToFit() 
 	{
-		ReduceIfNecessary(count);
+		int newCapacity = CalculateArrayGrowth(m_count);
+		if (m_capacity > newCapacity)
+		{
+			arr = allocator.Reallocate(arr, m_capacity, newCapacity);
+		}
 	}
 
-	const ValueT& Back() const { return arr[count - 1]; }
-	ValueT& Back() { return arr[count - 1]; }
-	void PopBack() { arr[--count].~ValueT(); }
+	const ValueT& Back()     const { return arr[m_count - 1];  }
+	ValueT&       Back()           { return arr[m_count - 1];  }
+	void          PopBack()        { arr[--m_count].~ValueT(); }
 	
-	const ValueT& Front() const { return arr[0]; }
-	ValueT& Fack()    { return arr[0]; }
-	void PopFront() { RemoveAt(0); }
+	const ValueT& Front()    const { return arr[0];          }
+	ValueT&       Front()          { return arr[0];          }
+	void          PopFront()       { RemoveAt(0);            }
 	
-	int Size()     const { return count;     }
-	int Capacity() const { return m_capacity; }
-	ValueT* Data() { return arr; }
-	const ValueT* Data() const { return arr; }
-	bool Empty() const { return count == 0; }
-	
-	ConstIterator  cbegin() const { return arr; }
-	ConstIterator  cend()   const { return arr + count; }
-	ConstIterator  end()    const { return arr + count; }
-	ConstIterator  begin()  const { return arr; }
-	Iterator  begin() { return arr; }
-	Iterator  end() { return arr + count; }
+	int           Size()     const { return m_count;         }
+	int           Capacity() const { return m_capacity;      }
+    ValueT*       Data()           { return arr;             }
+	const ValueT* Data()     const { return arr;             }
+	bool          Empty()    const { return m_count == 0;    }
+	                         
+	ConstIterator cbegin()   const { return arr;            }
+	ConstIterator cend()     const { return arr + m_count;  }
+	ConstIterator end()      const { return arr + m_count;  }
+	ConstIterator begin()    const { return arr;            }
+	Iterator      begin()          { return arr;            }
+	Iterator      end()            { return arr + m_count;  }
 	
 	#ifdef ASTL_STL_COMPATIBLE
+	using iterator = ValueT*; 
+	using const_iterator = const ValueT*;
 	void erase(Iterator _it, int _count = 1) { Remove(_it, _count); }
 	void insert(int index, const ValueT& value) { Insert(index, value); }
 	void push_back(const ValueT& value) { Add(value); }
-	int size()     const { return count; }
+	int size()     const { return m_count; }
 	int capacity() const { return m_capacity; }
 	ValueT* data() { return arr; }
 	const ValueT* data() const { return arr; }
 	bool empty() const { return size == 0; }
-	const ValueT& back() const { return arr[count - 1]; }
-	ValueT& back() { return arr[count - 1]; }
-	ValueT pop_back() { return arr[--count]; }
+	const ValueT& back() const { return arr[m_count - 1]; }
+	ValueT& back() { return arr[m_count - 1]; }
+	ValueT pop_back() { return arr[--m_count]; }
 	void resize(int _size) { Resize(_size); }
 	void shrink_to_fit() { ShrinkToFit(); }
 	#endif
@@ -349,47 +348,44 @@ private:
 
 	void GrowIfNecessary(int _size)
 	{
+		ASSERT(_size == INT32_MAX);
 		if (AX_UNLIKELY(_size > m_capacity))
 		{
 			size_t oldCapacity = m_capacity;
-			m_capacity = CalculateGrowth(_size);
+			m_capacity = CalculateArrayGrowth(_size);
 			arr = allocator.Reallocate(arr, oldCapacity, m_capacity);
 		}
 	}
 
 	void OpenSpace(int _index, int _count)
 	{
-		int i = count + _count;
-		int j = Max(count, 0);
+		int i = m_count + _count;
+		int j = Max(m_count, 0);
 
 		GrowIfNecessary(i);
 		while (j >= _index)
 		{
 			arr[--j] = Forward<ValueT>(arr[--i]);
 		}
-		count += _count;
+		m_count += _count;
 	}
 
 	bool ReduceIfNecessary(int _newSize)
 	{
+		constexpr uint32 minBytesToAllocate    = uint32(sizeof(uint64) * 1024ull);
+		constexpr uint32 minElementsToAllocate = Max(minBytesToAllocate / sizeof(ValueT), InitialSize);
+		const int halfCap                      = m_capacity / 2;
 		// leave space 
-		_newSize = CalculateGrowth(_newSize);
-
-		int oldCapacity = m_capacity;
-		// only reallocate if new size is greater than initial size(8)
-		// and requested size is smaller than (half of the capacity + growth addition) 
-		if (_newSize > InitialSize && _newSize < (m_capacity / 2))
+		// you can use _newSize as new capacity or you can use m_capacity / 2
+		// but I choose half way between _newSize and halfCap because _newSize might be too low
+		_newSize = Max(minElementsToAllocate, (CalculateArrayGrowth(_newSize) + halfCap) / 2);
+		
+		// resize if requested size is smaller than (halfCap - CalculateArrayGrowth(_newSize)) 
+		if (_newSize < halfCap ||
+			// initial capacity requested and current capacity is not equal to initial size
+			(m_capacity != minElementsToAllocate && _newSize == minElementsToAllocate)) 
 		{
-			// you can use _newSize as new capacity or you can use m_capacity / 2
-			// but I choose half way between _newSize and m_capacity / 2 because _newSize might be too low
-			m_capacity = (_newSize + (m_capacity / 2)) / 2;  
-			arr = allocator.Reallocate(arr, oldCapacity, m_capacity);
-			return true;
-		}
-		else if (_newSize <= InitialSize && m_capacity != InitialSize) // probably 0, check if is it already initial size
-		{
-			m_capacity = InitialSize;  
-			arr = allocator.Reallocate(arr, oldCapacity, m_capacity);
+			arr = allocator.Reallocate(arr, _newSize, m_capacity);
 			return true;
 		}
 		return false;
@@ -397,33 +393,24 @@ private:
 
 	void RemoveSpace(int _index, int _count)
 	{
-		int newSize = Max(count - _count, 0);
+		int newSize = Max(m_count - _count, 0);
 
 		int i = _index;
 		int j = _index + _count;
 
 		// *******i****j***   < opens space with incrementing both of the pointers (two pointer algorithm)
-		while (j < count)
+		while (j < m_count)
 		{
 			arr[i++] = Forward<ValueT>(arr[j++]);
 		}
 		
 		if (!ReduceIfNecessary(newSize))
 		{
-			for (int i = newSize; i < count; ++i)
+			for (int i = newSize; i < m_count; ++i)
 			{
 				arr[i].~ValueT();
 			}
 		}
-		count = newSize;
-	}
-
-	static int CalculateGrowth(int _size)
-	{
-		const int addition = _size / 2;
-		if (AX_UNLIKELY(_size > (INT32_MAX - addition))) {
-			return INT32_MAX; // growth would overflow
-		}
-		return _size + addition; // growth is sufficient
+		m_count = newSize;
 	}
 };

@@ -1,30 +1,117 @@
+// most of the functions are accurate and faster than stl 
+// convinient for game programming
+
 #pragma once
-#include "../Common.hpp"
-#include <math.h>
+
+#include "../Common.hpp" // includes Min, Max, Clamp, Abs and FAbs
 
 // constants
 constexpr float PI = 3.14159265358f;
-constexpr float PI_2 = 1.5707963267f;  // pi/2
 constexpr float RadToDeg = 180.0f / PI;
 constexpr float DegToRad = PI / 180.0f;
 constexpr float OneDivPI = 1.0f / PI;
 constexpr float PIDiv2 = PI / 2.0f;
 constexpr float TwoPI = PI * 2.0f;
+constexpr float Sqrt2 = 1.414213562f;
+// for integer constants use stdint.h's INT32_MIN, INT64_MIN, INT32_MAX...
+// for float constants use float.h's FLT_MAX, FLT_MIN, DBL_MAX, DBL_MIN
 
 //  ######################################  
 //  #####  [BASE FUNCTINS]  #####  
 //  ######################################  
 
-FINLINE _NODISCARD float Pow(float x, float y) { return powf(x, y);   }
-FINLINE _NODISCARD float Sqrt(float x)         { return sqrtf(x);  }
-FINLINE _NODISCARD float Log(float x)          { return logf(x);   }
-FINLINE _NODISCARD float Log10(float x)        { return log10f(x); } // if you want log10 for integer you can look at Algorithms.hpp
-FINLINE _NODISCARD float Log2(float x)         { return log2f(x);  }
+// for constant sqrt look at here: https://gist.github.com/alexshtf/eb5128b3e3e143187794
+FINLINE _NODISCARD float Sqrt(float x) 
+{
+#ifdef _MSC_VER
+	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(x)));  
+#else
+	return __builtin_sqrt(x);
+#endif
+}
 
-FINLINE constexpr _NODISCARD float FAbs(float x) { return x < 0.0f ? -x : x; }
-FINLINE constexpr _NODISCARD double FAbs(double x) { return x < 0.0 ? -x : x; }
-FINLINE constexpr _NODISCARD bool IsZero(float x) noexcept { return FAbs(x) <= 0.0001f; }
-FINLINE constexpr _NODISCARD bool AlmostEqual(float x, float  y) noexcept { return FAbs(x-y) <= 0.001f; }
+// original doom rsqrt implementation with comments :)
+// used constant(0x5f375a86f) is from Chriss Lomont's Fast Inverse Square Root paper
+FINLINE _NODISCARD constexpr float RSqrt(float x) 
+{
+	float x2 = x * 0.5F; // doom rsqrt
+	float y  = x;
+	int i    = BitCast<int>(y);        // evil floating point bit level hacking
+	i = 0x5f375a86f - ( i >> 1 );      // what the fuck? 
+	y = BitCast<float>(i);              
+	y = y * ( 1.5f - ( x2 * y * y ) ); // 1st iteration
+	y = y * ( 1.5f - ( x2 * y * y ) ); // 2th iteration
+	return y;
+}
+
+FINLINE constexpr _NODISCARD float Fract(float a) { a = Abs(a); return a - int(a); }
+
+FINLINE constexpr _NODISCARD double Exp(double a)
+{
+	union { double d; long long x; } u{}, v{};
+	u.x = (long long)(3248660424278399LL * a + 0x3fdf127e83d16f12LL);
+	v.x = (long long)(0x3fdf127e83d16f12LL - 3248660424278399LL * a);
+	return u.d / v.d;
+}
+
+// https://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
+// https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81
+// should be much more precise with large b
+FINLINE constexpr _NODISCARD float Pow(float a, float b) 
+{
+	// calculate approximation with fraction of the exponent
+	int e = (int) b;
+	union {
+		double d;
+		int x[2];
+	} u = { (double)a };
+	u.x[1] = (int)((b - e) * (u.x[1] - 1072632447) + 1072632447);
+	u.x[0] = 0;
+
+	// exponentiation by squaring with the exponent's integer part
+	// double r = u.d makes everything much slower, not sure why
+	float r = 1.0;
+	while (e) {
+		if (e & 1) {
+			r *= a;
+		}
+		a *= a;
+		e >>= 1;
+	}
+
+	return r * u.d;
+}
+
+// https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81 <--you can find double versions
+FINLINE constexpr _NODISCARD float Log(float x)
+{
+	return (BitCast<int>(x) - 1064866805) * 8.262958405176314e-8f;
+}
+
+// if you want log10 for integer you can look at Algorithms.hpp
+FINLINE constexpr _NODISCARD float Log10(float x)
+{ 
+	return Log(x) / 2.30258509299f; // ln(x) / ln(10)
+} 
+
+// you might look at this link as well: https://tech.ebayinc.com/engineering/fast-approximate-logarithms-part-i-the-basics/
+FINLINE constexpr _NODISCARD float Log2(float x)
+{
+	return Log(x) / 0.6931471805599453094f; // ln(x) / ln(2) 
+}
+
+FINLINE constexpr _NODISCARD bool IsZero(float x) noexcept { return Abs(x) <= 0.0001f; }
+FINLINE constexpr _NODISCARD bool AlmostEqual(float x, float  y) noexcept { return Abs(x-y) <= 0.001f; }
+FINLINE constexpr _NODISCARD float Sign(float x, float y) { return y < 0.0f ? -x : x; }
+
+FINLINE constexpr _NODISCARD float CopySign(float x, float y) 
+{
+	int ix = BitCast<int>(x);
+	int iy = BitCast<int>(y);
+	ix &= 0x7fffffff;
+	ix |= iy & 0x80000000;
+	return BitCast<float>(ix);
+}
 
 FINLINE constexpr _NODISCARD float FMod(float x, float y) {
 	float quotient = x / y;
@@ -40,7 +127,7 @@ FINLINE constexpr _NODISCARD float Floor(float x) {
 }
 
 template<typename T> FINLINE constexpr 
-bool IsPowerOfTwo(T x) noexcept { return !(x&1) & (x != 0); }
+bool IsPowerOfTwo(T x) noexcept { return (x != 0) && ((x & (x - 1)) == 0); }
 
 //  ######################################  
 //  #####  [TRIGONOMETRIC FUNCTINS]  #####  
@@ -54,55 +141,42 @@ FINLINE constexpr _NODISCARD float ATan(float x) {
 	return x * (a1 + x_sq * (a3 + x_sq * (a5 + x_sq * (a7 + x_sq * (a9 + x_sq * a11)))));
 }
 
-// from here: https://yal.cc/fast-atan2/  
-FINLINE _NODISCARD float ATan2(float y, float x) {
-	float ay = FAbs(y), ax = FAbs(x);
+FINLINE constexpr _NODISCARD float ATan2(float y, float x) {
+	// from here: https://yal.cc/fast-atan2/  
+	float ay = Abs(y), ax = Abs(x);
 	int invert = ay > ax;
 	float z = invert ? ax/ay : ay/ax;// [0,1]
 	float th = ATan(z);              // [0,π/4]
-	if(invert) th = PI_2 - th;       // [0,π/2]
+	if(invert) th = PIDiv2 - th;     // [0,π/2]
 	if(x < 0)  th = PI - th;         // [0,π]
-	// with removing this function we can make this function constexpr
-	// and currently not compatible with other than MSVC
-	return __copysignf(th, y);       // [-π,π] 
+	return CopySign(th, y);          // [-π,π] 
 }
 
 FINLINE _NODISCARD float ASin(float z) 
 {
 	return ATan2(z, Sqrt(1.0f-(z * z)));
-	// this way is probably much faster, 
-	// vectorizable and can be constexpr 
-	// but it doesn't work correctly when value is closer to -1
-	float z3 = z * z * z;
-	float t = z + (0.500000f * z3 * 0.333333333f); // z3 / 3.0f 0.333 = rcp(3)
-	t += (0.500000000f) * ((z3 *= z * z) * 0.200000000f);  // z5 / 5.0f 0.2 = rcp(5)
-	t += (0.375000000f) * ((z3 *= z * z) * 0.142857143f); // z7 / 9.0f
-	t += (0.234375000f) * ((z3 *= z * z) * 0.111111111f);
-	t += (0.102539062f) * ((z3 *= z * z) * 0.090909091f);
-	t += (0.028839111f) * ((z3 *= z * z) * 0.076923077f);
-	t += (0.004956722f) * ((z3 * z * z)  * 0.066666667f);
-	return t; //0.000029            //* 0.058824
 }
 
+// https://en.wikipedia.org/wiki/Sine_and_cosine
+// warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
 FINLINE constexpr _NODISCARD float Sin(float x) 
 {
-	x = FMod(x + PI, TwoPI) - PI;
 	float xx = x * x * x;                // x^3
 	float t = x - (xx * 0.16666666666f); // x3/!3  6 = !3 = 1.6666 = rcp(3)
 	t += (xx *= x * x) * 0.00833333333f; // x5/!5  120 = !5 = 0.0083 = rcp(5)
 	t -= (xx *= x * x) * 0.00019841269f; // x7/!7  5040 = !7
-	t += (xx * x * x) / 362880.0f;       // 362880 = !9
+	t += (xx * x * x)  * 2.75573e-06f;   // 362880 = !9
 	return t;
 }
 
+// warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
 FINLINE constexpr _NODISCARD float Cos(float x) 
 {
-	x = FMod(x + PI, TwoPI) - PI;
 	float xx = x * x;                    // x^2
 	float t = 1.0f - (xx * 0.5f);        // 1-(x2/!2) 0.5f = rcp(!2)
 	t += (xx *= x * x) * 0.04166666666f; // t + (x4/!4) 0.04166 = rcp(24) = 24.0f = !4
 	t -= (xx *= x * x) * 0.00138888888f; // t - (x6/!6) 720.0f = !6
-	t += (xx * x * x) / 40320.0f;        // t + (x8/!8) 40320 = !8
+	t += (xx * x * x)  * 2.48016e-05f;   // t + (x8/!8) 40320 = !8
 	return t;
 }
 
@@ -111,12 +185,17 @@ FINLINE constexpr _NODISCARD void SinCos(float x, float* s, float* c)
 	*s = Sin(x); *c = Cos(x); 
 }
 
-// from chat gpt
-FINLINE constexpr _NODISCARD float Tan(float x, int depth = 10) 
+FINLINE constexpr _NODISCARD float Tan(float radians) 
 {
-	if (depth == 0.0f) return x;
-	float h = Tan(x * 0.5f, depth - 1);
-	return (2.0f * h) / (1.0f - (h * h));
+	float rr = radians * radians;
+	float a = 9.5168091e-03f;
+	a *= rr; a += 2.900525e-03f;
+	a *= rr; a += 2.45650893e-02f;
+	a *= rr; a += 5.33740603e-02f;
+	a *= rr; a += 1.333923995e-01f;
+	a *= rr; a += 3.333314036e-01f;
+	a *= rr; a += 1.0f;
+	return a * radians;
 }
 
 // inspired from Casey Muratori's performance aware programming
@@ -127,30 +206,6 @@ FINLINE _NODISCARD float ACos(float x)   { return PIDiv2 - ASin(x); }
 FINLINE _NODISCARD float ACosPI(float x) { return ACos(x) / PI; }
 FINLINE _NODISCARD float CosPI(float x)  { return Cos(x) / PI; }
 FINLINE _NODISCARD float SinPI(float x)  { return Sin(x) / PI; }
-
-FINLINE _NODISCARD constexpr float Tan10(float x) { return Tan(x); }
-
-//  ######################################  
-//  #####      [MISC FUNCTINS]       #####  
-//  ######################################  
-
-template<typename RealT>
-FINLINE _NODISCARD RealT Lerp(const RealT from, const RealT to,
-                              const RealT t) noexcept {
-	return from + (to - from) * t;
-}
-
-// original doom rsqrt implementation with comments :)
-FINLINE _NODISCARD constexpr float RSqrt(float number) 
-{
-	float x2 = number * 0.5F;
-	float y  = number;
-	long i   = *(long*) &y;              // evil floating point bit level hacking
-	i = 0x5f3759df - ( i >> 1 );         // what the fuck? 
-	y = * ( float * ) &i;
-	y = y * ( 1.5f - ( x2 * y * y ) );   // 1st iteration
-	return y;
-}
 
 //  ######################################  
 //  #####      [HALF FUNCTINS]       #####  

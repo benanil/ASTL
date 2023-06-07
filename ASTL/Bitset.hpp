@@ -16,9 +16,9 @@ template<int numBits> struct Bitset
 
 	Bitset() {}
 
-	bool Get(int idx) const { ax_assert(idx < numBits && idx >= 0); return !!(bits[idx >> 6] & (1ul << idx & 63)); }
-	void Set(int idx)       { ax_assert(idx < numBits && idx >= 0); bits[idx >> 6] |= 1ul << (idx & 63); }
-	void Reset(int idx)     { ax_assert(idx < numBits && idx >= 0); bits[idx >> 6] &= ~(1ul << (idx & 63)); }
+	bool Get(int idx) const { ASSERT(idx < numBits && idx >= 0); return !!(bits[idx >> 6] & (1ul << idx & 63)); }
+	void Set(int idx)       { ASSERT(idx < numBits && idx >= 0); bits[idx >> 6] |= 1ul << (idx & 63); }
+	void Reset(int idx)     { ASSERT(idx < numBits && idx >= 0); bits[idx >> 6] &= ~(1ul << (idx & 63)); }
 
 	void Clear() { for (int i = 0; i < size; ++i) bits[i] =      0ul; }
 	void Flip()  { for (int i = 0; i < size; ++i) bits[i] = ~bits[i]; }

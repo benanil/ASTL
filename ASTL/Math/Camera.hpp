@@ -68,7 +68,8 @@ struct Camera
 		{
 			pitch -= diff.y * dt * senstivity;
 			yaw   += diff.x * dt * senstivity;
-			pitch = Clamp(pitch, -89.0f, 89.0f);
+			yaw    = FMod(yaw + 180.0f, 360.0f) - 180.0f; 
+			pitch  = Clamp(pitch, -89.0f, 89.0f);
 		}
 		
 		Front.x = Cos(yaw * DegToRad) * Cos(pitch * DegToRad);

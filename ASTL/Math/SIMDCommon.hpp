@@ -22,7 +22,6 @@
             #define AX_SUPPORT_AVX2
         #endif
     #else
-        /* Assume GNUC-style. */
         #if defined(__SSE2__) && !defined(AX_NO_SSE2)
             #define AX_SUPPORT_SSE2
         #endif
@@ -125,20 +124,20 @@ AXGLOBALCONST Vector432F g_XMIdentityR2 = { 0.0f, 0.0f, 1.0f, 0.0f };
 AXGLOBALCONST Vector432F g_XMIdentityR3 = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 AXGLOBALCONST Vector4UI g_XMMaskXY = { 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMask3 = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskX = { 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskY = { 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskZ = { 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskW = { 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF };
+AXGLOBALCONST Vector4UI g_XMMask3  = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000 };
+AXGLOBALCONST Vector4UI g_XMMaskX  = { 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 };
+AXGLOBALCONST Vector4UI g_XMMaskY  = { 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 };
+AXGLOBALCONST Vector4UI g_XMMaskZ  = { 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000 };
+AXGLOBALCONST Vector4UI g_XMMaskW  = { 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF };
 
-AXGLOBALCONST Vector432F g_XMOne = { 1.0f, 1.0f, 1.0f, 1.0f };
-AXGLOBALCONST Vector432F g_XMOne3 = { 1.0f, 1.0f, 1.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMZero = { 0.0f, 0.0f, 0.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMTwo = { 2.0f, 2.0f, 2.0f, 2.0f };
-AXGLOBALCONST Vector432F g_XMFour = { 4.0f, 4.0f, 4.0f, 4.0f };
-AXGLOBALCONST Vector432F g_XMSix = { 6.0f, 6.0f, 6.0f, 6.0f };
+AXGLOBALCONST Vector432F g_XMOne         = { 1.0f, 1.0f, 1.0f, 1.0f };
+AXGLOBALCONST Vector432F g_XMOne3        = { 1.0f, 1.0f, 1.0f, 0.0f };
+AXGLOBALCONST Vector432F g_XMZero        = { 0.0f, 0.0f, 0.0f, 0.0f };
+AXGLOBALCONST Vector432F g_XMTwo         = { 2.0f, 2.0f, 2.0f, 2.0f };
+AXGLOBALCONST Vector432F g_XMFour        = { 4.0f, 4.0f, 4.0f, 4.0f };
+AXGLOBALCONST Vector432F g_XMSix         = { 6.0f, 6.0f, 6.0f, 6.0f };
 AXGLOBALCONST Vector432F g_XMNegativeOne = { -1.0f, -1.0f, -1.0f, -1.0f };
-AXGLOBALCONST Vector432F g_XMOneHalf = { 0.5f, 0.5f, 0.5f, 0.5f };
+AXGLOBALCONST Vector432F g_XMOneHalf     = { 0.5f, 0.5f, 0.5f, 0.5f };
 
 FINLINE __m128 VECTORCALL SSESelect(const __m128 V1, const __m128 V2, const __m128& Control)
 {

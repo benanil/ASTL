@@ -17,7 +17,8 @@
 #ifndef FINLINE
 #	ifdef _MSC_VER
 #		define FINLINE __forceinline
-#       include <intrin.h>
+#include <intrin.h>
+#define VC_EXTRALEAN 1
 #   elif __CLANG__
 #       define FINLINE [[clang::always_inline]] 
 #	elif __GNUC__
@@ -81,14 +82,14 @@
 // https://nullprogram.com/blog/2022/06/26/
 #ifdef _DEBUG
 #  if __GNUC__
-#    define ax_assert(c) if (!(c)) __builtin_trap()
+#    define ASSERT(c) if (!(c)) __builtin_trap()
 #  elif _MSC_VER
-#    define ax_assert(c) if (!(c)) __debugbreak()
+#    define ASSERT(c) if (!(c)) __debugbreak()
 #  else
-#    define ax_assert(c) if (!(c)) *(volatile int *)0 = 0
+#    define ASSERT(c) if (!(c)) *(volatile int *)0 = 0
 #  endif
 #else
-#  define ax_assert(c)
+#  define ASSERT(c)
 #endif
 
 #if defined(__has_builtin)
@@ -154,6 +155,7 @@
 #define FOR_EACH_RSEQ_N() 6, 5, 4, 3, 2, 1, 0
 
 #define GLUE(x, y) x##y
+// usage example, FOR_EACH(fclose, aFile, bFile, cFile);
 #define FOR_EACH_(N, what, ...) EXPAND(GLUE(FOR_EACH_, N)(what, __VA_ARGS__))
 #define FOR_EACH(what, ...) FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, __VA_ARGS__)
 #define DELETE_ALL(...) FOR_EACH(delete, __VA_ARGS__)
@@ -232,7 +234,6 @@ _NODISCARD FINLINE constexpr To BitCast(const From& _Val) noexcept {
 	return __builtin_bit_cast(To, _Val);
 }
 
-typedef int32_t int32;
 typedef int64_t int64;
 
 typedef uint16_t ushort;
@@ -244,10 +245,10 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-template<typename T> FINLINE constexpr T Max(T a, T b) { return a > b ? a : b; }
-template<typename T> FINLINE constexpr T Min(T a, T b) { return a < b ? a : b; }
-template<typename T> FINLINE constexpr T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
-FINLINE constexpr _NODISCARD int Abs(int x) { return x < 0 ? -x : x; }
+template<typename T> FINLINE constexpr _NODISCARD T Min(T a, T b) { return a < b ? a : b; }
+template<typename T> FINLINE constexpr _NODISCARD T Max(T a, T b) { return a > b ? a : b; }
+template<typename T> FINLINE constexpr _NODISCARD T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
+template<typename T> FINLINE constexpr _NODISCARD T Abs(T x) { return x < T(0) ? -x : x; }
 
 // maybe we should move this to Algorithms.hpp
 template<typename T>
@@ -258,10 +259,14 @@ inline uint PointerDistance(const T* begin, const T* end)
 	  return result;
 }
 
-/*for qsort*/ template<typename T>
-inline int QLess(const void* a, const void* b) { return *(T*)a < *(T*)b; }
-/*for qsort*/ template<typename T>
-inline int QGreater(const void* a, const void* b) { return *(T*)a > *(T*)b; }
+inline constexpr int CalculateArrayGrowth(int _size)
+{
+    const int addition = _size / 2;
+    if (AX_UNLIKELY(_size > (INT32_MAX - addition))) {
+        return INT32_MAX; // growth would overflow
+    }
+    return _size + addition; // growth is sufficient
+}
 
 // enum for skipping initialization
 enum EForceInit

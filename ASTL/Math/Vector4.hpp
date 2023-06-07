@@ -67,9 +67,64 @@ AX_ALIGNED(16) struct RaySSE
 	__m128 direction;
 };
 
+#endif // AX_SUPPORT_SSE2
 
-#else // sse not supported
+#ifdef AX_SUPPORT_AVX2
 
+AX_ALIGNED(32) struct Vector4d
+{
+	union
+	{
+		struct { double x, y, z, w; };
+		double arr[4];
+		__m256d vec;
+	};
+
+	static constexpr int NumElements = 4;
+	static constexpr uint64 ElementSize = sizeof(double);
+	using ElemType = double;
+
+	constexpr Vector4d() : x(0), y(0), z(0), w(0) {}
+	constexpr Vector4d(double scale) : x(scale), y(scale), z(scale), w(scale) {}
+	constexpr Vector4d(__m256d _vec) : vec(_vec) {}
+	constexpr Vector4d(double _x, double _y, double _z, double _w) : x(_x), y(_y), z(_z), w(_w) {}
+
+	FINLINE static __m256d VECTORCALL Normalize(__m256d V)
+	{
+		return _mm256_div_pd(V, _mm256_sqrt_pd(Dot(V, V))); // v / sqrt(dot(v))
+	}
+
+	FINLINE static __m256d VECTORCALL Dot(const __m256d V1, const __m256d V2)
+	{
+		__m256d vDot = _mm256_mul_pd(V1, V2);
+		__m256d vTemp = _mm256_permute4x64_pd(vDot, _MM_SHUFFLE(2, 1, 2, 1));
+		vDot = _mm256_add_pd(vDot, vTemp);
+		vTemp = _mm256_permute4x64_pd(vTemp, _MM_SHUFFLE(1, 1, 1, 1));
+		vDot = _mm256_add_pd(vDot, vTemp);
+		return _mm256_permute4x64_pd(vDot, _MM_SHUFFLE(0, 0, 0, 0));
+	}
+
+	Vector4d& Normalized() { vec = Normalize(vec); return *this; }
+
+	Vector4d VECTORCALL operator + (const Vector4d b) const { return _mm256_add_pd(vec, b.vec); }
+	Vector4d VECTORCALL operator - (const Vector4d b) const { return _mm256_sub_pd(vec, b.vec); }
+	Vector4d VECTORCALL operator * (const Vector4d b) const { return _mm256_mul_pd(vec, b.vec); }
+	Vector4d VECTORCALL operator / (const Vector4d b) const { return _mm256_div_pd(vec, b.vec); }
+
+	Vector4d& VECTORCALL operator += (const Vector4d b) { vec = _mm256_add_pd(vec, b.vec); return *this; }
+	Vector4d& VECTORCALL operator -= (const Vector4d b) { vec = _mm256_sub_pd(vec, b.vec); return *this; }
+	Vector4d& VECTORCALL operator *= (const Vector4d b) { vec = _mm256_mul_pd(vec, b.vec); return *this; }
+	Vector4d& VECTORCALL operator /= (const Vector4d b) { vec = _mm256_div_pd(vec, b.vec); return *this; }
+
+	Vector4d operator  *  (const double b) const { return _mm256_mul_pd(vec, _mm256_set1_pd(b)); }
+	Vector4d operator  /  (const double b) const { return _mm256_div_pd(vec, _mm256_set1_pd(b)); }
+	Vector4d& operator *= (const double b) { vec = _mm256_mul_pd(vec, _mm256_set1_pd(b)); return *this; }
+	Vector4d& operator /= (const double b) { vec = _mm256_div_pd(vec, _mm256_set1_pd(b)); return *this; }
+};
+
+#endif // AX_SUPPORT_AVX2
+
+#if !defined(AX_SUPPORT_SSE2 ) || !defined(AX_SUPPORT_AVX2)
 template<typename T>
 struct Vector4
 {
@@ -131,65 +186,14 @@ struct Vector4
 	Vector4 operator -= (T o) { x -= o; y -= o; z -= o; w -= o; return *this; }
 };
 
+#if !AX_SUPPORT_SSE2
 using Vector4f = Vector4<float>;
+#endif
+#if !AX_SUPPORT_AVX2
 using Vector4d = Vector4<double>;
+#endif // !AX_SUPPORT_SSE2
 
-#endif // AX_SUPPORT_SSE2
-
-#ifdef AX_SUPPORT_AVX2
-
-AX_ALIGNED(32) struct Vector4d
-{
-	union
-	{
-		struct { double x, y, z, w; };
-		double arr[4];
-		__m256d vec;
-	};
-
-	static constexpr int NumElements = 4;
-	static constexpr uint64 ElementSize = sizeof(double);
-	using ElemType = double;
-
-	constexpr Vector4d() : x(0), y(0), z(0), w(0) {}
-	constexpr Vector4d(double scale) : x(scale), y(scale), z(scale), w(scale) {}
-	constexpr Vector4d(__m256d _vec) : vec(_vec) {}
-	constexpr Vector4d(double _x, double _y, double _z, double _w) : x(_x), y(_y), z(_z), w(_w) {}
-
-	FINLINE static __m256d VECTORCALL Normalize(__m256d V)
-	{
-		return _mm256_div_pd(V, _mm256_sqrt_pd(Dot(V, V))); // v / sqrt(dot(v))
-	}
-
-	FINLINE static __m256d VECTORCALL Dot(const __m256d V1, const __m256d V2)
-	{
-		__m256d vDot = _mm256_mul_pd(V1, V2);
-		__m256d vTemp = _mm256_permute4x64_pd(vDot, _MM_SHUFFLE(2, 1, 2, 1));
-		vDot = _mm256_add_pd(vDot, vTemp);
-		vTemp = _mm256_permute4x64_pd(vTemp, _MM_SHUFFLE(1, 1, 1, 1));
-		vDot = _mm256_add_pd(vDot, vTemp);
-		return _mm256_permute4x64_pd(vDot, _MM_SHUFFLE(0, 0, 0, 0));
-	}
-
-	Vector4d& Normalized() { vec = Normalize(vec); return *this; }
-
-	Vector4d VECTORCALL operator + (const Vector4d b) const { return _mm256_add_pd(vec, b.vec); }
-	Vector4d VECTORCALL operator - (const Vector4d b) const { return _mm256_sub_pd(vec, b.vec); }
-	Vector4d VECTORCALL operator * (const Vector4d b) const { return _mm256_mul_pd(vec, b.vec); }
-	Vector4d VECTORCALL operator / (const Vector4d b) const { return _mm256_div_pd(vec, b.vec); }
-
-	Vector4d& VECTORCALL operator += (const Vector4d b) { vec = _mm256_add_pd(vec, b.vec); return *this; }
-	Vector4d& VECTORCALL operator -= (const Vector4d b) { vec = _mm256_sub_pd(vec, b.vec); return *this; }
-	Vector4d& VECTORCALL operator *= (const Vector4d b) { vec = _mm256_mul_pd(vec, b.vec); return *this; }
-	Vector4d& VECTORCALL operator /= (const Vector4d b) { vec = _mm256_div_pd(vec, b.vec); return *this; }
-
-	Vector4d operator  *  (const double b) const { return _mm256_mul_pd(vec, _mm256_set1_pd(b)); }
-	Vector4d operator  /  (const double b) const { return _mm256_div_pd(vec, _mm256_set1_pd(b)); }
-	Vector4d& operator *= (const double b) { vec = _mm256_mul_pd(vec, _mm256_set1_pd(b)); return *this; }
-	Vector4d& operator /= (const double b) { vec = _mm256_div_pd(vec, _mm256_set1_pd(b)); return *this; }
-};
-
-#endif // AX_SUPPORT_AVX2
-
+#else
 typedef Vector4f float4;
+#endif
 

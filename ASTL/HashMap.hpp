@@ -53,7 +53,7 @@ class HashMap
         static constexpr uint32_t DistInc = 1u << 8u;             // skip 1 byte fingerprint
         static constexpr uint32_t FingerprintMask = DistInc - 1u; // mask for 1 byte of fingerprint
         uint32_t distAndFingerprint; // upper 3 byte: distance to original bucket. lower byte: fingerprint from hash
-        uint32_t valueIdx;            // index into the m_values vector.
+        uint32_t valueIdx;           // index into the m_values vector.
     };
 
     static constexpr uint8 initial_shifts = 64u - 3u; // 2^(64-m_shift) number of buckets
@@ -61,10 +61,11 @@ class HashMap
 
     Array<KeyValuePair<KeyT, ValueT>, AllocatorT> m_values{};
     Array<Bucket, MallocAllocator<Bucket>> m_buckets{};
-    uint32 m_num_buckets = 0;
-    uint32 m_max_bucket_capacity = 0;
-    float m_max_load_factor = default_max_load_factor;
-    uint8 m_shifts = initial_shifts;
+
+    uint32 m_num_buckets         = 0u;
+    uint32 m_max_bucket_capacity = 0u;
+    float m_max_load_factor      = default_max_load_factor;
+    uint8 m_shifts               = initial_shifts;
 
 private:
     uint32 Next(uint bucketIdx) const {
@@ -86,9 +87,9 @@ private:
     
     Bucket NextWhileLess(const KeyT& key) const
     {
-        uint64 hash = HasherT::Hash(key);
+        uint64 hash               = HasherT::Hash(key);
         uint32 distAndFingerprint = DistAndFingerprintFromHash(hash);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
+        uint32 bucketIdx          = BucketIdxFromHash(hash);
 
         while (distAndFingerprint < BucketAt(bucketIdx).distAndFingerprint)
         {
@@ -169,7 +170,6 @@ private:
         {
             const KeyT&  key = m_values[value_idx].key;
             Bucket bucket = NextWhileLess(key);
-
             // we know for certain that key has not yet been inserted, so no need to check it.
             PlaceAndShiftUp({bucket.distAndFingerprint, value_idx}, bucket.valueIdx);
         }
@@ -177,16 +177,16 @@ private:
 
     void IncreaseSize()
     {
-        ax_assert(m_max_bucket_capacity != MaxSize()); 
+        ASSERT(m_max_bucket_capacity != MaxSize()); 
         --m_shifts;
-        ReallocateBuckets(CalcNumBuckets(m_shifts)); // AllocateBuffersFromShift();
+        ReallocateBuckets(CalcNumBuckets(m_shifts));
         ClearAndFillBucketsFromValues();
     }
 
     void DoErase(uint32 bucketIdx)
     {
         uint32 valueIdxToRemove = m_buckets[bucketIdx].valueIdx;
-        uint32 nextBucketIdx = Next(bucketIdx);
+        uint32 nextBucketIdx    = Next(bucketIdx);
 
         while (BucketAt(nextBucketIdx).distAndFingerprint >= Bucket::DistInc * 2u)
         {
@@ -220,9 +220,9 @@ private:
         if (AX_UNLIKELY(IsFull())) 
             IncreaseSize();
 
-        uint64 hash = HasherT::Hash(key);
+        uint64 hash             = HasherT::Hash(key);
         uint32 distAndFootprint = DistAndFingerprintFromHash(hash);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
+        uint32 bucketIdx        = BucketIdxFromHash(hash);
 
         while (true)
         {
@@ -253,9 +253,9 @@ private:
         if (AX_UNLIKELY(IsFull())) 
             IncreaseSize();
     
-        uint64 hash = HasherT::Hash(key);
+        uint64 hash             = HasherT::Hash(key);
         uint32 distAndFootprint = DistAndFingerprintFromHash(hash);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
+        uint32 bucketIdx        = BucketIdxFromHash(hash);
     
         while (true)
         {
@@ -285,12 +285,11 @@ private:
         if (AX_UNLIKELY(IsEmpty()))
             return cend();
 
-        uint64 mh = HasherT::Hash(key);
+        uint64 mh                 = HasherT::Hash(key);
         uint32 distAndFingerPrint = DistAndFingerprintFromHash(mh);
-        uint32 bucketIdx = BucketIdxFromHash(mh);
-      
+        uint32 bucketIdx          = BucketIdxFromHash(mh);
         // first check two times without while loop. (unrolling for performance)
-        const Bucket* bucket = &BucketAt(bucketIdx);
+        const Bucket* bucket      = &BucketAt(bucketIdx);
 
         if (distAndFingerPrint == bucket->distAndFingerprint &&
                                   key == m_values[bucket->valueIdx].key) {
@@ -341,7 +340,7 @@ public:
         {
             return it->value;
         }
-        ax_assert(true); // key is not exist in array
+        ASSERT(true); // key is not exist in array
         return m_values[0].value;
     }
 
@@ -375,9 +374,9 @@ public:
     HashMap& operator = (HashMap const& other) {
         if (&other != this) {
             ReallocateBuckets(other.m_num_buckets); 
-            m_values = other.m_values;
+            m_values          = other.m_values;
             m_max_load_factor = other.m_max_load_factor;
-            m_shifts = initial_shifts;
+            m_shifts          = initial_shifts;
             CopyBuckets(other);
         }
         return *this;
@@ -387,12 +386,12 @@ public:
     {
         if (&other != this) {
             ReallocateBuckets(other.m_num_buckets); 
-            m_values = Move(other.m_values);
-            m_buckets = Move(other.m_buckets);
-            m_num_buckets = other.m_num_buckets;
+            m_values              = Move(other.m_values);
+            m_buckets             = Move(other.m_buckets);
+            m_num_buckets         = other.m_num_buckets;
             m_max_bucket_capacity = other.m_max_bucket_capacity;
-            m_max_load_factor = other.m_max_load_factor;
-            m_shifts = other.m_shifts;
+            m_max_load_factor     = other.m_max_load_factor;
+            m_shifts              = other.m_shifts;
             other.Clear();
         }
         return *this;
@@ -436,8 +435,8 @@ public:
 
     ConstIterator Erase(ConstIterator it)
     {
-        uint64 hash = HasherT::Hash(it->key);
-        uint32 bucketIdx = BucketIdxFromHash(hash);
+        uint64 hash             = HasherT::Hash(it->key);
+        uint32 bucketIdx        = BucketIdxFromHash(hash);
         uint32 valueIdxToRemove = uint32(PointerDistance(cbegin(), it));
 
         while (BucketAt(bucketIdx).valueIdx != valueIdxToRemove) {
@@ -449,12 +448,12 @@ public:
 
     uint32 Erase(const KeyT& key)
     {
-        if (IsEmpty()) return 0u;
+        if (IsEmpty()) 
+            return 0u;
     
-        const Bucket bucket = NextWhileLess(key);
-    
+        const Bucket bucket       = NextWhileLess(key);
         uint32 distAndFingerprint = bucket.distAndFingerprint;
-        uint32 bucketIdx = bucket.valueIdx;
+        uint32 bucketIdx          = bucket.valueIdx;
     
         while (distAndFingerprint == BucketAt(bucketIdx).distAndFingerprint &&
                               key != m_values[BucketAt(bucketIdx).valueIdx].key)
@@ -587,7 +586,7 @@ public:
         if (Iterator it = (Iterator)Find(key); AX_LIKELY(end() != it)) {
             return it->value;
         }
-        ax_assert(true); // key is not exist in array
+        ASSERT(true); // key is not exist in array
         return m_values[0].value;
     }
 #endif

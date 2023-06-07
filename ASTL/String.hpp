@@ -1,8 +1,12 @@
+
 #pragma once
-#include "Common.hpp"
-// #include <iosfwd> // for overriding << operator for std::cout
-// #include <sstream>
+
 #include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+
+#include "Common.hpp"
+#include "Random.hpp"
 #include "Algorithms.hpp"
 
 inline wchar_t* ToWCharArray(const char* string)
@@ -44,7 +48,7 @@ public:
         }
     }
 
-    String(int _size) : size(0), capacity(_size + 1)
+    explicit String(int _size) : size(0), capacity(_size + 1)
     {
         ptr = (char*)calloc(capacity, sizeof(char));
     }
@@ -79,11 +83,14 @@ public:
         memcpy(ptr, _ptr, size);
     }
     // asign operator
-    String& operator = (const String& right)
+    String& operator = (const String& right) 
     {
-        CapacityCheck(right.size);
-        memcpy(ptr, right.ptr, right.size);
-        size = right.size;
+        if (&right != this) 
+        {
+            CapacityCheck(right.size);
+            memcpy(ptr, right.ptr, right.size);
+            size = right.size;
+        }
         return *this;
     }
 
@@ -91,17 +98,17 @@ public:
     bool operator != (const String& b) const { return !Compare(*this, b); }
     bool operator == (const char* b)   const { return !strcmp(ptr, b); }
     bool operator != (const char* b)   const { return  strcmp(ptr, b); }
-    char operator[](int index)         const { ax_assert(index < size && index > 0); return ptr[index]; }
-    char& operator[](int index)              { ax_assert(index < size && index > 0); return ptr[index]; }
+    char operator[](int index)         const { ASSERT(index < size && index > 0); return ptr[index]; }
+    char& operator[](int index)              { ASSERT(index < size && index > 0); return ptr[index]; }
 
-    char* begin() { return ptr; }
-    char* end() { return ptr + size; }
-    const char* cbegin() const { return ptr; }
+    char* begin()              { return ptr;        }
+    char* end()                { return ptr + size; }
+    const char* cbegin() const { return ptr;        }
     const char* cend()   const { return ptr + size; }
 
-    const char* CStr() const { return ptr; };
-    const char* c_str() const { return ptr; };
-    const char* data() const { return ptr; }
+    const char* CStr()  const  { return ptr; }
+    const char* c_str() const  { return ptr; }
+    const char* data()  const  { return ptr; }
     char* data() { return ptr; }
 
     static FINLINE bool Compare(const String& a, const String& b)
@@ -486,8 +493,8 @@ public:
 
     bool operator == (const WString& b) { return  Compare(*this, b); }
     bool operator != (const WString& b) { return !Compare(*this, b); }
-    wchar_t operator[](int index) const { ax_assert(index < size && index > 0); return ptr[index]; }
-    wchar_t& operator[](int index)      { ax_assert(index < size && index > 0); return ptr[index]; }
+    wchar_t operator[](int index) const { ASSERT(index < size && index > 0); return ptr[index]; }
+    wchar_t& operator[](int index)      { ASSERT(index < size && index > 0); return ptr[index]; }
 
     wchar_t* begin() { return ptr; }
     wchar_t* end() { return ptr + size; }

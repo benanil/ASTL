@@ -298,9 +298,9 @@ AX_ALIGNED(16) struct Matrix4
 		// transpose 3x3, we know m03 = m13 = m23 = 0
 		__m128 t0 = VecShuffle_0101(inM.r[0], inM.r[1]); // 00, 01, 10, 11
 		__m128 t1 = VecShuffle_2323(inM.r[0], inM.r[1]); // 02, 03, 12, 13
-		out.r[0] = VecShuffle(t0, inM.r[2], 0,2,0,3); // 00, 10, 20, 23(=0)
-		out.r[1] = VecShuffle(t0, inM.r[2], 1,3,1,3); // 01, 11, 21, 23(=0)
-		out.r[2] = VecShuffle(t1, inM.r[2], 0,2,2,3); // 02, 12, 22, 23(=0)
+		out.r[0]  = VecShuffle(t0, inM.r[2], 0,2,0,3); // 00, 10, 20, 23(=0)
+		out.r[1]  = VecShuffle(t0, inM.r[2], 1,3,1,3); // 01, 11, 21, 23(=0)
+		out.r[2]  = VecShuffle(t1, inM.r[2], 0,2,2,3); // 02, 12, 22, 23(=0)
 
 		// (SizeSqr(mVec[0]), SizeSqr(mVec[1]), SizeSqr(mVec[2]), 0)
 		__m128 sizeSqr;
@@ -343,21 +343,21 @@ AX_ALIGNED(16) struct Matrix4
 		__m128 detC = VecSwizzle1(detSub, 2);
 		__m128 detD = VecSwizzle1(detSub, 3);
 
-		__m128 D_C = Mat2AdjMul(D, C);
-		__m128 A_B = Mat2AdjMul(A, B);
-		__m128 X_ = _mm_sub_ps(_mm_mul_ps(detD, A), Mat2Mul(B, D_C));
-		__m128 W_ = _mm_sub_ps(_mm_mul_ps(detA, D), Mat2Mul(C, A_B));
+		__m128 D_C  = Mat2AdjMul(D, C);
+		__m128 A_B  = Mat2AdjMul(A, B);
+		__m128 X_   = _mm_sub_ps(_mm_mul_ps(detD, A), Mat2Mul(B, D_C));
+		__m128 W_   = _mm_sub_ps(_mm_mul_ps(detA, D), Mat2Mul(C, A_B));
 
 		__m128 detM = _mm_mul_ps(detA, detD);
 
-		__m128 Y_ = _mm_sub_ps(_mm_mul_ps(detB, C), Mat2MulAdj(D, A_B));
-		__m128 Z_ = _mm_sub_ps(_mm_mul_ps(detC, B), Mat2MulAdj(A, D_C));
+		__m128 Y_   = _mm_sub_ps(_mm_mul_ps(detB, C), Mat2MulAdj(D, A_B));
+		__m128 Z_   = _mm_sub_ps(_mm_mul_ps(detC, B), Mat2MulAdj(A, D_C));
 
 		detM = _mm_add_ps(detM, _mm_mul_ps(detB, detC));
 
 		__m128 tr = _mm_mul_ps(A_B, VecSwizzle(D_C, 0, 2, 1, 3));
-		tr = _mm_hadd_ps(tr, tr);
-		tr = _mm_hadd_ps(tr, tr);
+		tr   = _mm_hadd_ps(tr, tr);
+		tr   = _mm_hadd_ps(tr, tr);
 		detM = _mm_sub_ps(detM, tr);
 
 		const __m128 adjSignMask = _mm_setr_ps(1.f, -1.f, -1.f, 1.f);
@@ -538,7 +538,7 @@ AX_ALIGNED(16) struct Matrix4
 		return result;
 	}
 
-	static Quaternion VECTORCALL ExtractRotation(const Matrix4 M, bool rowNormalize = true) noexcept
+	static Quaternion VECTORCALL ExtractRotation(const Matrix4 M, bool rowNormalize = true) 
 	{
 		int i, j, k = 0;
 		float root, trace = M.m[0][0] + M.m[1][1] + M.m[2][2];
@@ -630,7 +630,7 @@ AX_ALIGNED(16) struct Matrix4
 		return mResult;
 	}
 
-	FINLINE static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M) noexcept
+	FINLINE static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M)
 	{
 		__m128 vec = _mm_loadu_ps(&V.x);
 		__m128 vResult = _mm_shuffle_ps(vec, vec, _mm_shuffle(0, 0, 0, 0));
@@ -682,6 +682,7 @@ FINLINE void VECTORCALL InitializeMatrix4(Matrix4& r, __m128 x, __m128 y, const 
 
 #else // sse is not supported
 
+// todo create noın sse matrix
 AX_ALIGNED(16) struct Matrix4
 {
 	struct

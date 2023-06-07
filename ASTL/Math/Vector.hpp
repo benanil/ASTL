@@ -14,15 +14,15 @@ struct Vector2
 	static constexpr uint64 ElementSize = sizeof(T);
 	using ElemType = T;
 
-	Vector2()         noexcept  : x(0), y(0) { }
-	constexpr Vector2(T s)      noexcept  : x(s), y(s) { }
-	constexpr Vector2(T a, T b) noexcept  : x(a), y(b) { }
+	Vector2()                   : x(0), y(0) { }
+	constexpr Vector2(T s)      : x(s), y(s) { }
+	constexpr Vector2(T a, T b) : x(a), y(b) { }
 	
 	float Length()		  const { return Sqrt(LengthSquared()); }
 	float LengthSquared() const { return x * x + y * y; }
 
 	T& operator[] (int index) { return arr[index]; }
-	T operator[] (int index) const { return arr[index]; }
+	T  operator[] (int index) const { return arr[index]; }
 
 	static float Distance(const Vector2<T> a, const Vector2<T> b) {
 		float diffx = a.x - b.x;
@@ -90,7 +90,7 @@ struct Vector3
 	constexpr Vector3(T a, T b, T c) : x(a), y(b), z(c) { }
 
 	T& operator[] (int index) { return arr[index]; }
-	T operator[] (int index) const { return arr[index]; }
+	T  operator[] (int index) const { return arr[index]; }
 
 	float Length() const { return sqrtf(LengthSquared()); }
 	constexpr float LengthSquared() const { return x * x + y * y + z * z; }
