@@ -143,7 +143,6 @@
     <ClInclude Include="BVH.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="CPURayTrace.hpp" />
-    <ClInclude Include="DenseHashMap.hpp" />
     <ClInclude Include="HashMap.hpp" />
     <ClInclude Include="HashSet.hpp" />
     <ClInclude Include="Math\Camera.hpp" />

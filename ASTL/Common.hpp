@@ -245,10 +245,22 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-template<typename T> FINLINE constexpr _NODISCARD T Min(T a, T b) { return a < b ? a : b; }
-template<typename T> FINLINE constexpr _NODISCARD T Max(T a, T b) { return a > b ? a : b; }
-template<typename T> FINLINE constexpr _NODISCARD T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
-template<typename T> FINLINE constexpr _NODISCARD T Abs(T x) { return x < T(0) ? -x : x; }
+template<typename T> FINLINE constexpr T Min(T a, T b) { return a < b ? a : b; }
+template<typename T> FINLINE constexpr T Max(T a, T b) { return a > b ? a : b; }
+template<typename T> FINLINE constexpr T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
+template<typename T> FINLINE constexpr T Abs(T x) { return x < T(0) ? -x : x; }
+
+template<> FINLINE constexpr float Abs(float x)
+{ 
+  int ix = BitCast<int>(x) & 0x7FFFFFFF;
+  return BitCast<float>(ix);
+}
+
+template<> FINLINE constexpr double Abs(double x)
+{ 
+  unsigned long ix = BitCast<unsigned long>(x) & (~(1 << 63));
+  return BitCast<double>(ix);
+}
 
 // maybe we should move this to Algorithms.hpp
 template<typename T>

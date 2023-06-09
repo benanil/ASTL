@@ -116,7 +116,7 @@ private:
 
     constexpr uint32 MaxSize() const { return 1u << (sizeof(uint) * 8u - 1u); }
 
-    constexpr uint32 CalcNumBuckets(uint8 shifts)
+    uint32 CalcNumBuckets(uint8 shifts) const
     {
         return Min(MaxSize(), 1u << (64u - shifts));
     }

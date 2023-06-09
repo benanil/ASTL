@@ -9,7 +9,12 @@ inline bool ToUpper(char a) { return a > 'Z' ? a - 'a' + 'A' : a; }
 // is alphabetical character?
 inline bool IsChar(char a) { return IsUpper(a) || IsLower(a); };
 inline bool IsWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r'); }
-inline int StrLen(const char* c) { int len = 0; while (*c) { len++; c++; } return len; }
+
+inline int StrLen(const char* c) 
+{
+  int len = 0; while (*c) { len++; c++; } return len; 
+}
+
 inline int WStrLen(const wchar_t* c) { int len = 0; while (*c) { len++; c++; } return len; }
 
 template<typename T> inline void SwapPOD(T& a, T& b) { T t = a; a = b, b = t; }

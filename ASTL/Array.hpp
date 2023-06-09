@@ -8,19 +8,19 @@ template<typename ValueT,
 class Array
 {
  public:
-	using Iterator = ValueT*;
-	using ConstIterator = const ValueT*;
+    using Iterator = ValueT*;
+    using ConstIterator = const ValueT*;
 
     // we don't want to use same initial size for all data types because we want 
-	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-	// if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
-	static constexpr int InitialSize = 384 / Min((int)sizeof(ValueT), 128);//  1         384
-							                                               //  2         192
+    // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
+    // if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
+    static constexpr int InitialSize = 384 / Min((int)sizeof(ValueT), 128);//  1         384
+                                                                           //  2         192
 private:                                                                   //  4         96
-	ValueT* arr    = nullptr;                                              //  8         48
-	int m_count    = 0;
-	int m_capacity = InitialSize;
-	AllocatorT allocator{};
+    ValueT* arr    = nullptr;                                              //  8         48
+    int m_count    = 0;
+    int m_capacity = InitialSize;
+    AllocatorT allocator{};
 public:
 	Array()
 	{
@@ -40,7 +40,7 @@ public:
 	
 	explicit Array(const AllocatorT& _allocator) : allocator(_allocator)
 	{
-		arr = allocator.AlglocateUninitialized(m_capacity);
+		arr = allocator.AllocateUninitialized(m_capacity);
 	}
 	
 	explicit Array(Array const& other) : Array(other.Data(), other.Size()) {}
@@ -94,7 +94,7 @@ public:
 		if (&other != this)
 		{
 		    if (arr != nullptr)
-		    	allocator.Deallocate(arr, m_capacity);
+		        allocator.Deallocate(arr, m_capacity);
 			arr              = other.arr;
 			m_count          = other.Size();
 			m_capacity       = other.m_capacity;
@@ -315,7 +315,7 @@ public:
 	
 	int           Size()     const { return m_count;         }
 	int           Capacity() const { return m_capacity;      }
-    ValueT*       Data()           { return arr;             }
+	ValueT*       Data()           { return arr;             }
 	const ValueT* Data()     const { return arr;             }
 	bool          Empty()    const { return m_count == 0;    }
 	                         

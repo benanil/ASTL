@@ -114,12 +114,12 @@ static bool IntersectBVH(const RaySSE& ray, const BVHNode* nodes, uint rootNode,
 	return intersection;
 }
 
-_NODISCARD FINLINE float2 ConvertToFloat2(const half* h)
+FINLINE float2 ConvertToFloat2(const half* h)
 {
 	return float2(ConvertHalfToFloat(h[0]), ConvertHalfToFloat(h[1]));
 }
 
-_NODISCARD FINLINE float3 ConvertToFloat3(const half* h) {
+FINLINE float3 ConvertToFloat3(const half* h) {
 	return float3(
 		ConvertHalfToFloat(h[0]),
 		ConvertHalfToFloat(h[1]),
@@ -127,7 +127,7 @@ _NODISCARD FINLINE float3 ConvertToFloat3(const half* h) {
     );
 }
 
-_NODISCARD FINLINE uint MultiplyU32Colors(uint a, RGB8 b)
+FINLINE uint MultiplyU32Colors(uint a, RGB8 b)
 {
 	uint result = 0u;
 	result |= ((a & 0xffu) * b.r) >> 8u;
@@ -138,7 +138,7 @@ _NODISCARD FINLINE uint MultiplyU32Colors(uint a, RGB8 b)
 
 constexpr float UcharToFloat01 = 1.0f / 255.0f;
 
-_NODISCARD FINLINE float3 UnpackRGB8u(uint u)
+FINLINE float3 UnpackRGB8u(uint u)
 {
 	return float3(
 		float(u & 255u)        * UcharToFloat01,

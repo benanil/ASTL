@@ -458,7 +458,6 @@ AX_ALIGNED(16) struct Matrix4
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
-		
 		out_matrix.m[1][1] = c;
 		out_matrix.m[1][2] = s;
 		out_matrix.m[2][1] = -s;
@@ -470,7 +469,6 @@ AX_ALIGNED(16) struct Matrix4
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
-		
 		out_matrix.m[0][0] = c;
 		out_matrix.m[0][2] = -s;
 		out_matrix.m[2][0] = s;

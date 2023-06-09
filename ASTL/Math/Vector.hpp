@@ -24,16 +24,22 @@ struct Vector2
 	T& operator[] (int index) { return arr[index]; }
 	T  operator[] (int index) const { return arr[index]; }
 
-	static float Distance(const Vector2<T> a, const Vector2<T> b) {
+	static FINLINE float Distance(Vector2 a, Vector2 b) {
 		float diffx = a.x - b.x;
 		float diffy = a.y - b.y;
 		return Sqrt(diffx * diffx + diffy * diffy);
 	}
 
-	static float DistanceSq(const Vector2<T> a, const Vector2<T> b) {
+	static FINLINE float DistanceSq(Vector2 a, Vector2 b) {
 		float diffx = a.x - b.x;
 		float diffy = a.y - b.y;
 		return diffx * diffx + diffy * diffy;
+	}
+
+	static FINLINE Vector2 Rotate(Vector2 vec, float angle)
+	{
+		float s = Sin(angle), c = Cos(angle);
+		return Vector2(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
 	}
 
 	void Normalized() const { *this /= Length(); }
@@ -193,14 +199,6 @@ using Vector3c = Vector3<char>;
 typedef Vector3f float3;
 typedef Vector2f float2;
 
-struct Ray
-{
-	Vector3f origin;
-	Vector3f direction;
-	Ray() {}
-	Ray(Vector3f o, Vector3f d) : origin(o), direction(d) {}
-};
-
 // recommended to use simd instructions instead. this functions are slow in hot loops
 template<typename T> FINLINE Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return Vector3<T>(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z)); }
 template<typename T> FINLINE Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return Vector3<T>(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z)); }
@@ -218,20 +216,18 @@ FINLINE uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) |
 FINLINE uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
 FINLINE uint64 VecToHash(Vector3c vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 8ull) | (uint64(vec.z) << 16ull)); }
 
-FINLINE uint64 VecToHash(Vector3s vec) 
-{
+FINLINE uint64 VecToHash(Vector3s vec){
 	return WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull) | (uint64(vec.z) << 24ull));
 }
 
-FINLINE uint64 VecToHash(Vector3i vec)
-{
+FINLINE uint64 VecToHash(Vector3i vec) {
 	return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)) + WangHash(vec.z);
 }
-// for using these hashes with stl containers
-// namespace std {
-// 	template <> struct hash<Vector2s> {
-// 		uint64 operator()(const Vector2s& vec) const {
-// 			return VecToHash(vec);
-// 		}
-// 	};
-// }
+
+struct Ray
+{
+	Vector3f origin;
+	Vector3f direction;
+	Ray() {}
+	Ray(Vector3f o, Vector3f d) : origin(o), direction(d) {}
+};

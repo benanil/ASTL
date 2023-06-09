@@ -1,7 +1,6 @@
 #pragma once
 #include "Transform.hpp"
 #include "Vector4.hpp"
-#include "../Window.hpp"
 #include "../Logger.hpp"
 
 struct Camera
@@ -33,67 +32,10 @@ struct Camera
 	Camera(Vector2i xviewPortSize)
 	: viewportSize(xviewPortSize), position(0.0f,4.0f, 15.0f), targetPosition(0.0f, 4.0f, 15.0f), Front(0.0f,0.0f,-1.0f)
 	{
-		monitorSize = Window::GetMonitorScale();
 		RecalculateProjection(xviewPortSize.x, xviewPortSize.y);
 		RecalculateView();
 	}
 	
-	void SetCursorPos(int x, int y) 
-	{
-		Window::SetMouseScreenPos(Vector2i(x, y)); 
-		mouseOld = Vector2f((float)x, (float)y); 
-	}
-
-	void InfiniteMouse(const Vector2f& point)
-	{
-		if (point.x > monitorSize.x - 2) SetCursorPos(3, (int)point.y);
-		if (point.y > monitorSize.y - 2) SetCursorPos((int)point.x, 3);
-		
-		if (point.x < 2) SetCursorPos(monitorSize.x - 3, (int)point.y);
-		if (point.y < 2) SetCursorPos((int)point.x, monitorSize.y - 3);
-	}
-
-	void Update()
-	{
-		bool pressing = Window::GetMouseButton(MouseButton_Right);
-		if (!pressing) { wasPressing = false; return; }
-
-		float dt = (float)Window::DeltaTime();
-		float speed = dt * (1.0f + Window::GetKey(KeyCode_LEFT_SHIFT) * 2.0f) * 2.0f;
-
-		const Vector2f mousePos = ToVector2f(Window::GetMouseScreenPos());
-		Vector2f diff = mousePos - mouseOld;
-		
-		if (wasPressing && diff.x + diff.y < 130.0f)
-		{
-			pitch -= diff.y * dt * senstivity;
-			yaw   += diff.x * dt * senstivity;
-			yaw    = FMod(yaw + 180.0f, 360.0f) - 180.0f; 
-			pitch  = Clamp(pitch, -89.0f, 89.0f);
-		}
-		
-		Front.x = Cos(yaw * DegToRad) * Cos(pitch * DegToRad);
-		Front.y = Sin(pitch * DegToRad);
-		Front.z = Sin(yaw * DegToRad) * Cos(pitch * DegToRad);
-		Front.NormalizeSelf();
-		// also re-calculate the Right and Up vector
-		Right = Vector3f::Normalize(Vector3f::Cross(Front, Vector3f::Up()));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		Up = Vector3f::Normalize(Vector3f::Cross(Right, Front));
-
-		if (Window::GetKey(KeyCode_D)) position += Right * speed;
-		if (Window::GetKey(KeyCode_A)) position -= Right * speed;
-		if (Window::GetKey(KeyCode_W)) position += Front * speed;
-		if (Window::GetKey(KeyCode_S)) position -= Front * speed;
-		if (Window::GetKey(KeyCode_Q)) position -= Up * speed;
-		if (Window::GetKey(KeyCode_E)) position += Up * speed;
-
-		mouseOld = mousePos;
-		wasPressing = true;
-
-		InfiniteMouse(mousePos);
-		RecalculateView();
-	}
-
 	void RecalculateProjection(int width, int height)
 	{
 		projWidth = width; projHeight = height;
