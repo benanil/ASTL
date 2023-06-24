@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Vector.hpp"
-#include "Vector4.hpp"
-#include "SIMDCommon.hpp"
 
 #ifdef AX_SUPPORT_SSE2
 

@@ -21,6 +21,7 @@ constexpr float Sqrt2 = 1.414213562f;
 //  ######################################  
 
 // for constant sqrt look at here: https://gist.github.com/alexshtf/eb5128b3e3e143187794
+// or here for constexpr: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
 FINLINE float Sqrt(float x) 
 {
 #ifdef _MSC_VER
@@ -30,11 +31,11 @@ FINLINE float Sqrt(float x)
 #endif
 }
 
-// original doom rsqrt implementation with comments :)
+// original doom rsqrt implementation with comments :) maybe use _mm_rsqrt_ps instead ? and __builtin_sqrt if sse not supported
 // used constant(0x5f375a86f) is from Chriss Lomont's Fast Inverse Square Root paper
 FINLINE constexpr float RSqrt(float x) 
 {
-	float x2 = x * 0.5F; // doom rsqrt
+	float x2 = x * 0.5f; // doom rsqrt
 	float y  = x;
 	int i    = BitCast<int>(y);        // evil floating point bit level hacking
 	i = 0x5f375a86f - ( i >> 1 );      // what the fuck? 
@@ -102,7 +103,7 @@ FINLINE constexpr float Log2(float x)
 
 FINLINE constexpr bool IsZero(float x) noexcept { return Abs(x) <= 0.0001f; }
 FINLINE constexpr bool AlmostEqual(float x, float  y) noexcept { return Abs(x-y) <= 0.001f; }
-FINLINE constexpr float Sign(float x, float y) { return y < 0.0f ? -x : x; }
+FINLINE constexpr float Sign(float x, float y) { return y < 0.0f ? -x : x; } //!< maybe use templates?
 
 FINLINE constexpr float CopySign(float x, float y) 
 {

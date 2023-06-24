@@ -4,12 +4,16 @@ Work in progress. This library is composition of lots of paper, research and dev
 For compatibility I've used lots of macros in Common.hpp but still we have platform dependent code <br>
 Also I've avoided most of the modern C++ features <br>
 feel free to contribute, use, modify or oppening PR<br>
-I havent used any C++ headers except thread and atomic.<br>
+I havent used any C++ headers except thread and atomic. (by default threading is not compiled activate with ASTL_MULTI_THREADING)<br>
+also I havent used any C headers except <stdint.h>. and in msvc <intrin.h> (for SIMD) <br>
 Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>
 We have Hash functions and Random number generators in Random.hpp. <br>
 Matrix4 and Vector4 uses SIMD extensions(SSE3)<br>
 math library is combination of glm and DirectX Math. examples:
 ```cpp
+#include "Math/Vector.hpp"
+#include "Math/Matrix.hpp"
+
 static float f = 1.0f; f += 0.01f;
 constexpr float distance = 3.14159265f; // this is distance from cube but I did use pi anyways 
 Vector3f position(Sin(f) * distance, 0.0f, Cos(f) * distance );
@@ -35,9 +39,14 @@ HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses con
 Todo: RedBlackTree, ScopedPtr, and SharedPtr. coming soon.<br>
 I have Array<T> instead of std::vector<T> <br>
 also you can use Bitset1024, Bitset512, Bitset256(SIMD optimized) or Bitset<1234> instead of std::bitset <br>
-Queue and Stack will be fixed soon. Here is examples
+Here is examples
 
 ```cpp
+#include "Queue.hpp"
+#include "Stack.hpp"
+#include "String.hpp"
+#include "Array.hpp"
+
 String testStr = "floating test: ";
 testStr += 1234.567f;
 printf("%s\n", testStr.c_str());
@@ -104,6 +113,58 @@ contains1 = ourMap.Contains(33ull);
 ourMap.Insert(33, "33ull");
 contains1 = ourMap.Contains(33ull);
 ```
+
+here is the test of queue and stack
+
+```cpp
+Stack<uint64_t> stack{};
+Array<uint64_t> stackArray;
+uint64_t xoro[2];
+Random::Xoroshiro128PlusInit(xoro);
+char chr[9]{};
+
+for (int i = 0; i < 10001; ++i)
+{
+    uint64_t x = Random::Xoroshiro128Plus(xoro);
+    x &= ((1 << 15) - 1);
+    stackArray.Add(x);
+    stack.Push(x);
+}
+
+uint64_t sameCount = 0;
+
+while (stack.Any())
+{
+    bool same = stack.Top() == stackArray.Back();
+    sameCount += same;
+    ASSERT(same);
+    stack.Pop();
+    stackArray.RemoveAt(stackArray.Size() - 1);
+}
+printf("stack is all same: %i\n", (int)sameCount);
+
+printf("\n\n");
+
+Queue<uint64_t> queue(33);
+Array<uint64_t> queueArray(50);
+for (int i = 0; i < 33; ++i)
+    queue.Enqueue(i), queueArray.EmplaceBack(i);
+
+queue.Enqueue(97); queueArray.EmplaceBack(97);
+queue.Enqueue(98); queueArray.EmplaceBack(98);
+queue.Enqueue(98); queueArray.EmplaceBack(98);
+queue.Enqueue(98); queueArray.EmplaceBack(98);
+queue.Enqueue(98); queueArray.EmplaceBack(98);
+
+for (int i = 0; i < 10; i++)
+    queue.Dequeue(), queueArray.RemoveAt(0);
+
+Array<uint64_t>::Iterator ait = queueArray.begin();
+
+while (!queue.IsEmpty())
+   printf("%i\n", queue.Dequeue() == *ait++);
+```
+
 also you can use BVH algorithm(Jacco Bikker's but optimized with SIMD) for Ray casting to the 3d scene<br>
 it will return mesh index, hit position hit color etc.<br>
 note: I haven't touched multi threading code for a while

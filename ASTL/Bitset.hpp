@@ -103,7 +103,8 @@ struct Bitset256
 	Bitset256(ulong r) { bits[0] = r; bits[1] = r; bits[2] = r; bits[3] = r; }
 	Bitset256(ulong a, ulong b, ulong c, ulong d) { bits[0] = a; bits[1] = b; bits[2] = c; bits[3] = d; }
 	Bitset256(__m256i v) : sse(v) {}
-
+	// to set first n bits use this technique with simd(no need blend):
+	// https://gist.github.com/benanil/78ad3600f5e10b9a3f6173afc8565352#file-memcpymemset-cpp-L101
 	bool operator[](int idx) const { return !!(bits[idx >> 6] & (1ul << (idx & 63ul))); }
 	bool Get(int idx) const { return !!(bits[idx >> 6] & (1ul << (idx & 63ul))); }
 	void Set(int idx) { bits[idx >> 6] |= 1ul << (idx & 63); }

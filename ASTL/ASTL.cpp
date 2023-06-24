@@ -185,11 +185,55 @@ int main()
 #include "Queue.hpp"
 #include "Stack.hpp"
 #include "String.hpp"
-#include <stdio.h>
+#include "Array.hpp"
+#include "Math/Vector.hpp"
 
-void main()
+#include <stdio.h>
+#include <memory.h>
+#include <iostream>
+#include <chrono>
+
+int main()
 {
+/*
+    constexpr size_t kBufferSize = 1456 << 4;
+    char src[kBufferSize];
+    char dest[kBufferSize];
+
+    constexpr int kNumRuns = 5000;
+
+    double my_memcpy_total_duration = 0.0;
+    double std_memcpy_total_duration = 0.0;
+
+    for (int i = 0; i < kNumRuns; ++i) {
+        // Measure the time taken by std::memcpy
+        auto start = std::chrono::high_resolution_clock::now();
+        memset(dest, 128, kBufferSize);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto std_memcpy_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        std_memcpy_total_duration += std_memcpy_duration;
+    }
+
+    for (int i = 0; i < kNumRuns; ++i)
+    {
+        // Measure the time taken by your memcpy implementation
+        auto start = std::chrono::high_resolution_clock::now();
+        MemSet(dest, 0, kBufferSize);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto my_memcpy_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        my_memcpy_total_duration += my_memcpy_duration;
+    }
+
+    double my_memcpy_avg_duration = my_memcpy_total_duration / kNumRuns;
+    double std_memcpy_avg_duration = std_memcpy_total_duration / kNumRuns;
+
+    std::cout << "MemCpy average duration: " << my_memcpy_avg_duration << " ns" << std::endl;
+    std::cout << "memcpy average duration: " << std_memcpy_avg_duration << " ns" << std::endl;
+
+    return 0;
+  */
     Stack<uint64_t> stack{};
+    Array<uint64_t> stackArray;
     uint64_t xoro[2];
     Random::Xoroshiro128PlusInit(xoro);
     char chr[9]{};
@@ -197,32 +241,43 @@ void main()
     for (int i = 0; i < 10001; ++i)
     {
         uint64_t x = Random::Xoroshiro128Plus(xoro);
-        stack.Push(x & ((1 << 15)-1));
+        x &= ((1 << 15) - 1);
+        stackArray.Add(x);
+        stack.Push(x);
     }
+    
+    uint64_t sameCount = 0;
 
     while (stack.Any())
     {
-        printf("%llu\n", stack.Pop());
+        bool same = stack.Top() == stackArray.Back();
+        sameCount += same;
+        ASSERT(same);
+        stack.Pop();
+        stackArray.RemoveBack();
     }
+    printf("stack is all same: %i\n", (int)sameCount);
 
     printf("\n\n");
 
-    Queue<uint64> queue(33);
+    Queue<uint64_t> queue(33);
+    Array<uint64_t> queueArray(50);
     for (int i = 0; i < 33; ++i)
-        queue.Enqueue(i);
+        queue.Enqueue(i), queueArray.EmplaceBack(i);
 
-    queue.Enqueue(97);
-    queue.Enqueue(98);
-    queue.Enqueue(98);
-    queue.Enqueue(98);
-    queue.Enqueue(98);
+    queue.Enqueue(97); queueArray.EmplaceBack(97);
+    queue.Enqueue(98); queueArray.EmplaceBack(98);
+    queue.Enqueue(98); queueArray.EmplaceBack(98);
+    queue.Enqueue(98); queueArray.EmplaceBack(98);
+    queue.Enqueue(98); queueArray.EmplaceBack(98);
 
     for (int i = 0; i < 10; i++)
-        queue.Dequeue();
+        queue.Dequeue(), queueArray.RemoveAt(0);
 
-    for (Queue<uint64>::ConstIterator it = queue.cbegin();
-        it != queue.cend(); it++)
-       printf("%llu\n", *it);
+    Array<uint64_t>::Iterator ait = queueArray.begin();
+
+    while (!queue.IsEmpty())
+       printf("%i\n", queue.Dequeue() == *ait++);
 }
   
 #ifdef __NOTHING

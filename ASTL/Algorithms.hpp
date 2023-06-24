@@ -17,8 +17,6 @@ inline int StrLen(const char* c)
 
 inline int WStrLen(const wchar_t* c) { int len = 0; while (*c) { len++; c++; } return len; }
 
-template<typename T> inline void SwapPOD(T& a, T& b) { T t = a; a = b, b = t; }
-
 template<typename T>
 inline void Swap(T& a, T& b)
 {
@@ -92,6 +90,15 @@ inline void QuickSort(T* arr, int left, int right)
 			right = i - 1;
 		}
 	}
+}
+
+// todo strncat and memmove and you will not need external headers in String.hpp
+
+inline bool StrCmp(const char* a, const char* b)
+{
+    const uint64_t* ap  = (const uint64_t*)a;
+    const uint64_t* bp  = (const uint64_t*)b;
+    return false;
 }
 
 template<typename T>

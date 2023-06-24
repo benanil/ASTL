@@ -1,6 +1,5 @@
 #pragma once
 #include "Transform.hpp"
-#include "Vector4.hpp"
 #include "../Logger.hpp"
 
 struct Camera

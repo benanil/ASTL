@@ -11,15 +11,19 @@ public:
     // we don't want to use same initial size for all data types because we want 
 	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
 	// if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
-	static constexpr int InitialSize = 384 / Min((int)sizeof(T), 128);//  1         384
-							                                               //  2         192
-public:                                                                    //  4         96
-	int size     = 0;                                                      //  8         48
-	int capacity = 0;
-	T* ptr       = nullptr;
-	AllocatorT allocator{};
+	static constexpr int InitialSize = 384 / Min((int)sizeof(T), 128);    //  1         384
+                                                                          //  2         192
+public:                                                                   //  4         96
+    int size     = 0;                                                     //  8         48
+    int capacity = 0;
+    T* ptr       = nullptr;
+    AllocatorT allocator{};
 
 public:
+	Stack() : size(0), capacity(0), ptr(nullptr) 
+	{
+	}
+	
 	~Stack()
 	{ 
 		if (ptr) { 
@@ -27,11 +31,6 @@ public:
 			ptr  = nullptr; 
 			size = 0;
 		} 
-	}
-
-	Stack() : size(0), capacity(InitialSize) 
-	{
-		ptr = allocator.AllocateUninitialized(capacity);
 	}
 
 	explicit Stack(int _size) : size(0), capacity(CalculateArrayGrowth(_size)) 
@@ -120,8 +119,9 @@ private:
 	{
 		if (size + 1 >= capacity)
 		{
-			int newSize = CalculateArrayGrowth(capacity);
-			ptr         = allocator.Reallocate(ptr, capacity, newSize);
+			int newSize = Max(CalculateArrayGrowth(capacity), InitialSize);
+			if (ptr) ptr = allocator.Reallocate(ptr, capacity, newSize);
+			else     ptr = allocator.Allocate(newSize);
 			capacity    = newSize; 
 		}
 	}

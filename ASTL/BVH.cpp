@@ -58,7 +58,7 @@ static void UpdateNodeBounds(BVHNode* bvhNode, const Tri* tris, uint nodeIdx)
     __m128 nodeMin = _mm_set1_ps(1e30f), nodeMax = _mm_set1_ps(-1e30f);
     const __m128* leafPtr = (const __m128*)(tris + node->leftFirst);
 
-	AX_ASSUME(node->triCount > 0);
+    AX_ASSUME(node->triCount > 0);
     for (uint i = 0; i < node->triCount; i++)
     {
     	nodeMin = _mm_min_ps(nodeMin, leafPtr[0]);

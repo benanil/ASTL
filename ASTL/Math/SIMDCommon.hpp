@@ -1,52 +1,6 @@
 #pragma once
 #include "Math.hpp"
 
-/* Architecture Detection */
-// detection code from mini audio
-// you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
-#if defined(__x86_64__) || defined(_M_X64)
-#define AX_X64
-#elif defined(__i386) || defined(_M_IX86)
-#define AX_X86
-#elif defined(__arm__) || defined(_M_ARM) || defined(__arm64) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
-#define AX_ARM
-#endif
-
-/* Intrinsics Support */
-#if (defined(AX_X64) || defined(AX_X86)) && !defined(__COSMOPOLITAN__)
-    #if defined(_MSC_VER) && !defined(__clang__)
-        #if _MSC_VER >= 1400 && !defined(AX_NO_SSE2)   /* 2005 */
-            #define AX_SUPPORT_SSE2
-        #endif
-        #if _MSC_VER >= 1700 && !defined(AX_NO_AVX2)   /* 2012 */
-            #define AX_SUPPORT_AVX2
-        #endif
-    #else
-        #if defined(__SSE2__) && !defined(AX_NO_SSE2)
-            #define AX_SUPPORT_SSE2
-        #endif
-        #if defined(__AVX2__) && !defined(AX_NO_AVX2)
-            #define AX_SUPPORT_AVX2
-        #endif
-    #endif
-
-    /* If at this point we still haven't determined compiler support for the intrinsics just fall back to __has_include. */
-    #if !defined(__GNUC__) && !defined(__clang__) && defined(__has_include)
-        #if !defined(AX_SUPPORT_SSE2)   && !defined(AX_NO_SSE2)   && __has_include(<emmintrin.h>)
-            #define AX_SUPPORT_SSE2
-        #endif
-        #if !defined(AX_SUPPORT_AVX2)   && !defined(AX_NO_AVX2)   && __has_include(<immintrin.h>)
-            #define AX_SUPPORT_AVX2
-        #endif
-    #endif
-
-    #if defined(AX_SUPPORT_AVX2) || defined(AX_SUPPORT_AVX)
-        #include <immintrin.h>
-    #elif defined(AX_SUPPORT_SSE2)
-        #include <emmintrin.h>
-    #endif
-#endif
-
 enum CPUIDBits : int
 {
     CPUIDBits_SSE    = (1 << 25),
