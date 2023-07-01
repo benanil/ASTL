@@ -1,5 +1,4 @@
 #pragma once
-#include "Common.hpp"
 
 inline bool IsNumber(char a) { return a <= '9' && a >= '0'; };
 inline bool IsLower(char a) { return a >= 'a' && a <= 'z'; };
@@ -56,8 +55,10 @@ inline void ShellSort(T* arr, int n)
 	}
 }
 
+
 // left is beginning of the list(usually 0)
 // right is end of the list usually size -1
+// for simd: https://github.com/WojciechMula/simd-sort
 template<typename T>
 inline void QuickSort(T* arr, int left, int right)
 {
@@ -92,7 +93,8 @@ inline void QuickSort(T* arr, int left, int right)
 	}
 }
 
-// todo strncat and memmove and you will not need external headers in String.hpp
+// todo strcmp, strncat and memmove in Memory.hpp and you will not need external headers in String.hpp
+// https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
 
 inline bool StrCmp(const char* a, const char* b)
 {
@@ -112,6 +114,9 @@ inline void Reverse(T* begin, T* end)
 	}
 }
 
+// this is classic binary search. or you can use this:
+// optimized for integers. https://www.youtube.com/watch?v=1RIPMQQRBWk
+// Optimizing Binary Search - Sergey Slotin - CppCon 2022
 template<typename T>
 inline T* BinarySearch(T* begin, int len, T value)
 {
@@ -126,23 +131,6 @@ inline T* BinarySearch(T* begin, int len, T value)
         else return begin + mid; // (begin[mid] == value)
 	}
 	return nullptr;
-}
-
-// optimized for integers. https://www.youtube.com/watch?v=1RIPMQQRBWk
-// Optimizing Binary Search - Sergey Slotin - CppCon 2022
-template<typename T>
-inline T LowerBound(T* t, int n, int x) 
-{
-    T* base = t, len = n;
-
-    while (len > 1) {
-        T half = len / 2;
-        len -= half;
-        AX_PREFETCH(&base[len / 2 - 1]);
-        AX_PREFETCH(&base[half + len / 2 - 1]);
-        base += (base[half - 1] < x) * half;
-    }
-    return *base;
 }
 
 // String to number functions

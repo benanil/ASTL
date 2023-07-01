@@ -1,6 +1,4 @@
 #include "CPURayTrace.hpp"
-#include "BVH.hpp"
-#include "Math/Matrix.hpp"
 
 // todo make non simd version
 #ifdef AX_SUPPORT_SSE2
@@ -113,6 +111,9 @@ static bool IntersectBVH(const RaySSE& ray, const BVHNode* nodes, uint rootNode,
 	}
 	return intersection;
 }
+
+#undef SWAPF
+#undef SWAPUINT
 
 FINLINE float2 ConvertToFloat2(const half* h)
 {

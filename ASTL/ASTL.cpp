@@ -187,15 +187,105 @@ int main()
 #include "String.hpp"
 #include "Array.hpp"
 #include "Math/Vector.hpp"
+#include "RBTree.hpp"
+#include "RedBlackTree.hpp"
 
 #include <stdio.h>
 #include <memory.h>
 #include <iostream>
 #include <chrono>
 
+void TraverseRed(RedBlackTreeAI::Node *node) 
+{
+    if (!node) return;
+    TraverseRed(node->left);
+    printf("%i\n", node->key);
+    TraverseRed(node->right);
+}
+
+int leftCount  = 0;
+int rightCount = 0;
+
+void Traverse(RedBlackTree::Node* node)
+{
+    if (!node) return;
+
+    Traverse(node->child[0]);
+    
+    if (node->data != -1)
+    {
+        bool isRight = node->parent && node == node->parent->child[1];
+        leftCount += !isRight;
+        rightCount += isRight;
+
+        printf("%i : %c\n", node->data, node->isRed ? 'r' : 'b');
+    }
+
+    Traverse(node->child[1]);
+}
+
+
 int main()
 {
-/*
+    RedBlackTree map{};
+    for (int i = 0; i <= 100; i+=4)
+        map.Insert(i);
+
+    RedBlackTree::Node *node = map.root;
+    ValueT min;
+
+    while (node)
+    {
+        min = node->data;
+        printf("min: %i\n", min);
+        node = node->child[0];
+    }
+
+    map.Delete(40);
+    map.Delete(48);
+    map.Delete(56);
+
+    printf("root data: %i\n", map.root->data);
+    Traverse(map.root);
+    printf("left count: %i\n", leftCount);
+    printf("right count: %i\n", rightCount);
+    /*
+    RedBlackTree rb{};
+    rb.insert(14);
+    rb.insert(15);
+
+    // compare
+    Stack<RedBlackTree::Node*> nodes;
+    Stack<RedBlackTree::Node*> rodes;
+    nodes.Push(map.root);
+    rodes.Push(rb.root);
+    
+    while (!nodes.IsEmpty())
+    {
+        RedBlackTree::Node* nt = nodes.Top();
+        RedBlackTree::Node* rt = rodes.Top();
+        
+        ASSERT(uint64(nt) > 0 == uint64(rt) > 0);
+        if (!rt) continue;
+
+        ASSERT(uint64(nodes.Top()->child[0]) > 0 == uint64(rodes.Top()->left) > 0);
+        ASSERT(uint64(nodes.Top()->child[1]) > 0 == uint64(rodes.Top()->right) > 0);
+        
+        if (nodes.Top()->child[0])
+        ASSERT(nodes.Top()->child[0]->data == rodes.Top()->left->key);
+        if (nodes.Top()->child[1])
+        ASSERT(nodes.Top()->child[1]->data == rodes.Top()->right->key);
+        nodes.Pop(), rodes.Pop();
+        
+        nodes.Push(nt->child[0]);
+        nodes.Push(nt->child[1]);
+
+        rodes.Push(rt->left);
+        rodes.Push(rt->right);
+    }
+    */
+
+    /*
     constexpr size_t kBufferSize = 1456 << 4;
     char src[kBufferSize];
     char dest[kBufferSize];
@@ -232,6 +322,8 @@ int main()
 
     return 0;
   */
+    /*
+
     Stack<uint64_t> stack{};
     Array<uint64_t> stackArray;
     uint64_t xoro[2];
@@ -278,6 +370,7 @@ int main()
 
     while (!queue.IsEmpty())
        printf("%i\n", queue.Dequeue() == *ait++);
+    */
 }
   
 #ifdef __NOTHING

@@ -140,26 +140,6 @@
 #   define AX_CPUID(num, regs) __cpuid(regs, num)
 #endif
 
-#define EXPAND(x) x
-#define FOR_EACH_1(what, x, ...) what(x)
-#define FOR_EACH_2(what, x, ...) what(x); EXPAND(FOR_EACH_1(what, __VA_ARGS__))
-#define FOR_EACH_3(what, x, ...) what(x); EXPAND(FOR_EACH_2(what, __VA_ARGS__))
-#define FOR_EACH_4(what, x, ...) what(x); EXPAND(FOR_EACH_3(what, __VA_ARGS__))
-#define FOR_EACH_5(what, x, ...) what(x); EXPAND(FOR_EACH_4(what, __VA_ARGS__))
-#define FOR_EACH_6(what, x, ...) what(x); EXPAND(FOR_EACH_5(what, __VA_ARGS__))
-
-#define FOR_EACH_NARG(...) FOR_EACH_NARG_(__VA_ARGS__, FOR_EACH_RSEQ_N())
-#define FOR_EACH_NARG_(...) EXPAND(FOR_EACH_ARG_N(__VA_ARGS__))
-#define FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, N, ...) N
-#define FOR_EACH_RSEQ_N() 6, 5, 4, 3, 2, 1, 0
-
-#define GLUE(x, y) x##y
-// usage example, FOR_EACH(fclose, aFile, bFile, cFile);
-#define FOR_EACH_(N, what, ...) EXPAND(GLUE(FOR_EACH_, N)(what, __VA_ARGS__))
-#define FOR_EACH(what, ...) FOR_EACH_(FOR_EACH_NARG(__VA_ARGS__), what, __VA_ARGS__)
-#define DELETE_ALL(...) FOR_EACH(delete, __VA_ARGS__)
-#define FREE_ALL(...) FOR_EACH(free, __VA_ARGS__)
-
 /* Architecture Detection */
 // detection code from mini audio
 // you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
@@ -205,16 +185,6 @@
         #include <emmintrin.h>
     #endif
 #endif
-
-
-#define ENUM_FLAGS(ENUMNAME, ENUMTYPE) \
-inline ENUMNAME& operator |= (ENUMNAME& a, ENUMNAME b) noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) |= ((ENUMTYPE)b)); } \
-inline ENUMNAME& operator &= (ENUMNAME& a, ENUMNAME b) noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) &= ((ENUMTYPE)b)); } \
-inline ENUMNAME& operator ^= (ENUMNAME& a, ENUMNAME b) noexcept { return (ENUMNAME&)(((ENUMTYPE&)a) ^= ((ENUMTYPE)b)); } \
-inline constexpr ENUMNAME operator | (ENUMNAME a, ENUMNAME b) noexcept { return ENUMNAME(((ENUMTYPE)a) | ((ENUMTYPE)b));		} \
-inline constexpr ENUMNAME operator & (ENUMNAME a, ENUMNAME b) noexcept { return ENUMNAME(((ENUMTYPE)a) & ((ENUMTYPE)b));		} \
-inline constexpr ENUMNAME operator ~ (ENUMNAME a)			  noexcept { return ENUMNAME(~((ENUMTYPE)a));						} \
-inline constexpr ENUMNAME operator ^ (ENUMNAME a, ENUMNAME b) noexcept { return ENUMNAME(((ENUMTYPE)a) ^ (ENUMTYPE)b);		} 
 
 template<typename T>
 FINLINE constexpr T PopCount(T x)
@@ -341,6 +311,9 @@ struct Pair
     A first; 
     B second;
 
+    Pair(){}
+    Pair(A x, B y) : first((A&&)x), second((B&&)y) {}
+
     bool operator == (const Pair& other) {
         return first == other.first && second == other.second;
     }
@@ -348,9 +321,6 @@ struct Pair
     bool operator != (const Pair& other) {
         return first != other.first || second != other.second;
     }
-
-    Pair(){}
-    Pair(A x, B y) : first((A&&)x), second((B&&)y) {}
 };
 
 template<typename KeyT, typename ValueT>

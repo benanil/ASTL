@@ -24,21 +24,6 @@ constexpr FINLINE uint WangHashInverse(uint x)  {
 	return x ^ (x >> 16u);
 }
 
-// kind of slower than Wang but more accurate
-constexpr FINLINE uint32_t TripleHash(uint32_t x) {
-	x ^= x >> 17u; x *= 0xed5ad4bbu;
-	x ^= x >> 11u; x *= 0xac4c1b51u;
-	x ^= x >> 15u; x *= 0x31848babu;
-	return x ^ (x >> 14u);
-}
-
-constexpr FINLINE uint32_t TripleHashInverse(uint32_t x) {
-	x ^= x >> 14u ^ x >> 28u; x *= 0x32b21703u;
-	x ^= x >> 15u ^ x >> 30u; x *= 0x469e0db1u;
-	x ^= x >> 11u ^ x >> 22u; x *= 0x79a85073u;
-	return x ^ (x >> 17u);
-}
-
 constexpr FINLINE uint64 MurmurHash(uint64 x) {
 	x ^= x >> 30ULL; x *= 0xbf58476d1ce4e5b9ULL;
 	x ^= x >> 27ULL; x *= 0x94d049bb133111ebULL;
@@ -155,6 +140,8 @@ namespace Random
 		return result;
 	}
 
+	// too see alternative random number generator look at Aditional.hpp for mersene twister pseudo random number generators
+
 	template<typename T>
 	inline void Suffle(T* begin, uint64 len)
 	{
@@ -169,155 +156,6 @@ namespace Random
 			     begin[Xoroshiro128Plus(xoro) % len]);
 		}
 	}
-
-	// Copyright (c) 2011, 2013 Mutsuo Saito, Makoto Matsumoto,
-	// Hiroshima University and The University of Tokyo. All rights reserved.
-	// generated from paper: http://www.math.sci.hiroshima-u.ac.jp/~m-mat/m_MT/ARTICLES/mt.pdf
-	// also I don't recommend using more than one instance in a theread
-	class MTwister64
-	{
-		static constexpr int N = 624, M = 367;
-		uint64 m_MT[N];
-		int m_Index = N + 1;
-
-	public:
-		// any non zero integer can be used as a seed
-		MTwister64(uint64 seed = 4357ul)
-		{
-			m_MT[0] = seed & ~0ul;
-			for (m_Index = 1; m_Index < N; ++m_Index)
-				m_MT[m_Index] = (69069 * m_MT[m_Index - 1]) & ~0ul;
-		}
-
-		uint32 Next()
-		{
-			if (m_Index >= N) GenerateNumbers();
-			uint64 x = m_MT[m_Index++];
-			x ^= x >> 11;
-			x ^= x << 7 & 0x9d2c5680ul;
-			x ^= x << 15 & 0xefc60000ul;
-			x ^= x >> 18;
-			return int(x >> 16);
-		}
-
-		uint64 Next64() { return uint32(Next() >> 16); }
-
-	private:
-
-		void GenerateNumbers()
-		{
-			static const uint64 mag01[2] = { 0x0, 0x9908b0dful };
-			int kk = 0; uint64 y;
-
-			while (kk < N - M) // unrolled for chace line optimizations
-			{
-				y = (m_MT[kk] & 0x80000000ul) | (m_MT[kk + 1] & 0x7ffffffful);
-				m_MT[kk] = m_MT[kk + M] ^ (y >> 1) ^ mag01[y & 0x1];
-				kk++;
-				y = (m_MT[kk] & 0x80000000ul) | (m_MT[kk + 1] & 0x7ffffffful);
-				m_MT[kk] = m_MT[kk + M] ^ (y >> 1) ^ mag01[y & 0x1];
-				kk++;
-				y = (m_MT[kk] & 0x80000000ul) | (m_MT[kk + 1] & 0x7ffffffful);
-				m_MT[kk] = m_MT[kk + M] ^ (y >> 1) ^ mag01[y & 0x1];
-				kk++;
-			}
-			kk--;
-
-			while (kk < N - 1)
-			{
-				y = (m_MT[kk] & 0x80000000ul) | (m_MT[kk + 1] & 0x7ffffffful);
-				m_MT[kk] = m_MT[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1];
-				++kk;
-				y = (m_MT[kk] & 0x80000000ul) | (m_MT[kk + 1] & 0x7ffffffful);
-				m_MT[kk] = m_MT[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1];
-				++kk;
-				y = (m_MT[kk] & 0x80000000ul) | (m_MT[kk + 1] & 0x7ffffffful);
-				m_MT[kk] = m_MT[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1];
-				++kk;
-			}
-
-			y = (m_MT[N - 1] & 0x80000000ul) | (m_MT[0] & 0x7ffffffful);
-			m_MT[N - 1] = m_MT[M - 1] ^ (y >> 1) ^ mag01[y & 0x1];
-
-			m_Index = 0;
-		}
-	};
-
-	class MTwister
-	{
-		static constexpr int SIZE = 624, PERIOD = 397;
-		static constexpr int DIFF = SIZE - PERIOD;
-		static constexpr uint32 MAGIC = 0x9908b0df;
-		uint32 m_MT[SIZE];
-		int m_Index = SIZE;
-
-	public:
-		// value doesn't matter
-		MTwister(uint32 value = 4586u)
-		{
-			m_MT[0] = value; m_Index = SIZE;
-			for (uint32 i = 1; i < SIZE; ++i)
-				m_MT[i] = 0x6c078965 * (m_MT[i - 1] ^ m_MT[i - 1] >> 30) + i;
-		}
-
-		uint32 Next()
-		{
-			if (AX_UNLIKELY(m_Index >= SIZE)) 
-				GenerateNumbers();
-
-			uint32 y = m_MT[m_Index++];
-			y ^= y >> 11u;
-			y ^= y << 7u & 0x9d2c5680u;
-			y ^= y << 15u & 0xefc60000u;
-			return y ^ (y >> 18u);
-		}
-
-		uint64 Next64()
-		{
-			if (AX_UNLIKELY(m_Index + 1 >= SIZE)) 
-				GenerateNumbers();
-
-			uint64 y = m_MT[m_Index++] & (uint64(m_MT[m_Index++]) << 32ul);
-			y ^= y >> 11ul;
-			y ^= y << 7ul  & (0x9d2c5680ull & (0x9d2c5680ull << 32ull)); 
-			y ^= y << 15ul & (0xefc60000ull & (0xefc60000ull << 32ull)); 
-			return y ^ (y >> 18ul);
-		}
-
-	private:
-		void GenerateNumbers()
-		{
-			size_t i = 0; uint32_t y;
-
-			while (i < DIFF) {
-				y = (0x80000000 & m_MT[i]) | (0x7FFFFFFF & m_MT[i + 1]);
-				m_MT[i] = m_MT[i + PERIOD] ^ (y >> 1) ^ (((int(y) << 31) >> 31) & MAGIC);
-				++i;
-				y = (0x80000000 & m_MT[i]) | (0x7FFFFFFF & m_MT[i + 1]);
-				m_MT[i] = m_MT[i + PERIOD] ^ (y >> 1) ^ (((int(y) << 31) >> 31) & MAGIC);
-				++i;
-			}
-
-			while (i < SIZE - 1)
-			{
-				y = (0x80000000 & m_MT[i]) | (0x7FFFFFFF & m_MT[i + 1]);
-				m_MT[i] = m_MT[i - DIFF] ^ (y >> 1) ^ (((int(y) << 31) >> 31) & MAGIC);
-				++i;
-				y = (0x80000000 & m_MT[i]) | (0x7FFFFFFF & m_MT[i + 1]);
-				m_MT[i] = m_MT[i - DIFF] ^ (y >> 1) ^ (((int(y) << 31) >> 31) & MAGIC);
-				++i;
-				y = (0x80000000 & m_MT[i]) | (0x7FFFFFFF & m_MT[i + 1]);
-				m_MT[i] = m_MT[i - DIFF] ^ (y >> 1) ^ (((int(y) << 31) >> 31) & MAGIC);
-				++i;
-			}
-
-			// i = 623, last step rolls over
-			y = (0x80000000 & m_MT[SIZE - 1]) | (0x7FFFFFFF & m_MT[0]);
-			m_MT[SIZE - 1] = m_MT[PERIOD - 1] ^ (y >> 1) ^ (((int32_t(y) << 31) >> 31) & MAGIC);
-
-			m_Index = 0;
-		}
-	};
 } // namespace Random end
 
 
@@ -455,7 +293,7 @@ template<typename T> struct  Hasher
 	static FINLINE uint64 Hash(const T& x)
 	{
 		if constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
-		else if constexpr (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));
-		else return WYHash::Hash(&x, sizeof(T));
+		else if      (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));
+		else                          return WYHash::Hash(&x, sizeof(T));
 	}
 };

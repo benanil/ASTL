@@ -3,7 +3,9 @@
 #include "Memory.hpp"
 #include "Algorithms.hpp"
 
-// todo: add priority queue here (min heap)
+// todo: add priority queue here (min heap) https://github.com/lemire/FastPriorityQueue.js/blob/master/FastPriorityQueue.js
+//       use power of two increasing to not use mod operator
+//       make queue power of two and use & operator instead of modulo
 
 template<typename ValueT,
          typename AllocatorT = Allocator<ValueT>>
@@ -64,15 +66,13 @@ private:
 	static constexpr int InitialSize = 384 / Min((int)sizeof(ValueT), 128);//  1         384
 							                                               //  2         192
 	ValueT* ptr  = nullptr;                                                //  4         96
-	int capacity = InitialSize;                                            //  8         48         : minimum initial size is 8
+	int capacity = InitialSize;                                            //  8         48         : minimum initial size is 48
 	int front    = 0;
 	int rear     = 0;
 	AllocatorT allocator{};
 public:
-	Queue() : front(0), rear(0), capacity(InitialSize)
-	{
-		ptr = allocator.AllocateUninitialized(capacity);
-	}
+	Queue() : ptr(nullptr), capacity(0), front(0), rear(0)
+	{ }
 	
 	~Queue()
 	{
@@ -196,7 +196,6 @@ public:
 	ValueT& Emplace(Args&&... args)
 	{
 		GrowIfNecessary(1);
-		ptr[front].~ValueT();
 		new (ptr + front) ValueT(Forward<Args>(args)...);
 		int idx = front;
 		front   = IncrementIndex(front);
@@ -290,7 +289,7 @@ private:
 		return (x + 1) % capacity;
 	}
 
-	int CalculateArrayGrowth() const
+	int CalculateQueueGrowth() const
 	{
 		if (INT32_MAX-capacity < capacity)
 			return INT32_MAX;
@@ -305,9 +304,10 @@ private:
 			return; // no need to grow
 		}
 
-		const int newCapacity = Max(CalculateArrayGrowth(), 8);
-		ptr                   = allocator.Reallocate(ptr, capacity, newCapacity);
-		
+		const int newCapacity = Max(CalculateQueueGrowth(), InitialSize);
+		if (ptr)  ptr         = allocator.Reallocate(ptr, capacity, newCapacity);
+		else      ptr         = allocator.Allocate(newCapacity);
+
 		// unify front and rear, if they are seperate.
 		if (front < rear)
 		{

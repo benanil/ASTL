@@ -1,6 +1,8 @@
 // most of the functions are accurate and faster than stl 
 // convinient for game programming
 
+// todo IsNan function
+
 #pragma once
 
 #include "../Common.hpp" // includes Min, Max, Clamp, Abs and FAbs
@@ -110,6 +112,14 @@ FINLINE constexpr float CopySign(float x, float y)
 	int ix = BitCast<int>(x) & 0x7fffffff;
 	int iy = BitCast<int>(y) & 0x80000000;
 	return BitCast<float>(ix | iy);
+}
+
+FINLINE constexpr bool IsNan(float f)
+{
+	uint32 intValue = BitCast<uint32>(f);
+	uint32 exponent = (intValue >> 23) & 0xFF;
+	uint32 fraction = intValue & 0x7FFFFF;
+	return (exponent == 0xFF) & (fraction != 0);
 }
 
 FINLINE constexpr float FMod(float x, float y) {

@@ -165,13 +165,6 @@ public:
 		arr[index] = value;
 	}
 
-	void InsertUninitialized(int index)
-	{
-		OpenSpace(index, 1);
-		arr[index].~ValueT();
-		arr[index].ValueT();
-	}
-
 	void Insert(ConstIterator _it, const ValueT* _begin, const ValueT* _end)
 	{
 		Insert(PointerDistance(begin(), _it), _begin, _end);
@@ -278,9 +271,12 @@ public:
 		}
 		else if (_size < m_capacity)
 		{
-			for (int i = m_count - 1; i >= _size; --i)
+			if constexpr (!AllocatorT::IsPOD)
 			{
-				arr[i].~ValueT();
+				for (int i = m_count - 1; i >= _size; --i)
+				{
+					arr[i].~ValueT();
+				}
 			}
 			ReduceIfNecessary(_size);
 		}
@@ -372,14 +368,15 @@ private:
 
 	bool ReduceIfNecessary(int _newSize)
 	{
-		constexpr uint32 minBytesToAllocate    = uint32(sizeof(uint64) * 1024ull);
+		constexpr uint32 minBytesToAllocate    = 32u * 1024u; // 32 kilobyte of memory quarter of your cpu L1 chace (2023)
 		constexpr uint32 minElementsToReduce   = (uint32)Max(minBytesToAllocate / sizeof(ValueT), (size_t)InitialSize);
 		const int halfCap                      = m_capacity / 2;
-		// leave space 
+		
 		// you can use _newSize as new capacity or you can use m_capacity / 2
 		// but I choose half way between _newSize and halfCap because _newSize might be too low
 		_newSize = Max(minElementsToReduce, uint32(CalculateArrayGrowth(_newSize) + halfCap) / 2);
 		
+		// if size is too small no need to reallocate
 		// resize if requested size is smaller than (halfCap - CalculateArrayGrowth(_newSize)) 
 		if ((_newSize > minElementsToReduce && _newSize < halfCap) ||
 			// initial capacity requested and current capacity is not equal to initial size (if size is not already min)
@@ -394,6 +391,7 @@ private:
 
 	void RemoveSpace(int _index, int _count)
 	{
+		ASSERT((_index + _count) <= m_count);
 		int newSize = Max(m_count - _count, 0);
 
 		int i = _index;
@@ -405,11 +403,16 @@ private:
 			arr[i++] = Forward<ValueT>(arr[j++]);
 		}
 		
-		if (!ReduceIfNecessary(newSize))
+		bool reduced = ReduceIfNecessary(newSize);
+
+		if constexpr (!AllocatorT::IsPOD)
 		{
-			for (int i = newSize; i < m_count; ++i)
+			if (!reduced)
 			{
-				arr[i].~ValueT();
+				for (int i = newSize; i < m_count; ++i)
+				{
+					arr[i].~ValueT();
+				}
 			}
 		}
 		m_count = newSize;

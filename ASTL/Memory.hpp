@@ -29,12 +29,6 @@ FINLINE constexpr T Exchange(T& obj, U&& new_value)
   return old_value;
 }
 
-#ifdef AX_SUPPORT_AVX2
-AXGLOBALCONST uint64_t g_256MemMask[8] = { ~0ull, ~0ull, ~0ull, ~0ull, 0ull, 0ull, 0ull, 0ull };
-#elif AX_SUPPORT_SSE2
-AXGLOBALCONST uint32_t g_128MemMask[8] = { ~0u, ~0u, ~0u, ~0u, 0u, 0u, 0u, 0u };
-#endif
-
 void MemSet(void* dst, char val, uint64_t sizeInBytes)
 {
     if (sizeInBytes <= 512)
@@ -100,16 +94,19 @@ inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
     }
 }
 
+// and memmove
+
 template<typename T> 
 struct Allocator 
 {
+    static constexpr bool IsPOD = false;
+
     T* Allocate(int count) {
         return new T[count]{};
     }
     
     T* AllocateUninitialized(int count) {
-        // return (T*)::operator new(sizeof(T) * count); // for now I close uninitialized 
-        return new T[count]{};
+        return (T*)::operator new(sizeof(T) * count); // for now I close uninitialized 
     }
     
     void Deallocate(T* ptr, int count) {
@@ -136,6 +133,8 @@ struct Allocator
 template<typename T>
 struct MallocAllocator
 {
+    static constexpr bool IsPOD = true;
+
     T* Allocate(int count) {
         return new T[count];
     }

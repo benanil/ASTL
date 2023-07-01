@@ -16,13 +16,12 @@ public:
 public:                                                                   //  4         96
     int size     = 0;                                                     //  8         48
     int capacity = 0;
-    T* ptr       = nullptr;
+    T*  ptr      = nullptr;
     AllocatorT allocator{};
 
 public:
 	Stack() : size(0), capacity(0), ptr(nullptr) 
-	{
-	}
+	{ }
 	
 	~Stack()
 	{ 
@@ -47,8 +46,18 @@ public:
 	Stack(const Stack& other)
 	: size(other.size), capacity(other.capacity)
 	{
-		ptr = allocator.Allocate(capacity);
-		Copy(ptr, other.ptr, size);
+		if (&other != this)
+		{
+			if (other.size >= capacity) // grow if necessarry function
+			{
+				int newSize = Max(CalculateArrayGrowth(other.size), InitialSize);
+				if (ptr) ptr = allocator.Reallocate(ptr, capacity, newSize);
+				else     ptr = allocator.Allocate(newSize);
+				capacity    = newSize; 
+			}
+			Copy(ptr, other.ptr, other.Size());
+			size = other.Size();
+		}
 	}
 	// move constructor 
 	Stack(Stack&& other)

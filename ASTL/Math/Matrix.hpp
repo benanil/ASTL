@@ -75,7 +75,7 @@ struct Matrix3
 
 	inline static Matrix3 FromQuaternion(Quaternion q)
 	{
-		// ai generated
+		// ai generated, todo fix
 		Matrix3 rot;
 		float x2 = q.x * q.x, y2 = q.y * q.y;
 		float z2 = q.z * q.z, xy = q.x * q.y;

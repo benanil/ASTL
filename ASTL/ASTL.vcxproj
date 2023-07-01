@@ -140,6 +140,7 @@
     <ClCompile Include="MultiThreading\ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Aditional.hpp" />
     <ClInclude Include="Algorithms.hpp" />
     <ClInclude Include="Array.hpp" />
     <ClInclude Include="Bitset.hpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="MultiThreading\ThreadPool.hpp" />
     <ClInclude Include="Queue.hpp" />
     <ClInclude Include="Random.hpp" />
+    <ClInclude Include="RedBlackTree.hpp" />
     <ClInclude Include="SegmentedArray.hpp" />
     <ClInclude Include="Stack.hpp" />
     <ClInclude Include="String.hpp" />

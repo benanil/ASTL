@@ -113,5 +113,11 @@
     <ClInclude Include="RBTree.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RedBlackTree.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Aditional.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
