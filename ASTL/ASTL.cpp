@@ -241,9 +241,9 @@ int main()
         node = node->child[0];
     }
 
-    map.Delete(40);
-    map.Delete(48);
-    map.Delete(56);
+    map.Remove(40);
+    map.Remove(48);
+    map.Remove(56);
 
     printf("root data: %i\n", map.root->data);
     Traverse(map.root);
