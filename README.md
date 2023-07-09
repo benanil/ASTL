@@ -7,7 +7,7 @@ feel free to contribute, use, modify or oppening PR<br>
 I havent used any C++ headers except thread and atomic. (by default threading is not compiled activate with ASTL_MULTI_THREADING)<br>
 also I havent used any C headers except <stdint.h>. and in msvc <intrin.h> (for SIMD) <br>
 Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>
-We have Hash functions and Random number generators in Random.hpp. <br>
+I have Hash functions and Random number generators in Random.hpp. <br>
 Matrix4 and Vector4 uses SIMD extensions(SSE3)<br>
 math library is combination of glm and DirectX Math. examples:
 ```cpp
@@ -36,7 +36,8 @@ float length =  ToVector2f(x).Length();
 ```
 <br>
 HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>
-Todo: RedBlackTree, ScopedPtr, and SharedPtr. coming soon.<br>
+I have RedBlackTree for Map and Set (ordered lookup tables) using comparison operator instead of hash<br>
+ScopedPtr, and SharedPtr. coming soon.<br>
 I have Array<T> instead of std::vector<T> <br>
 also you can use Bitset1024, Bitset512, Bitset256(SIMD optimized) or Bitset<1234> instead of std::bitset <br>
 Here is examples
@@ -46,6 +47,36 @@ Here is examples
 #include "Stack.hpp"
 #include "String.hpp"
 #include "Array.hpp"
+#include "RedBlackTree.hpp"
+
+// Map<uint64_t, String> mapTest{};
+Set<uint64_t> set{};
+    
+Random::PCG pcg;
+Random::PCGInitialize(pcg, 12345);
+
+for (int i = 0; i <= 1000; i++)
+  set.Insert(Random::PCGNext(pcg) & 1023); // 
+
+Random::PCGInitialize(pcg, 12345);
+
+printf("is contains: %i\n", set.Contains(552));
+printf("root data: %llu\n", set.m_root->value);
+
+set.Traverse(Travert);
+
+bool containsAll = 1;
+for (int i = 0; i <= 1000; i++)
+    containsAll &= map.Contains(Random::PCGNext(pcg) & 1023);
+
+ASSERT(containsAll);
+
+Random::PCGInitialize(pcg, 12345);
+
+for (int i = 0; i <= 1000; i++)
+    set.Erase(Random::PCGNext(pcg) & 1023);
+
+set.Traverse(Travert);
 
 String testStr = "floating test: ";
 testStr += 1234.567f;

@@ -1,284 +1,515 @@
+// use this when you don't want to use hash functions 
+// and if you want sorted map you can use this otherwise use HashMap or hashset
+// this algorithm is from Introduction to algorithms book by Thomas H.Cormen and Ronald L.Rivest
 
+#pragma once
 
+#include "Memory.hpp"
 
-class RedBlackTreeAI {
+template<typename ValueT>
+class RedBlackTree
+{
 public:
-    enum class Color { RED, BLACK };
 
-    struct Node {
-        int key;
-        Color color;
-        Node* left;
-        Node* right;
-        Node* parent;
+	typedef void (*TraverseFunc)(ValueT& val);
 
-        Node(int key) : key(key), color(Color::RED), left(nullptr), right(nullptr), parent(nullptr) {}
-    };
+	struct Node
+	{
+		Node() {}
 
-    Node* root;
+		// protector constructor
+		Node(Node* protect) 
+		: parent(protect), left(protect), right(protect) 
+		{ }
 
-    void DestroyRec(Node* node)
-    {
-        if (!node) return;
-        DestroyRec(node->left);
-        DestroyRec(node->right);
-        delete node;
-    }
+        // set as red by default		
+		Node(ValueT val, Node* parent_, Node* protect)
+		: parent((Node*)(0x1ull | (uint64)parent_)), left(protect), right(protect), value((ValueT&&)val)
+		{  }
+		
+		Node*  parent;
+		Node*  left;
+		Node*  right;
+		ValueT value;
 
-    ~RedBlackTreeAI()
-    {
-        DestroyRec(root);
-    }
+		bool IsRed()  const { return ((uint64_t)parent) & 0x1ull; }
+		bool IsBlack() const { return !IsRed(); }
 
-    void rotateLeft(Node* node) {
-        Node* rightChild = node->right;
-        node->right = rightChild->left;
+		void SetRed()   { parent = (Node*)((uint64_t)parent | 0x1ull); }  
+		void SetBlack() { parent = (Node*)((uint64_t)parent & ~0x1ull); }
 
-        if (rightChild->left != nullptr)
-            rightChild->left->parent = node;
+		bool GetColor() { return IsRed(); }
+		void SetColor(bool isRed)
+		{
+			parent = (Node*)(uint64_t(isRed) | ((uint64_t)parent & ~0x1ull));
+		}
 
-        rightChild->parent = node->parent;
+		void SetParent(Node* newParent) {
+			parent = (Node*)((uint64_t)newParent | (((uint64_t)parent) & 0x1));
+		}
 
-        if (node->parent == nullptr)
-            root = rightChild;
-        else if (node == node->parent->left)
-            node->parent->left = rightChild;
-        else
-            node->parent->right = rightChild;
+		Node* GetParent() const {
+			return (Node*)(((uint64_t)parent) & ~0x1);
+		}
+	};
 
-        rightChild->left = node;
-        node->parent = rightChild;
-    }
+    Node* m_root = nullptr;
+	FixedSizeGrowableAllocator<Node> m_allocator{};
+	static Node m_protect;
 
-    void rotateRight(Node* node) {
-        Node* leftChild = node->left;
-        node->left = leftChild->right;
+	RedBlackTree()
+	{
+		// m_protect.SetBlack(); // by default this is black
+		m_protect.left = m_protect.right = &m_protect;
+		m_protect.SetParent(&m_protect);
+		m_root = &m_protect;
+	}
 
-        if (leftChild->right != nullptr)
-            leftChild->right->parent = node;
+    ~RedBlackTree()
+	{
+		Clear();
+	}
 
-        leftChild->parent = node->parent;
+	const Node* Nil() const { return &m_protect; }
 
-        if (node->parent == nullptr)
-            root = leftChild;
-        else if (node == node->parent->left)
-            node->parent->left = leftChild;
-        else
-            node->parent->right = leftChild;
+	template<typename...Args>
+	Node* Insert(Args&&... args)
+	{
+		Node* node   = m_root;
+		Node* parent = &m_protect;
+		ValueT value(Forward<Args>(args)...);
 
-        leftChild->right = node;
-        node->parent = leftChild;
-    }
+		while (node != &m_protect)
+		{
+			parent = node;
+			if (node->value < value) node = node->right;
+			else if (value < node->value) node = node->left;
+			else return node;
+		}
 
-    void removeFixup(Node* node) {
-        
-        while (node && node != root && node->color == Color::BLACK) {
-            if (node == node->parent->left) {
-                Node* sibling = node->parent->right;
+		Node* added = AllocateNode(Forward<ValueT>(value), parent);
+		
+		if (parent != &m_protect)
+			if (value < parent->value)
+				parent->left = added;
+			else
+				parent->right = added;
+		else 
+			m_root = added;
 
-                if (sibling->color == Color::RED) {
-                    sibling->color = Color::BLACK;
-                    node->parent->color = Color::RED;
-                    rotateLeft(node->parent);
-                    sibling = node->parent->right;
-                }
+		InsertFixup(added);
+		Validate();
+		return added;
+	}
 
-                if (sibling->left->color == Color::BLACK && sibling->right->color == Color::BLACK) {
-                    sibling->color = Color::RED;
-                    node = node->parent;
-                }
-                else {
-                    if (sibling->right->color == Color::BLACK) {
-                        sibling->left->color = Color::BLACK;
-                        sibling->color = Color::RED;
-                        rotateRight(sibling);
-                        sibling = node->parent->right;
-                    }
+	Node* Insert(const ValueT& value)
+	{
+		Node* node   = m_root;
+		Node* parent = &m_protect;
 
-                    sibling->color = node->parent->color;
-                    node->parent->color = Color::BLACK;
-                    sibling->right->color = Color::BLACK;
-                    rotateLeft(node->parent);
-                    node = root;
-                }
-            }
-            else {
-                Node* sibling = node->parent->left;
+		while (node != &m_protect)
+		{
+			parent = node;
+			if (node->value < value) node = node->right;
+			else if (value < node->value) node = node->left;
+			else return node;
+		}
 
-                if (sibling->color == Color::RED) {
-                    sibling->color = Color::BLACK;
-                    node->parent->color = Color::RED;
-                    rotateRight(node->parent);
-                    sibling = node->parent->left;
-                }
+		Node* added = AllocateNode(value, parent);
+		
+        if (parent != &m_protect)
+			if (value < parent->value)
+				parent->left = added;
+			else
+				parent->right = added;
+		else 
+			m_root = added;
 
-                if (sibling->right->color == Color::BLACK && sibling->left->color == Color::BLACK) {
-                    sibling->color = Color::RED;
-                    node = node->parent;
-                }
-                else {
-                    if (sibling->left->color == Color::BLACK) {
-                        sibling->right->color = Color::BLACK;
-                        sibling->color = Color::RED;
-                        rotateLeft(sibling);
-                        sibling = node->parent->left;
-                    }
+		InsertFixup(added);
+		Validate();
+		return added;
+	}
 
-                    sibling->color = node->parent->color;
-                    node->parent->color = Color::BLACK;
-                    sibling->left->color = Color::BLACK;
-                    rotateRight(node->parent);
-                    node = root;
-                }
-            }
-        }
+	int Erase(const ValueT& key)
+	{
+		if (Node* toErase = FindNode(key))
+		{
+			Erase(toErase);
+			return true;
+		}
+		return false;
+	}
 
-        if (node) node->color = Color::BLACK;
-    }
+	void Erase(Node* node)
+	{
+		ASSERT(m_root); // tree is already empty
+		Node* replacement;
 
+		if (node->left == &m_protect || node->right == &m_protect)
+			replacement = node;
+		else
+		{
+			// get successor
+			replacement = node->right;
+			while (replacement->left != &m_protect)
+				replacement = replacement->left;
+		}
 
-    Node* getSuccessor(Node* node) {
-        if (node->right != nullptr) {
-            node = node->right;
-            while (node->left != nullptr)
-                node = node->left;
-            return node;
-        }
+		Node* eraseChild = replacement->left != &m_protect ? replacement->left : replacement->right;
+		eraseChild->SetParent(replacement->GetParent());
+		
+		if (replacement->GetParent() != &m_protect)
+		{
+			if (replacement == replacement->GetParent()->left)
+				replacement->GetParent()->left = eraseChild;
+			else
+				replacement->GetParent()->right = eraseChild;
+		}
+		else
+			m_root = eraseChild;
 
-        Node* parent = node->parent;
-        while (parent != nullptr && node == parent->right) {
-            node = parent;
-            parent = parent->parent;
-        }
-        return parent;
-    }
+		node->value = replacement->value;
 
-    Node* searchNode(int key) {
-        Node* current = root;
+		if (replacement->IsBlack())
+			FixupAfterErase(eraseChild);
 
-        while (current != nullptr) {
-            if (key == current->key)
-                return current;
-            else if (key < current->key)
-                current = current->left;
-            else
-                current = current->right;
-        }
+		FreeNode(replacement, false);
 
-        return nullptr; // Node not found
-    }
+		Validate();
+	}
 
-    void remove(int key) {
-        Node* node = searchNode(key);
+    Node* FindNode(const ValueT& key)
+	{
+		Node* node = m_root;
+		while (node != &m_protect)
+		{
+			if (node->value < key)
+				node = node->right;
+			else if (key < node->value)
+				node = node->left;
+			else 
+				return node;
+		}
+		return nullptr;
+	}
 
-        if (node == nullptr)
-            return;
+	bool Contains(const ValueT& key)
+	{
+		return FindNode(key) != nullptr;
+	}
 
-        Node* replacement = nullptr;
+	void Clear()
+	{
+		if (m_root)
+		{
+			FreeNode(m_root, true);
+			m_root = &m_protect;
+		}
+	}
 
-        if (node->left == nullptr || node->right == nullptr)
-            replacement = node;
-        else
-            replacement = getSuccessor(node);
+	void TraverseNode(Node* n, TraverseFunc func)
+	{
+		if (n->left != &m_protect)
+			TraverseNode(n->left, func);
+		func(n->value);
+		if (n->right != &m_protect)
+			TraverseNode(n->right, func);
+	}
 
-        Node* child = nullptr;
-        if (replacement->left != nullptr)
-            child = replacement->left;
-        else
-            child = replacement->right;
+	void Traverse(TraverseFunc func)
+	{
+		if (m_root)
+			TraverseNode(m_root, func);
+	}
 
-        if (child != nullptr)
-            child->parent = replacement->parent;
+	Node* GetBeginNode() const
+	{
+		Node* iter = &m_protect;
+		if (m_root != &m_protect)
+		{
+			iter = m_root;
+			while (iter->left != &m_protect)
+				iter = iter->left;
+		}
+		return iter;
+	}
 
-        if (replacement->parent == nullptr)
-            root = child;
-        else if (replacement == replacement->parent->left)
-            replacement->parent->left = child;
-        else
-            replacement->parent->right = child;
+	Node* FindNextNode(Node* node) const
+	{
+		if (node == &m_protect) return &m_protect;
+		Node* next = &m_protect;
+		
+		if (node->right != &m_protect)
+		{
+			next = node->right;
+			while (next->left != &m_protect)
+				next = next->left;
+		}
+		else if (node->GetParent() != &m_protect)
+		{
+			if (node == node->GetParent()->left)
+				return node->GetParent();
+			else
+			{
+				next = node;
+				while (next->GetParent() != &m_protect)
+				{
+					if (next == next->GetParent()->right)
+						next = next->GetParent();
+					else
+						return next->GetParent();
+				}
+				next = nullptr;
+			}
+		}
+		else
+		{
+			ASSERT(node == m_root);
+		}
+		return next;
+	}
 
-        if (replacement != node)
-            node->key = replacement->key;
+	int NumNodes(const Node* n) const
+	{
+        return n == &m_protect ? nullptr : 1 + NumNodes(n->left) + NumNodes(n->right);
+	}
 
-        if (replacement->color == Color::BLACK)
-            removeFixup(child);
+	void InsertFixup(Node* new_node)
+	{
+		ASSERT(new_node->IsRed());
+		Node* iter = new_node;
+		
+		while (iter->GetParent()->IsRed())
+		{
+			Node* grandparent = iter->GetParent()->GetParent();
+			if (iter->GetParent() == grandparent->left)
+			{
+				Node* uncle = grandparent->right;
+				// Both parent and uncle are red.
+				// Repaint both, make grandparent red.
+				if (uncle->IsRed())
+				{
+					iter->GetParent()->SetBlack();
+					uncle->SetBlack();
+					grandparent->SetRed();
+					iter = grandparent;
+				}
+				else
+				{
+					if (iter == iter->GetParent()->right)
+					{
+						iter = iter->GetParent();
+						RotateLeft(iter);
+					}
+					grandparent = iter->GetParent()->GetParent();
+					iter->GetParent()->SetBlack();
+					grandparent->SetRed();
+					RotateRight(grandparent);
+				}
+			}
+			else
+			{
+				Node* uncle = grandparent->left;
+				if (uncle->IsRed())
+				{
+					grandparent->SetRed();
+					iter->GetParent()->SetBlack();
+					uncle->SetBlack();
+					iter = grandparent;
+				}
+				else
+				{
+					if (iter == iter->GetParent()->left)
+					{
+						iter = iter->GetParent();
+						RotateRight(iter);
+					}
+					grandparent = iter->GetParent()->GetParent();
+					iter->GetParent()->SetBlack();
+					grandparent->SetRed();
+					RotateLeft(grandparent);
+				}
+			}
+		}
+		m_root->SetBlack();
+	}
 
-        delete replacement;
-    }
+	void FixupAfterErase(Node* n)
+	{
+		Node* iter = n;
+		while (iter != m_root && iter->IsBlack())
+		{
+			if (iter == iter->GetParent()->left)
+			{
+				Node* sibling = iter->GetParent()->right;
+				if (sibling->IsRed())
+				{
+					sibling->SetBlack();
+					iter->GetParent()->SetRed();
+					RotateLeft(iter->GetParent());
+					sibling = iter->GetParent()->right;
+				}
+				if (sibling->left->IsBlack() && sibling->right->IsBlack())
+				{
+					sibling->SetRed();
+					iter = iter->GetParent();
+				}
+				else
+				{
+					if (sibling->right->IsBlack())
+					{
+						sibling->left->SetBlack();
+						sibling->SetRed();
+						RotateRight(sibling);
+						sibling = iter->GetParent()->right;
+					}
+					sibling->SetColor(iter->GetParent()->GetColor());
+					iter->GetParent()->SetBlack();
+					sibling->right->SetBlack();
+					RotateLeft(iter->GetParent());
+					iter = m_root;
+				}
+			}
+			else // iter == right child
+			{
+				Node* sibling = iter->GetParent()->left;
+				if (sibling->IsRed())
+				{
+					sibling->SetBlack();
+					iter->GetParent()->SetRed();
+					RotateRight(iter->GetParent());
+					sibling = iter->GetParent()->left;
+				}
 
-    void insertFixup(Node* node) {
-        while (node->parent != nullptr && node->parent->color == Color::RED) {
-            if (node->parent == node->parent->parent->left) {
-                Node* uncle = node->parent->parent->right;
+				if (sibling->left->IsBlack() && sibling->right->IsBlack())
+				{
+					sibling->SetRed();
+					iter = iter->GetParent();
+				}
+				else
+				{
+					if (sibling->left->IsBlack())
+					{
+						sibling->right->SetBlack();
+						sibling->SetRed();
+						RotateLeft(sibling);
+						sibling = iter->GetParent()->left;
+					}
+					sibling->SetColor(iter->GetParent()->GetColor());
+					iter->GetParent()->SetBlack();
+					sibling->left->SetBlack();
+					RotateRight(iter->GetParent());
+					iter = m_root;
+				}
+			}
+		}
+		iter->SetBlack();
+	}
 
-                if (uncle != nullptr && uncle->color == Color::RED) {
-                    node->parent->color = Color::BLACK;
-                    uncle->color = Color::BLACK;
-                    node->parent->parent->color = Color::RED;
-                    node = node->parent->parent;
-                }
-                else {
-                    if (node == node->parent->right) {
-                        node = node->parent;
-                        rotateLeft(node);
-                    }
+#if 1 && defined(_DEBUG)
+    void ValidateNodeRec(Node* n) const
+	{
+		if (m_root == nullptr || m_root == &m_protect) return;
+		ASSERT(n->GetParent() == &m_protect ||
+			n->GetParent()->left == n || n->GetParent()->right == n);
+		
+		if (n->IsRed())
+		{
+			ASSERT(n->left->IsBlack());
+			ASSERT(n->right->IsBlack());
+		}
+		if (n->left != &m_protect)
+			ValidateNodeRec(n->left);
+		if (n->right != &m_protect)
+			ValidateNodeRec(n->right);
+	}
 
-                    node->parent->color = Color::BLACK;
-                    node->parent->parent->color = Color::RED;
-                    rotateRight(node->parent->parent);
-                }
-            }
-            else {
-                Node* uncle = node->parent->parent->left;
+	void Validate() const
+	{
+		ASSERT(m_root->IsBlack());
+		ValidateNodeRec(m_root);
+	}
+#else
+    void Validate() const { }
+#endif
 
-                if (uncle != nullptr && uncle->color == Color::RED) {
-                    node->parent->color = Color::BLACK;
-                    uncle->color = Color::BLACK;
-                    node->parent->parent->color = Color::RED;
-                    node = node->parent->parent;
-                }
-                else {
-                    if (node == node->parent->left) {
-                        node = node->parent;
-                        rotateRight(node);
-                    }
+	void RotateLeft(Node* node)
+	{
+		Node* rightChild = node->right;
+		node->right = rightChild->left;
+		
+		if (node->right != &m_protect)
+			node->right->SetParent(node);
 
-                    node->parent->color = Color::BLACK;
-                    node->parent->parent->color = Color::RED;
-                    rotateLeft(node->parent->parent);
-                }
-            }
-        }
+		rightChild->SetParent(node->GetParent());
+		
+		if (node->GetParent() == &m_protect)
+			m_root = rightChild;
+		else
+		{
+			if (node == node->GetParent()->left)
+				node->GetParent()->left = rightChild;
+			else
+				node->GetParent()->right = rightChild;
+		}
+		rightChild->left = node;
+		node->SetParent(rightChild);
+	}
 
-        root->color = Color::BLACK;
-    }
+	void RotateRight(Node* node)
+	{
+		Node* leftChild = node->left;
+		node->left = leftChild->right;
 
-    RedBlackTreeAI() : root(nullptr) {}
+		if (node->left != &m_protect)
+			node->left->SetParent(node);
 
-    void insert(int key) {
-        Node* newNode = new Node(key);
+		leftChild->SetParent(node->GetParent());
+		if (node->GetParent() == &m_protect)
+			m_root = leftChild;
+		else
+			if (node == node->GetParent()->left)
+				node->GetParent()->left = leftChild;
+			else
+				node->GetParent()->right = leftChild;
+		
+		leftChild->right = node;
+		node->SetParent(leftChild);
+	}
 
-        Node* parent = nullptr;
-        Node* current = root;
+	Node* AllocateNode(const ValueT& value, Node* parent)
+	{
+		return m_allocator.Allocate(value, parent, &m_protect);
+	}
+	
+	template<typename... Args>
+	Node* AllocateNode(Node* parent, Args&&... args)
+	{
+		ValueT val(Forward<Args>(args)...);
+		return m_allocator.Allocate(Forward<ValueT>(val), parent, &m_protect);
+	}
 
-        while (current != nullptr) {
-            parent = current;
-
-            if (key < current->key)
-                current = current->left;
-            else
-                current = current->right;
-        }
-
-        newNode->parent = parent;
-
-        if (parent == nullptr)
-            root = newNode;
-        else if (key < parent->key)
-            parent->left = newNode;
-        else
-            parent->right = newNode;
-
-        insertFixup(newNode);
-    }
+	void FreeNode(Node* n, bool recursive)
+	{
+		if (recursive)
+		{
+			if (n->left != &m_protect)
+				FreeNode(n->left, true);
+			if (n->right != &m_protect)
+				FreeNode(n->right, true);
+		}
+		if (n != &m_protect)
+		{
+			m_allocator.Deallocate(n, 1);
+		}
+	}
 };
+
+template<typename ValueT>
+typename RedBlackTree<ValueT>::Node RedBlackTree<ValueT>::m_protect(&m_protect);
+
+template<typename ValueT>
+using Set = RedBlackTree<ValueT>;
+
+template<typename KeyT, typename ValueT>
+using Map = RedBlackTree<KeyValuePair<KeyT, ValueT>>;

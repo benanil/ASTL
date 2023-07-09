@@ -110,9 +110,6 @@
     <ClInclude Include="MultiThreading\ThreadPool.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RBTree.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RedBlackTree.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

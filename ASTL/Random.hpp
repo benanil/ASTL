@@ -203,6 +203,9 @@ namespace WYHash
 		return (uint64_t(p[0]) << 16U) | (uint64_t(p[k >> 1U]) << 8U) | p[k - 1]; 
 	}
 
+	// alternative algorithm for this is xxHash which is really efficient
+	// https://github.com/Cyan4973/xxHash
+
 	[[nodiscard]] FINLINE uint64 Hash(void const* key, size_t len)
 	{
         const size_t secret[4] = { 0xa0761d6478bd642full,

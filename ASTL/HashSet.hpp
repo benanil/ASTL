@@ -144,7 +144,7 @@ private:
 
         m_shifts = other.m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts));
-        MemCpy(&m_buckets[0], &other.m_buckets[0], m_num_buckets * sizeof(Bucket));
+        MemCpy<alignof(Bucket)>(&m_buckets[0], &other.m_buckets[0], m_num_buckets * sizeof(Bucket));
     }
 
     void ReallocateBuckets(uint32 numBuckets)

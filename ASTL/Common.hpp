@@ -269,6 +269,11 @@ template<typename T> FINLINE constexpr T Max(T a, T b) { return a > b ? a : b; }
 template<typename T> FINLINE constexpr T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
 template<typename T> FINLINE constexpr T Abs(T x) { return x < T(0) ? -x : x; }
 
+constexpr int NextPowerOf2(int x)
+{
+    return 1 << TrailingZeroCount(x);
+}
+
 template<> FINLINE constexpr float Abs(float x)
 { 
     int ix = BitCast<int>(x) & 0x7FFFFFFF; // every bit except sign mask

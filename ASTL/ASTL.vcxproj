@@ -150,7 +150,6 @@
     <ClInclude Include="HashMap.hpp" />
     <ClInclude Include="HashSet.hpp" />
     <ClInclude Include="Math\Camera.hpp" />
-    <ClInclude Include="RBTree.hpp" />
     <ClInclude Include="Math\Math.hpp" />
     <ClInclude Include="Math\Matrix.hpp" />
     <ClInclude Include="Math\Quaternion.hpp" />

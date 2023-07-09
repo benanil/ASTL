@@ -14,13 +14,13 @@ class Queue
 public:
 	struct Iterator 
 	{
-		Iterator(ValueT* ptr, int capacity, int rear) 
-		: m_ptr(ptr), m_capacity(capacity), m_rear(rear) {}
+		Iterator(ValueT* ptr, uint capacity, uint rear) 
+		: m_ptr(ptr), m_mod(capacity-1), m_rear(rear) {}
 		~Iterator() {}
 
 		ValueT&   operator * ()    { return m_ptr[m_rear]; }
 		ValueT*   operator ->()    { return m_ptr + m_rear; }
-		Iterator& operator ++()    { m_rear = (m_rear + 1) % m_capacity; return *this; }
+		Iterator& operator ++()    { m_rear = (m_rear + 1) & m_mod; return *this; }
 		Iterator  operator ++(int) { Iterator tmp = *this; ++(*this); return tmp; }
 		
 		friend bool operator == (const Iterator& a, const Iterator& b)
@@ -31,18 +31,18 @@ public:
 
 	private:
 		ValueT* m_ptr;
-		int m_capacity, m_rear;
+		uint m_mod, m_rear;
 	};
 
 	struct ConstIterator 
 	{
-		ConstIterator (const ValueT* ptr, int capacity, int rear) 
-		: m_ptr(ptr), m_capacity(capacity), m_rear(rear) {}
+		ConstIterator (const ValueT* ptr, uint capacity, uint rear) 
+		: m_ptr(ptr), m_mod(capacity-1), m_rear(rear) {}
 		~ConstIterator() {}
 
 		const ValueT&  operator * ()  const { return m_ptr[m_rear]; }
 		const ValueT*  operator ->()  const { return m_ptr + m_rear; }
-		ConstIterator& operator ++()        { m_rear = (m_rear + 1) % m_capacity; return *this; }  
+		ConstIterator& operator ++()        { m_rear = (m_rear + 1) & m_mod; return *this; }  
 		ConstIterator  operator ++(int)     { ConstIterator tmp = *this; ++(*this); return tmp; }
 		
 		friend bool operator == (const ConstIterator& a, const ConstIterator & b)
@@ -53,7 +53,7 @@ public:
 
 	private:
 		const ValueT* m_ptr;
-		int m_capacity, m_rear;
+		uint m_mod, m_rear;
 	};
 
 	using iterator = Iterator; // stl compatible
@@ -62,13 +62,12 @@ public:
 private:
 	// we don't want to use same initial size for all data types because we want 
 	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-	// if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
-	static constexpr int InitialSize = 384 / Min((int)sizeof(ValueT), 128);//  1         384
-							                                               //  2         192
-	ValueT* ptr  = nullptr;                                                //  4         96
-	int capacity = InitialSize;                                            //  8         48         : minimum initial size is 48
-	int front    = 0;
-	int rear     = 0;
+	static constexpr int InitialSize = NextPowerOf2(512 / Min((int)sizeof(ValueT), 128));
+							                                               
+	ValueT* ptr  = nullptr;                                                
+	uint capacity = InitialSize;                                            
+	uint front    = 0;
+	uint rear     = 0;
 	AllocatorT allocator{};
 public:
 	Queue() : ptr(nullptr), capacity(0), front(0), rear(0)
@@ -84,18 +83,18 @@ public:
 		}
 	}
 
-	explicit Queue(int _capacity) : capacity(_capacity + 1), front(0), rear(0)
+	explicit Queue(uint _capacity) : capacity(NextPowerOf2(_capacity + 1)), front(0), rear(0)
 	{
-		ptr = allocator.AllocateUninitialized(capacity);
+		ptr = allocator.AllocateUninitialized((int)capacity);
 	}
 
-	Queue(int _capacity, int count) : capacity(_capacity + 1), front(count), rear(0)
+	Queue(uint _capacity, uint count) : capacity(NextPowerOf2(_capacity + 1)), front(count), rear(0)
 	{
-		ptr = allocator.Allocate(capacity);
+		ptr = allocator.Allocate((int)capacity);
 	}
 
-	Queue(int _size, const ValueT& val) 
-	: capacity(_size + (_size / 2)), front(0), rear(0)
+	Queue(uint _size, const ValueT& val) 
+	: capacity(NextPowerOf2(_size + (_size / 2))), front(0), rear(0)
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
 		
@@ -105,8 +104,8 @@ public:
 		}
 	}
 
-	Queue(ValueT* p, int size)
-	: capacity(size + (size / 2)), front(size), rear(0)
+	Queue(ValueT* p, uint size)
+	: capacity(NextPowerOf2(size + (size / 2))), front(size), rear(0)
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
 		Copy(ptr, p, size);
@@ -123,17 +122,18 @@ public:
 	{
 		if (&other != this)
 		{
-		    int newSize = other.Size();
+		    uint newSize = other.Size();
 			GrowIfNecessary(newSize);
 			const ValueT* otherPtr  = other.ptr;
-			const int otherCapacity = other.capacity;
-			int otherRear = other.rear;
+			const uint otherCapacity = other.capacity;
+			uint otherRear = other.rear;
+			uint e = other.capacity-1;
 
 			for (int i = 0; i < newSize; ++i)
 			{
 				ptr[i].~ValueT();
 				ptr[i] = otherPtr[otherRear];
-				otherRear = (otherRear + 1) % otherCapacity;
+				otherRear = (otherRear + 1) & e;
 			}
 		}
 		return *this;
@@ -197,7 +197,7 @@ public:
 	{
 		GrowIfNecessary(1);
 		new (ptr + front) ValueT(Forward<Args>(args)...);
-		int idx = front;
+		uint idx = front;
 		front   = IncrementIndex(front);
 		return ptr[idx];
 	}
@@ -208,14 +208,14 @@ public:
 		ptr[front++] = value;
 	}
 
-	void Enqueue(const ValueT* begin, int count)
+	void Enqueue(const ValueT* begin, uint count)
 	{
 		GrowIfNecessary(count);
-		int f = front;
-		for (int i = 0; i < count; i++)
+		uint f = front, e = capacity-1;
+		for (uint i = 0; i < count; i++)
 		{
-			ptr[f] = begin[i];
-			f      = IncrementIndex(f);
+			ptr[f++] = begin[i];
+			f &= e;
 		}
 		front += count;
 	}
@@ -226,17 +226,18 @@ public:
 	}
 
 	// returns true if size is enough
-	bool TryDequeue(ValueT* result, int count)
+	bool TryDequeue(ValueT* result, uint count)
 	{
 		if (Size() + count > capacity)
 		{
 			return false;
 		}
-		int r = rear;
-		for (int i = 0; i < count; i++)
+		uint r = rear, e = capacity-1;
+
+		for (uint i = 0; i < count; i++)
 		{
-			result[i] = Forward<ValueT>(ptr[r]);
-			r         = IncrementIndex(r);
+			result[i] = Forward<ValueT>(ptr[r++]);
+			r &= e;
 		}
 		rear = r;
 		return true;
@@ -245,11 +246,11 @@ public:
 	void Dequeue(ValueT* result, int count)
 	{
 		ASSERT(Size() + count <= capacity);
-		int r = rear;
-		for (int i = 0; i < count; i++)
+		uint r = rear, e = capacity-1;
+		for (uint i = 0; i < count; i++)
 		{
-			result[i] = Forward<ValueT>(ptr[r]);
-			r         = IncrementIndex(r);
+			result[i] = Forward<ValueT>(ptr[r++]);
+			r &= e;
 		}
 		rear = r;
 	}
@@ -271,7 +272,7 @@ public:
 		return true;
 	}
 
-	int Size() const 
+	uint Size() const 
 	{
 		if (front < rear)
 		{
@@ -284,41 +285,41 @@ public:
 
 private:
 
-	int IncrementIndex(int x) const
+	uint IncrementIndex(uint x) const
 	{
-		return (x + 1) % capacity;
+		return (x + 1) & (capacity-1);
 	}
 
-	int CalculateQueueGrowth() const
+	uint CalculateQueueGrowth() const
 	{
-		if (INT32_MAX-capacity < capacity)
-			return INT32_MAX;
+		if (UINT32_MAX-capacity < capacity)
+			return UINT32_MAX;
 		return capacity + capacity;
 	}
 
-	void GrowIfNecessary(int _size)
+	void GrowIfNecessary(uint _size)
 	{
-		int size = Size();
+		uint size = Size();
 		if (AX_LIKELY(size + _size < capacity))
 		{
 			return; // no need to grow
 		}
 
-		const int newCapacity = Max(CalculateQueueGrowth(), InitialSize);
-		if (ptr)  ptr         = allocator.Reallocate(ptr, capacity, newCapacity);
-		else      ptr         = allocator.Allocate(newCapacity);
+		const uint newCapacity = Max(CalculateQueueGrowth(), InitialSize);
+		if (ptr)  ptr = allocator.Reallocate(ptr, capacity, newCapacity);
+		else      ptr = allocator.Allocate(newCapacity);
 
 		// unify front and rear, if they are seperate.
 		if (front < rear)
 		{
-			for (int i = 0; i < front; i++)
+			for (uint i = 0; i < front; i++)
 			{
 				ptr[capacity++] = Forward<ValueT>(ptr[i]);
 			}
 		}
 		
 		// move everything to the right
-		for (int i = 0; i < size; ++i)
+		for (uint i = 0; i < size; ++i)
 		{
 			ptr[newCapacity - 1 - i] = Forward<ValueT>(ptr[capacity - 2 - i]);
 		}

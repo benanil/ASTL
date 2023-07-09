@@ -195,61 +195,55 @@ int main()
 #include <iostream>
 #include <chrono>
 
-void TraverseRed(RedBlackTreeAI::Node *node) 
+void Travert(unsigned long long& val)
 {
-    if (!node) return;
-    TraverseRed(node->left);
-    printf("%i\n", node->key);
-    TraverseRed(node->right);
+    printf("%llu\n", val);
 }
-
-int leftCount  = 0;
-int rightCount = 0;
-
-void Traverse(RedBlackTree::Node* node)
-{
-    if (!node) return;
-
-    Traverse(node->child[0]);
-    
-    if (node->data != -1)
-    {
-        bool isRight = node->parent && node == node->parent->child[1];
-        leftCount += !isRight;
-        rightCount += isRight;
-
-        printf("%i : %c\n", node->data, node->isRed ? 'r' : 'b');
-    }
-
-    Traverse(node->child[1]);
-}
-
 
 int main()
 {
-    RedBlackTree map{};
-    for (int i = 0; i <= 100; i+=4)
-        map.Insert(i);
+    unsigned long long arr[1234];
+    MemSet<8>(arr, 0, 1234 * 8);
+    
+    for (int i = 0; i < 1234 ; i++)
+        ASSERT(arr[i] == 0ull);
+    
+    MemSet<8>(arr, 123, 1234 * 8);
+    
+    const char* carr = (const char*)arr;
+    for (int i = 0; i < 1234 * 8; i++)
+        ASSERT(carr [i] == 123);
 
-    RedBlackTree::Node *node = map.root;
-    ValueT min;
+    RedBlackTree<unsigned long long> map{};
+    
+    Random::PCG pcg;
+    Random::PCGInitialize(pcg, 12345);
 
-    while (node)
-    {
-        min = node->data;
-        printf("min: %i\n", min);
-        node = node->child[0];
-    }
+    for (int i = 0; i <= 1000; i++)
+      map.Insert(Random::PCGNext(pcg) & 1023); // 
 
-    map.Remove(40);
-    map.Remove(48);
-    map.Remove(56);
+    Random::PCGInitialize(pcg, 12345);
+    
+    printf("is contains: %i\n", map.Contains(552));
+    printf("root data: %llu\n", map.m_root->value);
 
-    printf("root data: %i\n", map.root->data);
-    Traverse(map.root);
-    printf("left count: %i\n", leftCount);
-    printf("right count: %i\n", rightCount);
+    map.Traverse(Travert);
+
+    bool containsAll = 1;
+    for (int i = 0; i <= 1000; i++)
+        containsAll &= map.Contains(Random::PCGNext(pcg) & 1023);
+    
+    ASSERT(containsAll);
+
+    Random::PCGInitialize(pcg, 12345);
+
+    for (int i = 0; i <= 1000; i++)
+        map.Erase(Random::PCGNext(pcg) & 1023);
+
+    map.Traverse(Travert);
+
     /*
+
     RedBlackTree rb{};
     rb.insert(14);
     rb.insert(15);
