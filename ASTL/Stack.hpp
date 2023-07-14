@@ -28,7 +28,7 @@ public:
 		if (ptr) { 
 			allocator.Deallocate(ptr, capacity);
 			ptr  = nullptr; 
-			size = 0;
+			size = capacity = 0;
 		} 
 	}
 
@@ -48,13 +48,9 @@ public:
 	{
 		if (&other != this)
 		{
-			if (other.size >= capacity) // grow if necessarry function
-			{
-				int newSize = Max(CalculateArrayGrowth(other.size), InitialSize);
-				if (ptr) ptr = allocator.Reallocate(ptr, capacity, newSize);
-				else     ptr = allocator.Allocate(newSize);
-				capacity    = newSize; 
-			}
+			if (other.capacity > capacity) 
+				GrowIfNecessarry(other.capacity - capacity);
+
 			Copy(ptr, other.ptr, other.Size());
 			size = other.Size();
 		}
@@ -69,6 +65,7 @@ public:
 		capacity  = other.capacity;
 		ptr       = other.ptr;
 		other.ptr = nullptr;
+		other.size = other.capacity = 0;
 	}
 
 	T&       operator[](int index)       { ASSERT(index >= capacity); return ptr[index]; } 
@@ -90,14 +87,12 @@ public:
 		{
 			if (ptr)
 				allocator.Deallocate(ptr, capacity);
-			ptr      = allocator.Allocate(InitialSize);
-			capacity = InitialSize;
-		    size     = 0; 
+		    size     = capacity = 0; 
 		}
 	}
 
 	template<typename ... Args>
-	T& Emplace(Args && ... args)
+	T& Emplace(Args&&... args)
 	{
 		GrowIfNecessarry();
 		new (ptr + size) T(Forward<Args>(args)...);

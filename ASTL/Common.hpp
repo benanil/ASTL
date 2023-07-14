@@ -186,6 +186,17 @@
     #endif
 #endif
 
+FINLINE uint64_t ReadTimeStampCount()
+{
+#ifdef _MSC_VER
+  return __rdtsc();
+#else
+  uint64_t tsc;
+  __asm__ volatile("rdtsc" : "=A" (tsc));
+  return tsc;
+#endif
+}
+
 template<typename T>
 FINLINE constexpr T PopCount(T x)
 {
@@ -271,7 +282,11 @@ template<typename T> FINLINE constexpr T Abs(T x) { return x < T(0) ? -x : x; }
 
 constexpr int NextPowerOf2(int x)
 {
-    return 1 << TrailingZeroCount(x);
+    x--;
+    x |= x >> 1; x |= x >> 2; x |= x >> 4;
+    x |= x >> 8; x |= x >> 16;
+    x++;
+    return x;
 }
 
 template<> FINLINE constexpr float Abs(float x)
@@ -344,4 +359,19 @@ struct KeyValuePair
     bool operator != (const KeyValuePair& other) {
         return key != other.key || value != other.value;
     }
+};
+
+template<typename T>
+struct Span
+{
+    T*  ptr  = nullptr; 
+    int size = 0;
+
+    Span() {}
+    Span(T* ptr_, int size_) : ptr(ptr_), size(size_) {}
+
+    const T* begin() const { return ptr; }
+    const T* end()   const { return ptr + size; }
+    T* begin() { return ptr; }
+    T* end()   { return ptr + size; }
 };

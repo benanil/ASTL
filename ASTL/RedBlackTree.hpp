@@ -6,6 +6,8 @@
 
 #include "Memory.hpp"
 
+// todo copy constructor move constructor
+
 template<typename ValueT>
 class RedBlackTree
 {
@@ -61,7 +63,7 @@ public:
 	{
 		// m_protect.SetBlack(); // by default this is black
 		m_protect.left = m_protect.right = &m_protect;
-		m_protect.SetParent(&m_protect);
+		m_protect.parent = &m_protect;
 		m_root = &m_protect;
 	}
 

@@ -67,11 +67,12 @@ inline void MemSetAligned32(void* dst, char val, uint64_t sizeInBytes)
     while (dp < end) *dp++ = d4;
 }
 
+// use size for struct/class types such as Vector3 and Matrix4, 
+// leave as zero size constant for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
 inline void MemSet(void* dst, char val, uint64_t sizeInBytes)
 {
     if constexpr (size)
-    // use this for struct/class types such as Vector3 and Matrix4, and use MemSet for big arrays or unknown size arrays
     #ifdef _MSC_VER
         __stosb((unsigned char*)dst, (unsigned char)val, size);
     #else
@@ -133,11 +134,11 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
     while (sp < end) *dp++ = *sp++;
 }
 
+// use size for struct/class types such as Vector3 and Matrix4,
+// and use MemCpy for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
 inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
 {
-    // use this for struct/class types such as Vector3 and Matrix4,
-    // and use MemCpy for big arrays or unknown size arrays
     if constexpr (size != 0)
 #ifdef _MSC_VER
     __movsb((unsigned char*)dst, (unsigned char const*)src, size);
@@ -244,7 +245,7 @@ struct MallocAllocator
 template<typename T>
 struct FixedSizeGrowableAllocator
 {
-    static constexpr int InitialSize = 512 / Min((int)sizeof(T), 128);
+    static constexpr int InitialSize = NextPowerOf2(512 / Min((int)sizeof(T), 128));
 
     struct Fragment
     {

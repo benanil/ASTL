@@ -5,7 +5,7 @@ For compatibility I've used lots of macros in Common.hpp but still we have platf
 Also I've avoided most of the modern C++ features <br>
 feel free to contribute, use, modify or oppening PR<br>
 I havent used any C++ headers except thread and atomic. (by default threading is not compiled activate with ASTL_MULTI_THREADING)<br>
-also I havent used any C headers except <stdint.h>. and in msvc <intrin.h> (for SIMD) <br>
+also I havent used any C headers except <intrin.h> (for SIMD) <br>
 Goal is make this library compile as fast as possible,  easy to use. and easy to read <br>
 I have Hash functions and Random number generators in Random.hpp. <br>
 Matrix4 and Vector4 uses SIMD extensions(SSE3)<br>
@@ -33,6 +33,43 @@ record.normal = Vector3f::Normalize((n0 * baryCentrics.x) + (n1 * baryCentrics.y
 
 Vector2i x = Vector2i(1, 1) + Vector2(2, 2);
 float length =  ToVector2f(x).Length();
+
+// from Math.hpp
+// https://mazzo.li/posts/vectorized-atan2.html
+FINLINE constexpr float ATan(float x) {
+	const float x_sq = x * x;
+	constexpr float a1 =  0.99997726f, a3 = -0.33262347f, a5  = 0.19354346f,
+	                a7 = -0.11643287f, a9 =  0.05265332f, a11 = -0.01172120f;
+	return x * (a1 + x_sq * (a3 + x_sq * (a5 + x_sq * (a7 + x_sq * (a9 + x_sq * a11)))));
+}
+
+FINLINE constexpr float ATan2(float y, float x) {
+	// from here: https://yal.cc/fast-atan2/  
+	float ay = Abs(y), ax = Abs(x);
+	int invert = ay > ax;
+	float z = invert ? ax/ay : ay/ax;// [0,1]
+	float th = ATan(z);              // [0,π/4]
+	if(invert) th = PIDiv2 - th;     // [0,π/2]
+	if(x < 0)  th = PI - th;         // [0,π]
+	return CopySign(th, y);          // [-π,π] 
+}
+
+FINLINE float ASin(float z) 
+{
+	return ATan2(z, Sqrt(1.0f-(z * z)));
+}
+
+// https://en.wikipedia.org/wiki/Sine_and_cosine
+// warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
+FINLINE constexpr float Sin(float x) 
+{
+	float xx = x * x * x;                // x^3
+	float t = x - (xx * 0.16666666666f); // x3/!3  6 = !3 = 1.6666 = rcp(3)
+	t += (xx *= x * x) * 0.00833333333f; // x5/!5  120 = !5 = 0.0083 = rcp(5)
+	t -= (xx *= x * x) * 0.00019841269f; // x7/!7  5040 = !7
+	t += (xx * x * x)  * 2.75573e-06f;   // 362880 = !9
+	return t;
+}
 ```
 <br>
 HashMap uses Ankerl's algorithm (way faster than std::unordered_map and uses contigues memory)<br>

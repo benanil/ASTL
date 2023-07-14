@@ -187,21 +187,34 @@ int main()
 #include "String.hpp"
 #include "Array.hpp"
 #include "Math/Vector.hpp"
-#include "RBTree.hpp"
 #include "RedBlackTree.hpp"
 
 #include <stdio.h>
 #include <memory.h>
 #include <iostream>
-#include <chrono>
+#include "Timer.hpp"
+
+unsigned long long traverseSum = 0ull;
 
 void Travert(unsigned long long& val)
 {
-    printf("%llu\n", val);
+  traverseSum += val;
+  // printf("%llu\n", val);
 }
 
 int main()
 {
+    PriorityQueue<int> pq{};
+    for (int i = 0; i < 123; i++)
+        pq.Push(i);
+    
+    pq.Pop();
+    pq.Pop();
+    pq.Pop();
+    pq.Pop();
+
+    printf("pq min: %i\n", pq.Peek());
+    
     unsigned long long arr[1234];
     MemSet<8>(arr, 0, 1234 * 8);
     
@@ -227,7 +240,12 @@ int main()
     printf("is contains: %i\n", map.Contains(552));
     printf("root data: %llu\n", map.m_root->value);
 
-    map.Traverse(Travert);
+    {
+      CSTIMER("traverse time");
+      map.Traverse(Travert);
+      map.Traverse(Travert);
+      printf("total sum: %llu ", traverseSum);
+    }
 
     bool containsAll = 1;
     for (int i = 0; i <= 1000; i++)
