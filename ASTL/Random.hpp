@@ -181,7 +181,11 @@ inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
 	for (size_t i = len >> 2; i; i--) {
 		// Here is a source of differing results across endiannesses.
 		// A swap here has no effects on hash properties though.
-		MemCpy<4, 4>(&k, key, 4);
+#ifdef _MSC_VER // MemCpy<4, 4>(&k, key, 4);
+		__movsb((unsigned char*)&k, key, sizeof(uint64));
+#else
+		__builtin_memcpy(&k, key, sizeof(uint64_t));
+#endif
 		key += sizeof(uint32_t);
 		h ^= murmur_32_scramble(k);
 		h = (h << 13) | (h >> 19);
@@ -218,9 +222,12 @@ inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
 
 	while (data != end)
 	{
-		uint64 k = *data++;
-		MemCpy<8, 8>(&k, data++);
-		
+		uint64 k;
+#ifdef _MSC_VER // MemCpy<8, 8>(&k, data++);
+		__movsb((unsigned char*)&k, (unsigned char const*)data, sizeof(uint64)); data++;
+#else
+		__builtin_memcpy(&k, data++, sizeof(uint64_t));
+#endif
 		k *= m;
 		k ^= k >> r;
 		k *= m;
