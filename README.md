@@ -373,8 +373,8 @@ struct FixedSizeGrowableAllocator // for red black tree
 
 # Algorithms
 
-"Algorithms.hpp" Header is simple, only 280 line open to sugesstions and improvements.
-it includes number parsing, sorting it does the job of <algorithm> header 
+The Algorithms component offers additional algorithms, including number parsing and sorting.<br>
+The header file is concise, with only 280 lines, providing a simple and efficient implementation.<br>
 
 Also Bitset.hpp for fast bitsets (SIMD optimized). Bitset1024, Bitset512, Bitset256 or Bitset<1234> instead of std::bitset <br>
 
