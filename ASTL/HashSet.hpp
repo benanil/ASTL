@@ -56,16 +56,16 @@ class HashSet
         uint32_t valueIdx;            // index into the m_values vector.
     };
 
-    static constexpr uint8_t initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
+    static constexpr uint8 initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
     static constexpr float default_max_load_factor = 0.8F;
 
     Array<KeyT, AllocatorT> m_keys{};
     Array<Bucket, MallocAllocator<Bucket>> m_buckets {16u};
  
-    uint32 m_num_buckets         = 0;
-    uint32 m_max_bucket_capacity = 0;
-    float m_max_load_factor      = default_max_load_factor;
-    uint8_t m_shifts             = initial_shifts;
+    uint32_t m_num_buckets         = 0;
+    uint32_t m_max_bucket_capacity = 0;
+    float    m_max_load_factor     = default_max_load_factor;
+    uint8_t  m_shifts              = initial_shifts;
 
 private:
     uint32 Next(uint bucketIdx) const {
@@ -126,7 +126,7 @@ private:
         uint8 shifts = initial_shifts;
 
         while (shifts > 0 && uint32(float(CalcNumBuckets(shifts)) * m_max_load_factor) < s)
-            --shifts;
+            --shifts;   
         
         return shifts;
     }
@@ -140,7 +140,7 @@ private:
 
     void CopyBuckets(const HashSet& other)
     {
-        if (!IsEmpty()) return;
+        if (!Empty()) return;
 
         m_shifts = other.m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts));
@@ -162,7 +162,7 @@ private:
 
     void ClearAndFillBucketsFromValues() 
     {
-        MemSet(m_buckets.Data(), 0, m_num_buckets * sizeof(Bucket));
+        MemSet<alignof(Bucket)>(m_buckets.Data(), 0, m_num_buckets * sizeof(Bucket));
 
         for (uint32 value_idx = 0u,
             end_idx = uint32(m_keys.Size());
@@ -178,7 +178,7 @@ private:
 
     void IncreaseSize()
     {
-        Assert(m_max_bucket_capacity != MaxSize());
+        ASSERT(m_max_bucket_capacity != MaxSize());
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // DeallocateBuckets(); AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();
@@ -275,7 +275,7 @@ private:
 
     ConstIterator DoFind(KeyT key) const
     {
-        if (AX_UNLIKELY(IsEmpty()))
+        if (AX_UNLIKELY(Empty()))
             return cend();
 
         uint64 mh                 = HasherT::Hash(key);
@@ -382,7 +382,7 @@ public:
     Iterator  end()               { return m_keys.end(); }
 
     bool IsFull()  const { return Size() >= m_max_bucket_capacity; }
-    bool IsEmpty() const { return m_keys.Size() == 0; }
+    bool Empty() const { return m_keys.Size() == 0; }
     uint32 Size()  const { return m_keys.Size(); }
     uint32 size()  const { return m_keys.Size(); }
 
@@ -408,7 +408,7 @@ public:
 
     ConstIterator Erase(ConstIterator it)
     {
-        uint64 hash             = HasherT::Hash(it->key);
+        uint64 hash             = HasherT::Hash(*it);
         uint32 bucketIdx        = BucketIdxFromHash(hash);
         uint32 valueIdxToRemove = uint32(PointerDistance(cbegin(), it));
 
@@ -421,7 +421,7 @@ public:
 
     uint32 Erase(const KeyT& key)
     {
-        if (IsEmpty()) return 0u;
+        if (Empty()) return 0u;
     
         const Bucket bucket       = NextWhileLess(key);
         uint32 distAndFingerprint = bucket.distAndFingerprint;
@@ -508,13 +508,8 @@ public:
     }
 #ifdef ASTL_STL_COMPATIBLE
     // stl compatibility
-    bool contains(KeyT const& key) const
-    {
-      return DoFind(key) != cend();
-    }
-
-    Iterator insert(const KeyT& key) {
-      return DoTryInsert(key).first;
-    }
+    bool contains(KeyT const& key) const { return DoFind(key) != cend(); }
+    uint32 erase(const KeyT& key)        { return Erase(key); }
+    Iterator insert(const KeyT& key)     { return DoTryInsert(key).first; }
 #endif
 };

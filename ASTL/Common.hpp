@@ -1,7 +1,6 @@
 #pragma once
 
-#define _CRT_SECURE_NO_WARNINGS 1
-#include <stdint.h>
+#include "IntFltTypesLimits.h"
 
 #if AX_SHARED
 #ifdef AX_EXPORT
@@ -155,14 +154,14 @@
 #if (defined(AX_X64) || defined(AX_X86)) && !defined(__COSMOPOLITAN__)
     #if defined(_MSC_VER) && !defined(__clang__)
         #if _MSC_VER >= 1400 && !defined(AX_NO_SSE2)   /* 2005 */
-            #define AX_SUPPORT_SSE2
+            #define AX_SUPPORT_SSE
         #endif
         #if _MSC_VER >= 1700 && !defined(AX_NO_AVX2)   /* 2012 */
             #define AX_SUPPORT_AVX2
         #endif
     #else
         #if defined(__SSE2__) && !defined(AX_NO_SSE2)
-            #define AX_SUPPORT_SSE2
+            #define AX_SUPPORT_SSE
         #endif
         #if defined(__AVX2__) && !defined(AX_NO_AVX2)
             #define AX_SUPPORT_AVX2
@@ -171,8 +170,8 @@
 
     /* If at this point we still haven't determined compiler support for the intrinsics just fall back to __has_include. */
     #if !defined(__GNUC__) && !defined(__clang__) && defined(__has_include)
-        #if !defined(AX_SUPPORT_SSE2)   && !defined(AX_NO_SSE2)   && __has_include(<emmintrin.h>)
-            #define AX_SUPPORT_SSE2
+        #if !defined(AX_SUPPORT_SSE)   && !defined(AX_NO_SSE2)   && __has_include(<emmintrin.h>)
+            #define AX_SUPPORT_SSE
         #endif
         #if !defined(AX_SUPPORT_AVX2)   && !defined(AX_NO_AVX2)   && __has_include(<immintrin.h>)
             #define AX_SUPPORT_AVX2
@@ -181,21 +180,10 @@
 
     #if defined(AX_SUPPORT_AVX2) || defined(AX_SUPPORT_AVX)
         #include <immintrin.h>
-    #elif defined(AX_SUPPORT_SSE2)
+    #elif defined(AX_SUPPORT_SSE)
         #include <emmintrin.h>
     #endif
 #endif
-
-FINLINE uint64_t ReadTimeStampCount()
-{
-#ifdef _MSC_VER
-  return __rdtsc();
-#else
-  uint64_t tsc;
-  __asm__ volatile("rdtsc" : "=A" (tsc));
-  return tsc;
-#endif
-}
 
 template<typename T>
 FINLINE constexpr T PopCount(T x)
@@ -203,7 +191,7 @@ FINLINE constexpr T PopCount(T x)
     // according to intel intrinsic, popcnt instruction is 3 cycle (equal to mulps, addps) 
     // throughput is even double of mulps and addps which is 1.0 (%100)
     // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 	if      constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
     else if constexpr (sizeof(T) == 8) return _mm_popcnt_u64(x);
 #elif defined(__GNUC__) && !defined(__MINGW32__)
@@ -264,17 +252,6 @@ FINLINE constexpr To BitCast(const From& _Val) {
 	return __builtin_bit_cast(To, _Val);
 }
 
-typedef int64_t int64;
-
-typedef uint16_t ushort;
-typedef uint32_t uint  ;
-typedef uint64_t ulong ;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
 template<typename T> FINLINE constexpr T Min(T a, T b) { return a < b ? a : b; }
 template<typename T> FINLINE constexpr T Max(T a, T b) { return a > b ? a : b; }
 template<typename T> FINLINE constexpr T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
@@ -285,8 +262,15 @@ constexpr int NextPowerOf2(int x)
     x--;
     x |= x >> 1; x |= x >> 2; x |= x >> 4;
     x |= x >> 8; x |= x >> 16;
-    x++;
-    return x;
+    return ++x;
+}
+
+constexpr int64_t NextPowerOf2(int64_t x)
+{
+    x--;
+    x |= x >> 1; x |= x >> 2;  x |= x >> 4;
+    x |= x >> 8; x |= x >> 16; x |= x >> 32;
+    return ++x;
 }
 
 template<> FINLINE constexpr float Abs(float x)
@@ -346,7 +330,7 @@ struct Pair
 template<typename KeyT, typename ValueT>
 struct KeyValuePair
 {
-    KeyT key{};
+    KeyT   key{};
     ValueT value{};
 
     KeyValuePair() {}
@@ -359,19 +343,4 @@ struct KeyValuePair
     bool operator != (const KeyValuePair& other) {
         return key != other.key || value != other.value;
     }
-};
-
-template<typename T>
-struct Span
-{
-    T*  ptr  = nullptr; 
-    int size = 0;
-
-    Span() {}
-    Span(T* ptr_, int size_) : ptr(ptr_), size(size_) {}
-
-    const T* begin() const { return ptr; }
-    const T* end()   const { return ptr + size; }
-    T* begin() { return ptr; }
-    T* end()   { return ptr + size; }
 };

@@ -24,7 +24,7 @@ public:
 		: parent(protect), left(protect), right(protect) 
 		{ }
 
-        // set as red by default		
+		// set as red by default		
 		Node(ValueT val, Node* parent_, Node* protect)
 		: parent((Node*)(0x1ull | (uint64)parent_)), left(protect), right(protect), value((ValueT&&)val)
 		{  }
@@ -40,7 +40,7 @@ public:
 		void SetRed()   { parent = (Node*)((uint64_t)parent | 0x1ull); }  
 		void SetBlack() { parent = (Node*)((uint64_t)parent & ~0x1ull); }
 
-		bool GetColor() { return IsRed(); }
+		bool GetColor() const { return IsRed(); }
 		void SetColor(bool isRed)
 		{
 			parent = (Node*)(uint64_t(isRed) | ((uint64_t)parent & ~0x1ull));
@@ -55,7 +55,7 @@ public:
 		}
 	};
 
-    Node* m_root = nullptr;
+	Node* m_root = nullptr;
 	FixedSizeGrowableAllocator<Node> m_allocator{};
 	static Node m_protect;
 
@@ -67,12 +67,14 @@ public:
 		m_root = &m_protect;
 	}
 
-    ~RedBlackTree()
+	~RedBlackTree()
 	{
 		Clear();
 	}
 
 	const Node* Nil() const { return &m_protect; }
+
+	bool Empty() const { return m_root == nullptr || m_root = &m_protect; }
 
 	template<typename...Args>
 	Node* Insert(Args&&... args)
@@ -94,8 +96,8 @@ public:
 		if (parent != &m_protect)
 			if (value < parent->value)
 				parent->left = added;
-			else
-				parent->right = added;
+		else
+			parent->right = added;
 		else 
 			m_root = added;
 
@@ -119,11 +121,11 @@ public:
 
 		Node* added = AllocateNode(value, parent);
 		
-        if (parent != &m_protect)
+		if (parent != &m_protect)
 			if (value < parent->value)
 				parent->left = added;
-			else
-				parent->right = added;
+		else
+			parent->right = added;
 		else 
 			m_root = added;
 
@@ -180,7 +182,7 @@ public:
 		Validate();
 	}
 
-    Node* FindNode(const ValueT& key)
+	Node* FindNode(const ValueT& key)
 	{
 		Node* node = m_root;
 		while (node != &m_protect)
@@ -220,7 +222,7 @@ public:
 
 	void Traverse(TraverseFunc func)
 	{
-		if (m_root)
+		if (m_root && m_root != &m_protect)
 			TraverseNode(m_root, func);
 	}
 
@@ -273,7 +275,7 @@ public:
 
 	int NumNodes(const Node* n) const
 	{
-        return n == &m_protect ? nullptr : 1 + NumNodes(n->left) + NumNodes(n->right);
+		return n == &m_protect ? nullptr : 1 + NumNodes(n->left) + NumNodes(n->right);
 	}
 
 	void InsertFixup(Node* new_node)
@@ -409,11 +411,11 @@ public:
 	}
 
 #if 1 && defined(_DEBUG)
-    void ValidateNodeRec(Node* n) const
+	void ValidateNodeRec(Node* n) const
 	{
 		if (m_root == nullptr || m_root == &m_protect) return;
 		ASSERT(n->GetParent() == &m_protect ||
-			n->GetParent()->left == n || n->GetParent()->right == n);
+		       n->GetParent()->left == n || n->GetParent()->right == n);
 		
 		if (n->IsRed())
 		{
@@ -432,7 +434,7 @@ public:
 		ValidateNodeRec(m_root);
 	}
 #else
-    void Validate() const { }
+	void Validate() const { }
 #endif
 
 	void RotateLeft(Node* node)
@@ -472,8 +474,8 @@ public:
 		else
 			if (node == node->GetParent()->left)
 				node->GetParent()->left = leftChild;
-			else
-				node->GetParent()->right = leftChild;
+		else
+			node->GetParent()->right = leftChild;
 		
 		leftChild->right = node;
 		node->SetParent(leftChild);
@@ -481,14 +483,24 @@ public:
 
 	Node* AllocateNode(const ValueT& value, Node* parent)
 	{
-		return m_allocator.Allocate(value, parent, &m_protect);
+		Node* node   = (Node*)m_allocator.AllocateUninitialized(1);
+		node->value  = value;
+		node->parent = parent;
+		node->right  = node->left = &m_protect;
+		node->SetRed();
+		return node;
 	}
 	
 	template<typename... Args>
 	Node* AllocateNode(Node* parent, Args&&... args)
 	{
 		ValueT val(Forward<Args>(args)...);
-		return m_allocator.Allocate(Forward<ValueT>(val), parent, &m_protect);
+		Node* node   = (Node*)m_allocator.AllocateUninitialized(1);
+		node->value  = (ValueT&&)val;
+		node->parent = parent;
+		node->right  = node->left = &m_protect;
+		node->SetRed();
+		return node;
 	}
 
 	void FreeNode(Node* n, bool recursive)

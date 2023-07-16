@@ -189,7 +189,7 @@ public:
 	ConstIterator cend()   const  { return { ptr, capacity, front }; }
 
 	bool Any()     const { return Size() > 0;  }
-	bool IsEmpty() const { return Size() == 0; }
+	bool Empty() const { return Size() == 0; }
 
 	template<typename... Args>
 	ValueT& Emplace(Args&&... args)
@@ -333,79 +333,69 @@ private:
 /////   PriorityQueue /////
 
 
-enum Compare
+enum PQCompare
 {
-	Compare_Less    = 0,
-	Compare_Equal   = 1,
-	Compare_Greater = 2
+	PQCompare_Less    = 0,
+	PQCompare_Greater = 1
 };
 
-template<typename T, Compare op>
-struct Comparer
-{
-	static bool Compare(const T& a, const T& b)
-	{
-		if constexpr (op == Compare_Less)    return a < b;
-		if constexpr (op == Compare_Equal)   return a == b;
-		if constexpr (op == Compare_Greater) return a > b;
-		else static_assert(true && "undefined operator");
-	}
-};
+// https://github.com/lemire/FastPriorityQueue.js/blob/master/FastPriorityQueue.js
 
 template<typename T, 
-         typename ComparerT comp = Comparer<T, Compare_Less>,
-         typename AllocatorT     = Allocator<T>>
-class PriorityQueue
+	PQCompare compare = PQCompare_Less,
+	typename AllocatorT = Allocator<T>>
+class PriorityQueue 
 {
-    // we don't want to use same initial size for all data types because we want 
-	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-	static constexpr int InitialSize = 512 / Min((int)sizeof(T), 128);
 public:
-	T*      array    = nullptr;
-	int     size     = 0;
-	int     capacity = 0;
+    // we don't want to use same initial size for all data types because we want 
+    // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
+    static constexpr int InitialSize = 512 / Min((int)sizeof(T), 128);
+	
+	T*         heap     = nullptr;
+	int        size     = 0;
+	int        capacity = 0;
 	AllocatorT allocator;
-
-	PriorityQueue() {}
+	
+	PriorityQueue() : heap(nullptr), size(0), capacity(0) {}
 	
 	~PriorityQueue()
 	{
-		if (array)
+		if (heap)
 		{
-			allocator.Deallocate(array, capacity);
-			array = nullptr;
+			allocator.Deallocate(heap, capacity);
+			heap = nullptr;
 			size  = capacity = 0;
 		}
 	}
 
-	explicit Stack(int _size) : size(0), capacity(CalculateArrayGrowth(_size)) 
+	explicit PriorityQueue(int _size) : size(0), capacity(CalculateArrayGrowth(_size)) 
 	{
-		array = allocator.AllocateUninitialized(capacity);
+		heap = allocator.AllocateUninitialized(capacity);
 	}
-	
+
+	PriorityQueue(const T* begin, const T* end) : heap(nullptr), size(0), capacity(0) 
+	{
+		Push(begin, end); 
+	}
+
 	PriorityQueue& operator=(const PriorityQueue& other) 	
 	{
 	    if (this != &other) 
 		{
 		    if (other.size > capacity) 
 				GrowIfNecessarry(other.size - capacity);
-			Copy(array, other.array, other.size);
+			Copy(heap, other.heap, other.size);
 	        size = other.size;
 	    }
 	    return *this;
 	}
+private:
 
-	// move constructor 
-	PriorityQueue(PriorityQueue&& other)
+	static bool Compare(const T& a, const T& b)
 	{
-		if (ptr != nullptr)
-			allocator.Deallocate(ptr, capacity);
-
-		size      = other.size;
-		capacity  = other.capacity;
-		ptr       = other.ptr;
-		other.ptr = nullptr;
-		other.size = other.capacity = 0;
+		if constexpr (compare == PQCompare_Less)    return a < b;
+		if constexpr (compare == PQCompare_Greater) return a > b;
+		else { ASSERT(0); return 0; }
 	}
 
 	void GrowIfNecessarry(int adition)
@@ -413,144 +403,101 @@ public:
 		if (size + adition >= capacity)
 		{
 			int newCapacity = Max(CalculateArrayGrowth(size + adition), InitialSize);
-			if (array)
-				array = allocator.Reallocate(array, capacity, newCapacity);
+			if (heap)
+				heap = allocator.Reallocate(heap, capacity, newCapacity);
 			else
-				array = allocator.Allocate(newCapacity);
+				heap = allocator.Allocate(newCapacity);
 			capacity = newCapacity;
 		}
 	}
 
-	int InsertFixup(int i, const T& myval)
+	void HeapifyUp(int index, bool force = false) 
 	{
-		while (i > 0) 
+		while (index != 0)
 		{
-			int p  = (i - 1) >> 1;
-			if (!ComparerT::Compare(myval, array[p]))
-				break;
-            
-			array[i] = (T&&)array[p];
-			i = p;
+			int parent = (index - 1) >> 1;
+			
+			if (Compare(heap[parent], heap[index]))
+			{
+				Swap(heap[parent], heap[index]);
+				index = parent;
+			}
+			else break;
 		}
-		return i;
 	}
 
-	void Push(const T& myval) 
+	void HeapifyDown(int index) 
+	{
+		while (true)
+		{
+			int leftChild  = (index << 1) + 1;
+			int rightChild = leftChild + 1;
+			int largest    = index;
+
+			if (leftChild < size && !Compare(heap[leftChild], heap[largest]))
+				largest = leftChild;
+
+			if (rightChild < size && !Compare(heap[rightChild], heap[largest]))
+				largest = rightChild;
+
+			if (largest != index) 
+			{
+				Swap(heap[index], heap[largest]);
+				index = largest;
+			}
+			else break;
+		}
+	}
+
+public:
+
+	bool Empty() const { return size == 0; }
+
+	void Push(const T& value) 
 	{
 		GrowIfNecessarry(1);
-		int i = size++;
-		i = InsertFixup(i, myval);
-		array[i] = (T&&)myval;
+		heap[size++] = value; 
+		HeapifyUp(size - 1); 
+	}
+	
+	T RemoveAt(int index)
+	{
+		ASSERT(!(index > this->size - 1 || index < 0));
+		T res = (T&&)heap[index];
+		HeapifyUp(index, true);
+		size--;
+		return res;
 	}
 
-	template<typename ... Args>
+	template<typename... Args>
 	void Emplace(Args&&... args) 
 	{
 		GrowIfNecessarry(1);
-		T myval(Forward<Args>(args)...);
-
-		int i = size++;
-		i = InsertFixup(i, myval);
-		
-		array[i] = (T&&)myval;
+		T t(Forward<Args>(args)...);
+		heap[size] = (T&&)t;
+		HeapifyUp(size++);
 	}
 
-	bool Remove(const T& myval) 
+	void Pop()
 	{
-		for (int i = 0; i < this->size; i++) 
-		{
-			if (this->array[i] == myval) 
-			{
-				RemoveAt(i);
-				return true;
-			}
-		}
-		return false;
+		ASSERT(!Empty());
+		Swap(heap[0], heap[--size]);
+		heap[size].~T();
+		HeapifyDown(0);
 	}
 
-	T RemoveAt(int index) 
-	{
-		ASSERT(!(index > this->size - 1 || index < 0));
-		PercolateUp(index, true);
-		return this->Pop();
+	const T& Top() const {
+		ASSERT(!Empty());
+		return heap[0];
 	}
 
-	void PercolateUp(int i, bool force = false)
-	{
-		T myval = (T&&)array[i];
-		while (i > 0) 
-		{
-			int p  = (i - 1) >> 1;
-			
-			if (!force && !ComparerT::Compare(myval, array[p]))
- 				break;
-			
-			array[i] = (T&&)array[p];
-			i = p;
-    	}
-		array[i] = (T&&)myval;
-	}
+#ifdef ASTL_STL_COMPATIBLE
+	bool empty() const { return size == 0; }
+	void push(const T& value) { Push(value); }
+	template<typename... Args>
+	void emplace(Args && ... args) { Emplace(Forward<Args>(args)...); }
+	void pop() { Pop(); }
+	const T& top() const { return Top(); }
+#endif
 
-	void PercolateDown(int i) 
-	{
-		int size  = this->size;
-		int hsize = this->size >> 1;
-		T ai = (T&&)array[i];
-
-		while (i < hsize)
-		{
-			int l = (i << 1) + 1;
-			int r = l + 1;
-			
-			if (r < size)
-			{
-				if (ComparerT::Compare(array[r], array[l]))
-				{
-					l = r;
-				}
-			}
-			
-			if (!ComparerT::Compare(array[l], ai))
-				break;
-			
-			array[i] = (T&&)array[l];
-			i = l;
-		}
-		array[i] = (T&&)ai;
-	}
-
-	const T* begin() const { return this->array; }
-	const T* end()   const { return this->array + size; }
-	T* begin() { return this->array; }
-	T* end() { return this->array + size; }
-
-	const T& Peek() const 
-	{
-		return array[0];
-	}
-
-	T Pop() 
-	{
-		ASSERT(size != 0);
-		T ans = (T&&)array[0];
-		if (size-- > 1) 
-		{
-			array[0] = array[size];
-			PercolateDown(0);
-		} 
-		return ans;
-	}
-
-	bool IsEmpty() const { return size == 0; }
-	bool     Any() const { return size >  0; }					
-	
-	void Clear()  
-	{
-		if (capacity != InitialSize)
-		{
-			if (array)
-				allocator.Deallocate(array, capacity);
-			size = capacity = 0; 
-		}
-	}
 };

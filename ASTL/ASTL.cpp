@@ -1,78 +1,26 @@
 
-#ifdef __HashMapTest
-
+#include "Queue.hpp"
+#include "Stack.hpp"
+#include "String.hpp"
+#include "Array.hpp"
 #include "HashMap.hpp"
 #include "HashSet.hpp"
-#include "DenseHashMap.hpp"
-#include <unordered_map>
-#include "Timer.hpp"
-#include <string.h>
-#include <assert.h>
+#include "RedBlackTree.hpp"
+#include "Math/Vector.hpp"
 #include "String.hpp"
 
-template <typename MapT> void TestMap(const char *name, MapT &map) {
-  printf("\n%s BEGIN\n", name);
+#include <stdio.h>
+#include "Timer.hpp"
 
-  CSTIMER("total speed: ");
+extern void AdventOfCodeTests();
 
-  {
-    CSTIMER("insert speed: ");
-    uint64 pw = 1ull;
-    for (uint64 i = 0ull; i < 90000ull; ++i) {
-      map.TryEmplace(pw, "123");
-      pw += 331ull;
-    }
-  }
 
-  {
-    CSTIMER("contains speed: ");
-    uint64 pw = 1ull;
-    uint64 numContains = 0ull;
-
-    for (uint64 i = 0ull; i < 90000ull; ++i) {
-      numContains += map.Find(pw) != map.cend();
-      pw += 331ull;
-    }
-    printf("numContains: %i\n", numContains);
-  }
-
-  {
-    CSTIMER("Iteration speed: ");
-    uint64 keySum = 0ull;
-    uint64 valueSum = 0ull;
-  
-    for (const auto &val : map) {
-        keySum += val.key;
-        valueSum += val.value.Length();
-    }
-    printf("key sum: %lu, value sum: %lu\n", keySum, valueSum);
-  }
-  
-  {
-    CSTIMER("Erase speed: ");
-    uint64 pw = 1ull;
-    for (uint64 i = 0ull; i < 90000ull; ++i) {
-      map.Erase((int)pw);
-      pw += 331ull;
-    }
-  }
-
-  printf("%s END\n", name);
-}
-
-void PassingToConstFunction(const HashMap<int, String>& hashMap)
-{
-    bool containsAll = true;
-    int pw = 1;
-    printf("ours %s the test\n", containsAll ? "passed" : "failed");
-}
-
-int ints[13] { 23, 456, 789, 42,
+int ints[13]{ 23, 456, 789, 42,
                8675309, 555, 999,
-               314159, 271828, 777, 
+               314159, 271828, 777,
                888, 666, 99999 };
 
-void PassingToConstFunction( HashSet<int>& testSet)
+void PassingToConstFunction(HashSet<int>& testSet)
 {
     bool allExist = true;
     for (int i = 0; i < 13; ++i)
@@ -85,20 +33,73 @@ void PassingToConstFunction( HashSet<int>& testSet)
         allExist &= testSet.Contains(ints[i]);
     }
     allExist &= testSet.Contains(213444590);
-    assert(allExist);
+    ASSERT(allExist);
     printf("ours %s the test\n", allExist ? "passed" : "failed");
+}
+
+
+template <typename MapT> void TestMap(const char* name, MapT& map) {
+    printf("\n%s BEGIN\n", name);
+
+    CSTIMER("total speed: ");
+
+    {
+        CSTIMER("insert speed: ");
+        uint64 pw = 1ull;
+        for (uint64 i = 0ull; i < 90000ull; ++i) {
+            map.TryEmplace(pw, "123");
+            pw += 331ull;
+        }
+    }
+
+    {
+        CSTIMER("contains speed: ");
+        uint64 pw = 1ull;
+        uint64 numContains = 0ull;
+
+        for (uint64 i = 0ull; i < 90000ull; ++i) {
+            numContains += map.Find(pw) != map.cend();
+            pw += 331ull;
+        }
+        printf("numContains: %i\n", numContains);
+    }
+
+    {
+        CSTIMER("Iteration speed: ");
+        uint64 keySum = 0ull;
+        uint64 valueSum = 0ull;
+
+        for (const auto& val : map) {
+            keySum += val.key;
+            valueSum += val.value.Length();
+        }
+        printf("key sum: %lu, value sum: %lu\n", keySum, valueSum);
+    }
+
+    {
+        CSTIMER("Erase speed: ");
+        uint64 pw = 1ull;
+        for (uint64 i = 0ull; i < 90000ull; ++i) {
+            map.Erase((int)pw);
+            pw += 331ull;
+        }
+    }
+
+    printf("%s END\n", name);
 }
 
 int main()
 {
+    AdventOfCodeTests();
+
     String testStr = "floating test: ";
     testStr += 1234.567f;
-    printf("%s\n", testStr.c_str());
-    
+    printf("%s\n", testStr.CStr());
+
     String testStr1 = "int test: ";
     testStr1 += 1234567;
-    printf("%s\n", testStr1.c_str());
-    
+    printf("%s\n", testStr1.CStr());
+
     static const KeyValuePair<int, String> testMapInitializer[13] =
     {
         { 23     , "apple"    },
@@ -115,274 +116,69 @@ int main()
         { 666    , "lemon"    },
         { 99999  , "monkey"   }
     };
-    
+
     static HashMap<int, String> testMap(testMapInitializer, 13);
-            
+
     testMap[4] = "no its five";
-    
+
     String strings[13] = {
         "apple", "banana", "cherry", "dog", "elephant", "frog", "guitar",
         "house", "igloo", "jigsaw", "kangaroo", "lemon", "monkey"
-    };       
-    
+    };
+
     Array<String> strs{};
-    
+
     for (int i = 0; i < 13; ++i)
     {
         strs.Add(strings[i]);
     }
-    
+
     strs.RemoveAt(3, 3);
-    
+
     for (int i = 0; i < strs.Size(); ++i)
     {
         printf("%s \n", strs[i].c_str());
     }
-    
-    for (const auto&[key, value] : testMap)
+
+    for (const KeyValuePair<int, String>& x : testMap)
     {
-        printf("%i, %s\n", key, value.CStr());
+        printf("%i, %s\n", x.key, x.value.CStr());
     }
     ASSERT(testMap[99999] == String("monkey"));
-    
+
     HashSet<int> testSet{};
     testSet.Insert(213444590);
-    
+
     PassingToConstFunction(testSet);
-    
+
     HashMap<int, String> ourMap = testMap;
-    
+
     TestMap("ourMap", ourMap);
-    
-    PassingToConstFunction(ourMap);
-    
+
+    PassingToConstFunction(testSet);
+
     String num = ourMap[4];
     ASSERT(num == String("no its five"));
     bool finded1 = ourMap.Find(5ull) != ourMap.end();
     ASSERT(finded1 == false);
-    
+
     String val1 = ourMap.At(4);
     ASSERT(val1 == String("no its five"));
-    
+
     ourMap.TryEmplace(33, "33ull");
-    
+
     bool contains1 = ourMap.Contains(33);
     ASSERT(contains1);
     ourMap.Erase(33);
-    
+
     contains1 = ourMap.Contains(33ull);
     ASSERT(!contains1);
-    
+
     ourMap.Insert(33, "33ull");
     contains1 = ourMap.Contains(33ull);
     ASSERT(contains1);
-    // printf("number of array:  alloc=%i, dealloc:%i\n", numberOfArrayAllocs, numberOfArrayDelete);
-    // printf("number of string: alloc=%i, dealloc:%i, copy:%i", numberOfStringAllocs, numberOfStringDelete, numStringCopy);
-    return 1;
-}
-#endif
-
-#include "Queue.hpp"
-#include "Stack.hpp"
-#include "String.hpp"
-#include "Array.hpp"
-#include "Math/Vector.hpp"
-#include "RedBlackTree.hpp"
-
-#include <stdio.h>
-#include <memory.h>
-#include <iostream>
-#include "Timer.hpp"
-
-unsigned long long traverseSum = 0ull;
-
-void Travert(unsigned long long& val)
-{
-  traverseSum += val;
-  // printf("%llu\n", val);
-}
-
-int main()
-{
-    PriorityQueue<int> pq{};
-    for (int i = 0; i < 123; i++)
-        pq.Push(i);
-    
-    pq.Pop();
-    pq.Pop();
-    pq.Pop();
-    pq.Pop();
-
-    printf("pq min: %i\n", pq.Peek());
-    
-    unsigned long long arr[1234];
-    MemSet<8>(arr, 0, 1234 * 8);
-    
-    for (int i = 0; i < 1234 ; i++)
-        ASSERT(arr[i] == 0ull);
-    
-    MemSet<8>(arr, 123, 1234 * 8);
-    
-    const char* carr = (const char*)arr;
-    for (int i = 0; i < 1234 * 8; i++)
-        ASSERT(carr [i] == 123);
-
-    RedBlackTree<unsigned long long> map{};
-    
-    Random::PCG pcg;
-    Random::PCGInitialize(pcg, 12345);
-
-    for (int i = 0; i <= 1000; i++)
-      map.Insert(Random::PCGNext(pcg) & 1023); // 
-
-    Random::PCGInitialize(pcg, 12345);
-    
-    printf("is contains: %i\n", map.Contains(552));
-    printf("root data: %llu\n", map.m_root->value);
-
-    {
-      CSTIMER("traverse time");
-      map.Traverse(Travert);
-      map.Traverse(Travert);
-      printf("total sum: %llu ", traverseSum);
-    }
-
-    bool containsAll = 1;
-    for (int i = 0; i <= 1000; i++)
-        containsAll &= map.Contains(Random::PCGNext(pcg) & 1023);
-    
-    ASSERT(containsAll);
-
-    Random::PCGInitialize(pcg, 12345);
-
-    for (int i = 0; i <= 1000; i++)
-        map.Erase(Random::PCGNext(pcg) & 1023);
-
-    map.Traverse(Travert);
-
-    /*
-
-    RedBlackTree rb{};
-    rb.insert(14);
-    rb.insert(15);
-
-    // compare
-    Stack<RedBlackTree::Node*> nodes;
-    Stack<RedBlackTree::Node*> rodes;
-    nodes.Push(map.root);
-    rodes.Push(rb.root);
-    
-    while (!nodes.IsEmpty())
-    {
-        RedBlackTree::Node* nt = nodes.Top();
-        RedBlackTree::Node* rt = rodes.Top();
-        
-        ASSERT(uint64(nt) > 0 == uint64(rt) > 0);
-        if (!rt) continue;
-
-        ASSERT(uint64(nodes.Top()->child[0]) > 0 == uint64(rodes.Top()->left) > 0);
-        ASSERT(uint64(nodes.Top()->child[1]) > 0 == uint64(rodes.Top()->right) > 0);
-        
-        if (nodes.Top()->child[0])
-        ASSERT(nodes.Top()->child[0]->data == rodes.Top()->left->key);
-        if (nodes.Top()->child[1])
-        ASSERT(nodes.Top()->child[1]->data == rodes.Top()->right->key);
-        nodes.Pop(), rodes.Pop();
-        
-        nodes.Push(nt->child[0]);
-        nodes.Push(nt->child[1]);
-
-        rodes.Push(rt->left);
-        rodes.Push(rt->right);
-    }
-    */
-
-    /*
-    constexpr size_t kBufferSize = 1456 << 4;
-    char src[kBufferSize];
-    char dest[kBufferSize];
-
-    constexpr int kNumRuns = 5000;
-
-    double my_memcpy_total_duration = 0.0;
-    double std_memcpy_total_duration = 0.0;
-
-    for (int i = 0; i < kNumRuns; ++i) {
-        // Measure the time taken by std::memcpy
-        auto start = std::chrono::high_resolution_clock::now();
-        memset(dest, 128, kBufferSize);
-        auto end = std::chrono::high_resolution_clock::now();
-        auto std_memcpy_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        std_memcpy_total_duration += std_memcpy_duration;
-    }
-
-    for (int i = 0; i < kNumRuns; ++i)
-    {
-        // Measure the time taken by your memcpy implementation
-        auto start = std::chrono::high_resolution_clock::now();
-        MemSet(dest, 0, kBufferSize);
-        auto end = std::chrono::high_resolution_clock::now();
-        auto my_memcpy_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        my_memcpy_total_duration += my_memcpy_duration;
-    }
-
-    double my_memcpy_avg_duration = my_memcpy_total_duration / kNumRuns;
-    double std_memcpy_avg_duration = std_memcpy_total_duration / kNumRuns;
-
-    std::cout << "MemCpy average duration: " << my_memcpy_avg_duration << " ns" << std::endl;
-    std::cout << "memcpy average duration: " << std_memcpy_avg_duration << " ns" << std::endl;
 
     return 0;
-  */
-    /*
-
-    Stack<uint64_t> stack{};
-    Array<uint64_t> stackArray;
-    uint64_t xoro[2];
-    Random::Xoroshiro128PlusInit(xoro);
-    char chr[9]{};
-
-    for (int i = 0; i < 10001; ++i)
-    {
-        uint64_t x = Random::Xoroshiro128Plus(xoro);
-        x &= ((1 << 15) - 1);
-        stackArray.Add(x);
-        stack.Push(x);
-    }
-    
-    uint64_t sameCount = 0;
-
-    while (stack.Any())
-    {
-        bool same = stack.Top() == stackArray.Back();
-        sameCount += same;
-        ASSERT(same);
-        stack.Pop();
-        stackArray.RemoveBack();
-    }
-    printf("stack is all same: %i\n", (int)sameCount);
-
-    printf("\n\n");
-
-    Queue<uint64_t> queue(33);
-    Array<uint64_t> queueArray(50);
-    for (int i = 0; i < 33; ++i)
-        queue.Enqueue(i), queueArray.EmplaceBack(i);
-
-    queue.Enqueue(97); queueArray.EmplaceBack(97);
-    queue.Enqueue(98); queueArray.EmplaceBack(98);
-    queue.Enqueue(98); queueArray.EmplaceBack(98);
-    queue.Enqueue(98); queueArray.EmplaceBack(98);
-    queue.Enqueue(98); queueArray.EmplaceBack(98);
-
-    for (int i = 0; i < 10; i++)
-        queue.Dequeue(), queueArray.RemoveAt(0);
-
-    Array<uint64_t>::Iterator ait = queueArray.begin();
-
-    while (!queue.IsEmpty())
-       printf("%i\n", queue.Dequeue() == *ait++);
-    */
 }
   
 #ifdef __NOTHING

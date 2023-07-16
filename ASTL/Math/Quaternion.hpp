@@ -2,7 +2,7 @@
 
 #include "Vector.hpp"
 
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 
 AX_ALIGNED(16) struct Quaternion
 {
@@ -179,4 +179,4 @@ AX_ALIGNED(16) struct Quaternion
 	FINLINE Quaternion operator *= (const Quaternion& b) { this->vec = Mul(this->vec, b.vec); return *this; }
 };
 
-#endif // AX_SUPPORT_SSE2
+#endif // AX_SUPPORT_SSE

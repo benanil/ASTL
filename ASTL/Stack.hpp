@@ -25,7 +25,8 @@ public:
 	
 	~Stack()
 	{ 
-		if (ptr) { 
+		if (ptr) 
+		{ 
 			allocator.Deallocate(ptr, capacity);
 			ptr  = nullptr; 
 			size = capacity = 0;
@@ -55,6 +56,7 @@ public:
 			size = other.Size();
 		}
 	}
+
 	// move constructor 
 	Stack(Stack&& other)
 	{
@@ -79,16 +81,16 @@ public:
 	const T& Top()     const { return ptr[size - 1]; }                                 
 	T&       Top()           { return ptr[size - 1]; }                                        
 	bool     Any()     const { return size >  0;     }								  
-	bool     IsEmpty() const { return size == 0;     } 								  
+	bool     Empty() const { return size == 0;     } 								  
 	
 	void Clear()  
 	{
-		if (capacity != InitialSize)
-		{
-			if (ptr)
-				allocator.Deallocate(ptr, capacity);
-		    size     = capacity = 0; 
-		}
+		if (ptr) 
+		{ 
+			allocator.Deallocate(ptr, capacity);
+			ptr  = nullptr; 
+			size = capacity = 0;
+		} 
 	}
 
 	template<typename ... Args>

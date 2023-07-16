@@ -236,7 +236,7 @@ struct Ray
 
 #include "SIMDCommon.hpp"
 
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 
 AX_ALIGNED(16) struct Vector4f
 {
@@ -273,7 +273,7 @@ AX_ALIGNED(16) struct Vector4f
 		return _mm_dp_ps(V1, V2, 0xff);
 	}
 
-	float Length() { return Sqrt(_mm_cvtss_f32(_mm_dp_ps(vec, vec, 0xff))); }
+	float Length() const { return Sqrt(_mm_cvtss_f32(_mm_dp_ps(vec, vec, 0xff))); }
 
 	Vector4f& Normalized() { vec = _mm_mul_ps(_mm_rsqrt_ps(_mm_dp_ps(vec, vec, 0xff)), vec); return *this; }
 
@@ -301,7 +301,7 @@ AX_ALIGNED(16) struct RaySSE
 	__m128 direction;
 };
 
-#endif // AX_SUPPORT_SSE2
+#endif // AX_SUPPORT_SSE
 
 #ifdef AX_SUPPORT_AVX2
 
@@ -322,6 +322,8 @@ AX_ALIGNED(32) struct Vector4d
 	constexpr Vector4d(double scale) : x(scale), y(scale), z(scale), w(scale) {}
 	constexpr Vector4d(__m256d _vec) : vec(_vec) {}
 	constexpr Vector4d(double _x, double _y, double _z, double _w) : x(_x), y(_y), z(_z), w(_w) {}
+
+	float Length() const { return _mm256_cvtsd_f64(_mm256_sqrt_pd(Dot(this->vec, this->vec))); }
 
 	FINLINE static __m256d VECTORCALL Normalize(__m256d V)
 	{
@@ -358,7 +360,7 @@ AX_ALIGNED(32) struct Vector4d
 
 #endif // AX_SUPPORT_AVX2
 
-#if !defined(AX_SUPPORT_SSE2 ) || !defined(AX_SUPPORT_AVX2)
+#if !defined(AX_SUPPORT_SSE ) || !defined(AX_SUPPORT_AVX2)
 template<typename T>
 struct Vector4
 {
@@ -392,7 +394,7 @@ struct Vector4
 		return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 	}
 
-	float Length() { return Sqrt(Dot(this)); }
+	float Length() const { return Sqrt(Dot(this)); }
 
 	Vector4& Normalized() { Vector4 norm = Normalize(this); x = norm.x; y = norm.y; z = norm.z; w = norm.w; return *this; }
 
@@ -420,12 +422,12 @@ struct Vector4
 	Vector4 operator -= (T o) { x -= o; y -= o; z -= o; w -= o; return *this; }
 	};
 
-#if !AX_SUPPORT_SSE2
+#if !AX_SUPPORT_SSE
 	using Vector4f = Vector4<float>;
 #endif
 #if !AX_SUPPORT_AVX2
 	using Vector4d = Vector4<double>;
-#endif // !AX_SUPPORT_SSE2
+#endif // !AX_SUPPORT_SSE
 
 #else
 	typedef Vector4f float4;

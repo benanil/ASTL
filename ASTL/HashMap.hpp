@@ -34,7 +34,7 @@
 /* example custom hasher
 template<> struct Hasher<int> 
 {
-    static FINLINE uint64 Hash(int obj) const {
+    static FINLINE uint64 Hash(int obj)  {
         return uint64(WangHash(x)) * 0x9ddfea08eb382d69ull;
     }
 };
@@ -140,7 +140,7 @@ private:
 
     void CopyBuckets(const HashMap& other)
     {
-        if (!IsEmpty()) return;
+        if (!Empty()) return;
         m_shifts = other.m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // AllocateBuffersFromShift();
         MemCpy<alignof(Bucket)>(&m_buckets[0], &other.m_buckets[0], m_num_buckets * sizeof(Bucket));
@@ -150,6 +150,7 @@ private:
     {
         m_num_buckets = numBuckets;
         m_buckets.Resize(m_num_buckets);
+
         if (AX_UNLIKELY(m_num_buckets == MaxSize())) {
             m_max_bucket_capacity = MaxSize();
         }
@@ -160,7 +161,7 @@ private:
 
     void ClearAndFillBucketsFromValues() 
     {
-        MemSet(m_buckets.Data(), 0, m_num_buckets * sizeof(Bucket));
+        MemSet<alignof(Bucket)>(m_buckets.Data(), 0, m_num_buckets * sizeof(Bucket));
 
         for (uint32 value_idx = 0u,
             end_idx = uint32(m_values.Size());
@@ -236,7 +237,7 @@ private:
             else if (distAndFootprint > bucket.distAndFingerprint)
             {
                 ValueT val(Forward<Args>(args)...);
-                KeyValuePair<KeyT, ValueT> p(Forward<KeyT>(key), Forward<ValueT>(val));
+                KeyValuePair<KeyT, ValueT> p((KeyT&&)key, (ValueT&&)val);
                 m_values.EmplaceBack(Forward<KeyValuePair<KeyT, ValueT>>(p));
                 uint32 valueIdx = uint32(m_values.Size()) - 1;
                 PlaceAndShiftUp({distAndFootprint, valueIdx}, bucketIdx);
@@ -281,7 +282,7 @@ private:
 
     ConstIterator DoFind(const KeyT& key) const
     {
-        if (AX_UNLIKELY(IsEmpty()))
+        if (AX_UNLIKELY(Empty()))
             return cend();
 
         uint64 mh                 = HasherT::Hash(key);
@@ -335,7 +336,8 @@ public:
 
     ValueT& At(KeyT const& key)
     {
-        if (Iterator it = (Iterator)Find(key); AX_LIKELY(end() != it))
+        Iterator it = (Iterator)Find(key);
+        if (AX_LIKELY(end() != it))
         {
             return it->value;
         }
@@ -404,7 +406,7 @@ public:
     Iterator  end()               { return m_values.end(); }
 
     bool IsFull()  const { return Size() >= m_max_bucket_capacity; }
-    bool IsEmpty() const { return m_values.Size() == 0; }
+    bool Empty() const { return m_values.Size() == 0; }
     uint32 Size()  const { return m_values.Size(); }
 
     void Clear() { m_values.Clear(); m_buckets.Resize(16); }
@@ -447,7 +449,7 @@ public:
 
     uint32 Erase(const KeyT& key)
     {
-        if (IsEmpty()) 
+        if (Empty()) 
             return 0u;
     
         const Bucket bucket       = NextWhileLess(key);
@@ -581,10 +583,10 @@ public:
 
     uint32 erase(const KeyT& key) { return Erase(key); }
 
-    ValueT& At(KeyT const& key) {
-        if (Iterator it = (Iterator)Find(key); AX_LIKELY(end() != it)) {
+    ValueT& at(KeyT const& key) {
+        Iterator it = (Iterator)Find(key);
+        if (AX_LIKELY(end() != it)) 
             return it->value;
-        }
         ASSERT(true); // key is not exist in array
         return m_values[0].value;
     }

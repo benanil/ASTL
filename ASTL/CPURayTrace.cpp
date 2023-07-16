@@ -1,7 +1,7 @@
 #include "CPURayTrace.hpp"
 
 // todo make non simd version
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 
 typedef struct _RayHit {
 	float3 position;
@@ -233,4 +233,4 @@ HitRecord CPU_RayCast(RaySSE ray)
 	return record;
 }
 
-#endif // AX_SUPPORT_SSE2
+#endif // AX_SUPPORT_SSE

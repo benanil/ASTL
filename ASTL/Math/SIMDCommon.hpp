@@ -30,7 +30,7 @@ inline int AX_InitSIMD_CPUID()
     return mask;
 }
 
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 
 AX_ALIGNED(16) struct Vector4UI
 {
@@ -216,7 +216,7 @@ FINLINE float VECTORCALL hsum_ps_sse3(__m128 v) {
 	return _mm_cvtss_f32(sums);
 }
 
-#endif // AX_SUPPORT_SSE2
+#endif // AX_SUPPORT_SSE
 
 #ifdef AX_SUPPORT_AVX2
 

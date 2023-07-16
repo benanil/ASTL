@@ -8,6 +8,17 @@
 #   define CSTIMER(message) Timer timer = Timer(message);
 #endif
 
+FINLINE uint64_t ReadTimeStampCount()
+{
+#ifdef _MSC_VER
+    return __rdtsc();
+#else
+    uint64_t tsc;
+    __asm__ volatile("rdtsc" : "=A" (tsc));
+    return tsc;
+#endif
+}
+
 struct Timer
 {
 	uint64_t start_point;

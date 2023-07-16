@@ -73,9 +73,9 @@ struct Matrix3
 		return m.x * v.xxx() + m.y * v.yyy() + m.z * v.zzz();
 	}
 
-	inline static Matrix3 FromQuaternion(Quaternion q)
+	inline static Matrix3 FromQuaternion(const Quaternion& q)
 	{
-		// ai generated, todo fix
+		// todo fix look from glm
 		Matrix3 rot;
 		float x2 = q.x * q.x, y2 = q.y * q.y;
 		float z2 = q.z * q.z, xy = q.x * q.y;
@@ -137,7 +137,7 @@ struct Matrix3
 };
 
 // todo make non simd version
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 
 AX_ALIGNED(16) struct Matrix4
 {
@@ -919,4 +919,4 @@ FINLINE void InitializeMatrix4(Matrix4& mat, Vector4f a, Vector4f b, Vector4f c,
 
 }
 
-#endif // AX_SUPPORT_SSE2
+#endif // AX_SUPPORT_SSE

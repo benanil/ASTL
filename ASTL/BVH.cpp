@@ -1,7 +1,7 @@
 #include "BVH.hpp"
 
 // todo make non simd version
-#ifdef AX_SUPPORT_SSE2
+#ifdef AX_SUPPORT_SSE
 
 // from Jacco Bikker's tutorial I've optimized with SIMD. the unlicense
 // https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
@@ -259,4 +259,4 @@ uint BuildBVH(Tri* tris, MeshInfo* meshes, int numMeshes, BVHNode* nodes, uint* 
 	return totalNodesUsed - nodesUsedStart;
 }
 
-#endif // AX_SUPPORT_SSE2
+#endif // AX_SUPPORT_SSE

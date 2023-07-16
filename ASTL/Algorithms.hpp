@@ -9,13 +9,6 @@ inline bool ToUpper(char a) { return a > 'Z' ? a - 'a' + 'A' : a; }
 inline bool IsChar(char a) { return IsUpper(a) || IsLower(a); };
 inline bool IsWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r'); }
 
-inline int StrLen(const char* c) 
-{
-  int len = 0; while (*c) { len++; c++; } return len; 
-}
-
-inline int WStrLen(const wchar_t* c) { int len = 0; while (*c) { len++; c++; } return len; }
-
 template<typename T>
 inline void Swap(T& a, T& b)
 {
@@ -93,15 +86,6 @@ inline void QuickSort(T* arr, int left, int right)
 	}
 }
 
-// todo strcmp, strncat and memmove in Memory.hpp and you will not need external headers in String.hpp
-// https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
-
-inline bool StrCmp(const char* a, const char* b)
-{
-    const uint64_t* ap  = (const uint64_t*)a;
-    const uint64_t* bp  = (const uint64_t*)b;
-    return false;
-}
 
 template<typename T>
 inline void Reverse(T* begin, T* end)
@@ -134,31 +118,26 @@ inline T* BinarySearch(T* begin, int len, T value)
 }
 
 // String to number functions
-template<typename T>
-inline T ParseNumber(const char*& curr)
+inline int ParseNumber(const char*& curr)
 {
 	while (*curr && (*curr != '-' && !IsNumber(*curr))) curr++; // skip whitespace
-	T val = T(0);
+    
+    int val = 0l;
 	bool negative = false;
-	if (*curr == '-') curr++, negative = true;
-	while (*curr > '\n' && IsNumber(*curr))
-		val = val * T(10) + (*curr++ - '0');
-	if (negative) val = -val;
-	return val;
+	
+    if (*curr == '-') curr++, negative = true;
+	
+    while (*curr > '\n' && IsNumber(*curr))
+		val = val * 10 + (*curr++ - '0');
+    
+    return negative ? -val : val;
 }
 
-template<typename T>
-inline void ParseNumberRef(const char*& curr, T& val) {
-	val = ParseNumber<T>(curr);
-}
-
-template<typename T>
-inline bool TryParse(T& val, const char*& curr)
+inline bool IsParsable(const char*& curr)
 {   // additional checks
 	if (*curr == 0 || *curr == '\n') return false;
 	while (IsWhitespace(*curr)) curr++;
 	if (!IsNumber(*curr) || *curr != '-') return false;
-	val = ParseNumber<T>(curr);
 	return true;
 }
 
@@ -248,36 +227,33 @@ inline bool StartsWith(const char*& curr, const char* str)
     return isEqual;
 }
 
-template<typename T> 
-inline void Fill(T* begin, T* end, const T& val)
+template<typename T> inline void Fill(T* begin, T* end, const T& val)
 {
 	while (begin < end) *begin++ = val;
 }
 
-template<typename T> 
-inline void FillN(T* arr, T val, int n)
+template<typename T> inline void FillN(T* arr, T val, int n)
 {
 	for (int i = 0; i < n; ++i) arr[i] = val;
 }
 
-template<typename T> 
-inline bool Contains(const T* arr, const T& val, int n)
+template<typename T> inline bool Contains(const T* arr, const T& val, int n)
 {
     for (int i = 0; i < n; ++i) 
         if (arr[i] == val) return true;
     return false;
 }
 
-template<typename T> 
-inline int IndexOf(const T* arr, const T& val, int n)
+// returns the index if found, otherwise returns -1
+template<typename T> inline int IndexOf(const T* arr, const T& val, int n)
 {
     for (int i = 0; i < n; ++i) 
         if (arr[i] == val) return i;
     return -1;
 }
 
-template<typename T> 
-inline int CountIf(const T* arr, const T& val, int n)
+// returns number of val contained in arr
+template<typename T> inline int CountIf(const T* arr, const T& val, int n)
 {
     int count = 0;
     for (int i = 0; i < n; ++i) 
@@ -285,22 +261,19 @@ inline int CountIf(const T* arr, const T& val, int n)
     return count;
 }
 
-template<typename T>
-inline void Copy(T* dst, const T* src, int n)
+template<typename T> inline void Copy(T* dst, const T* src, int n)
 {
 	for (int i = 0; i < n; ++i)
 		dst[i] = src[i];
 }
 
-template<typename T>
-inline void MoveArray(T* dst, T* src, int n)
+template<typename T> inline void MoveArray(T* dst, T* src, int n)
 {
   for (int i = 0; i < n; ++i)
 	dst[i] = (T&&)src[i];
 }
 
-template<typename T>
-inline void ClearN(T* src, int n)
+template<typename T> inline void ClearN(T* src, int n)
 {
     for (int i = 0; i < n; ++i)
         src[i].~T();
