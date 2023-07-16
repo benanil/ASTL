@@ -136,7 +136,7 @@ Additionally, the library provides trigonometric functions such as:
 Most of these functions are constexpr, and for those that are not,<br>
 links are provided so that you can modify them to be constexpr as well.<br>
 Although constexpr math functions are officially introduced in C++23, you can still use these functions with C++14.<br>
-Example Usage of the Math Library:<br>
+Example Usage of the Math Library:
 ```cpp
 #include "Math/Vector.hpp"
 #include "Math/Matrix.hpp"
