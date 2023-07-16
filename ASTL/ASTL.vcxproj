@@ -137,8 +137,8 @@
     <ClCompile Include="CPURayTrace.cpp" />
     <ClCompile Include="MultiThreading\ParallelFor.cpp" />
     <ClCompile Include="MultiThreading\ThreadPool.cpp" />
-    <ClCompile Include="Tests\AdventOfCodeTests.cpp" />
-    <ClCompile Include="Tests\ASTL.cpp" />
+    <ClCompile Include="AdventOfCodeTests.cpp" />
+    <ClCompile Include="ASTL.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Aditional.hpp" />

@@ -41,7 +41,7 @@ inline uint64_t Align(uint64_t n, uint64_t alignment = 64)
 inline void MemSetAligned64(void* dst, unsigned char val, uint64_t sizeInBytes)
 {
     // we want an offset because the while loop below iterates over 4 uint64 at a time
-    const uint64_t* end = (uint64_t*)((char*)dst + (sizeInBytes >> 3));
+    const uint64_t* end = (uint64_t*)((char*)dst) + (sizeInBytes >> 3);
     uint64_t* dp = (uint64_t*)dst;
     uint64_t  d4 = (uint64_t)val;
 #ifdef _MSC_VER
@@ -64,13 +64,13 @@ inline void MemSetAligned64(void* dst, unsigned char val, uint64_t sizeInBytes)
         case 4: *dp++ = d4;
         case 3: *dp++ = d4;
         case 2: *dp++ = d4;
-        case 1: *dp++ = d4;
+        case 1: *dp   = d4;
     };
 }
 
 inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
 {
-    const uint32_t* end = (uint32_t*)((char*)dst + (sizeInBytes >> 2));
+    const uint32_t* end = (uint32_t*)((char*)dst) + (sizeInBytes >> 2);
     uint32_t* dp = (uint32_t*)dst;
     uint32_t  d4 = (uint32_t)val;
 #ifdef _MSC_VER
@@ -88,10 +88,10 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
     {
         case 3: *dp++ = d4;
         case 2: *dp++ = d4;
-        case 1: *dp++ = d4;
+        case 1: *dp   = d4;
     };
 }
-
+#include <memory.h>
 // use size for struct/class types such as Vector3 and Matrix4, 
 // leave as zero size constant for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
@@ -124,9 +124,9 @@ inline void MemCpyAligned64(void* dst, const void* src, uint64_t sizeInBytes)
 {
     uint64_t*       dp  = (uint64_t*)dst;
     const uint64_t* sp  = (const uint64_t*)src;
-    const uint64_t* end = (const uint64_t*)((char*)src + (sizeInBytes >> 3));
+    const uint64_t* end = (const uint64_t*)((char*)src) + (sizeInBytes >> 3);
         
-    while (sp < end)
+    while (sp + 4 < end)
     {
         dp[0] = sp[0];
         dp[1] = sp[1];
@@ -143,16 +143,15 @@ inline void MemCpyAligned64(void* dst, const void* src, uint64_t sizeInBytes)
         case 4: *dp++ = *sp++;
         case 3: *dp++ = *sp++;
         case 2: *dp++ = *sp++;
-        case 1: *dp++ = *sp++;
+        case 1: *dp = *sp;
     };
 }
 
 inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
 {
-    const uint32_t offset = (sizeInBytes >> 4) & 15; 
     uint32_t*       dp  = (uint32_t*)dst;
     const uint32_t* sp  = (const uint32_t*)src;
-    const uint32_t* end = (const uint32_t*)((char*)src + sizeInBytes - offset);
+    const uint32_t* end = (const uint32_t*)((char*)src) + (sizeInBytes >> 2);
         
     while (sp < end)
     {

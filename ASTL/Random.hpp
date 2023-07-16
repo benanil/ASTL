@@ -102,7 +102,7 @@ namespace Random
 		return uint32((xorshifted >> rot) | (xorshifted << ((-rot) & 31)));
 	}
 
-	uint PCG2Next(uint& rng_state)
+	FINLINE uint PCG2Next(uint& rng_state)
 	{
 		uint state = rng_state;
 		rng_state = state * 747796405u + 2891336453u;
