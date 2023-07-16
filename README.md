@@ -36,6 +36,7 @@ here is the data structures that I have:
 each data structure has an header with same name except Map and Set these structures uses "RedBlackTree.hpp" header.
 
 here is the example usage of data structures
+
 ```cpp
 #include <ASTL/RedBlackTree.hpp>
 #include <ASTL/HashMap.hpp>
@@ -157,6 +158,7 @@ Most of these functions are constexpr, and for those that are not,<br>
 links are provided so that you can modify them to be constexpr as well.<br>
 Although constexpr math functions are officially introduced in C++23, you can still use these functions with C++14.<br>
 Example Usage of the Math Library:
+
 ```cpp
 #include "Math/Vector.hpp"
 #include "Math/Matrix.hpp"
@@ -187,6 +189,7 @@ It showcases various operations involving vectors, matrices, and other math func
 Feel free to explore and utilize the math library based on your project's requirements.
 
 here how it looks internaly, with bunch of links and comments that'll help you
+
 ```cpp
 // https://mazzo.li/posts/vectorized-atan2.html
 FINLINE constexpr float ATan(float x) {
