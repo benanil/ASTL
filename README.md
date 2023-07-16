@@ -37,6 +37,10 @@ each data structure has an header with same name except Map and Set these struct
 
 here is the example usage of data structures
 ```cpp
+#include <ASTL/RedBlackTree.hpp>
+#include <ASTL/HashMap.hpp>
+#include <ASTL/Math/Vector.hpp>
+
 FILE* file = fopen("TestData/AOC15.txt", "r");
 Array<char> line(120, '\n');
 HashMap<Vector2i, int> sensors{};
@@ -128,11 +132,11 @@ Additionally, the library provides trigonometric functions such as:
 * Atan2
 * ASin
 * ACos
+<br>
 Most of these functions are constexpr, and for those that are not,<br>
 links are provided so that you can modify them to be constexpr as well.<br>
 Although constexpr math functions are officially introduced in C++23, you can still use these functions with C++14.<br>
-<br>
-Example Usage of the Math Library:
+Example Usage of the Math Library:<br>
 ```cpp
 #include "Math/Vector.hpp"
 #include "Math/Matrix.hpp"
