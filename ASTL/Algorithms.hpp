@@ -184,22 +184,22 @@ inline int IntToString(char* ptr, int x, int afterPoint = 0)
     int blen = len;
     int size = 0;
 
-    while (++blen < afterPoint)
+    while (++blen <= afterPoint)
     {
         ptr[size++] = '0';
-        ptr[size] = '\0';
     }
-    
-    len = Pow10(len) + 1;
-   
+
+    len = Pow10(len);
+
     while (len)
     {
         int digit = x / len;
-        ptr[size++] = char(digit + '0');
-        ptr[size] = '\0';
+        ptr[size++] = (char)(digit + '0');
         x -= len * digit;
         len /= 10;
     }
+
+    ptr[size] = '\0';
     return size;
 }
 
@@ -213,7 +213,7 @@ inline int FloatToString(char* ptr, float f, int afterpoint = 4)
     float fPart = f - iPart;
     ptr[numChars++] = '.';
     int power = Pow10(afterpoint); 
-    return numChars + IntToString(ptr + numChars, int(fPart * power), afterpoint);
+    return numChars + IntToString(ptr + numChars, int(fPart * power), afterpoint-1);
 }
 
 inline bool StartsWith(const char*& curr, const char* str)
