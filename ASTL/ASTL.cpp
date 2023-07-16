@@ -94,6 +94,7 @@ int main()
 
     String testStr = "floating test: ";
     testStr += 1234.567f;
+    testStr.Replace("1234", "4321");
     printf("%s\n", testStr.CStr());
 
     String testStr1 = "int test: ";
@@ -126,12 +127,7 @@ int main()
         "house", "igloo", "jigsaw", "kangaroo", "lemon", "monkey"
     };
 
-    Array<String> strs{};
-
-    for (int i = 0; i < 13; ++i)
-    {
-        strs.Add(strings[i]);
-    }
+    Array<String> strs(strings, strings+13);
 
     strs.RemoveAt(3, 3);
 

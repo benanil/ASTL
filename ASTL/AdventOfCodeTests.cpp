@@ -34,6 +34,9 @@ template<> struct Hasher<Vector2s>
 	}
 };
 
+#pragma warning(disable: 4996) // fopen
+#pragma warning(disable: 4554) // | operator
+
 inline char* ReadAllFile(const char* fileName, int* numCharacters = 0)
 {
     FILE* fp = fopen(fileName, "r");
@@ -430,6 +433,7 @@ void AdventOfCodeTests()
 {
 	Day12();
 	Day15();
-    Day17();
+	Day17();
 	Day22();
 }
+    

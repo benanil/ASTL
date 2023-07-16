@@ -26,7 +26,7 @@ inline int StringLength(const char* s)
     }
 }
 
-inline bool StringCompare(const char* s1, const char* s2)
+inline int StringCompare(const char* s1, const char* s2)
 {
     if (s1 == s2) 
         return 0;
@@ -195,11 +195,11 @@ public:
         return true;
     }
 
-    bool IndexOf(const char* other) const
+    int IndexOf(const char* other) const
     {
         int otherLen = StringLength(other);
         for (int i = size - otherLen; i >= 0; i--) {
-            if (CompareN(ptr + i, other))
+            if (CompareN(ptr + i, other, otherLen))
                 return i;
         }
         return -1;
@@ -288,6 +288,14 @@ public:
         Remove(x + repLen, StringLength(find));
     }
 
+    void Replace(const BasicString& find, const BasicString& replace)
+    {
+        int x = IndexOf(find.c_str());
+        if (x == -1) return;
+        Insert(x, replace);
+        Remove(x + replace.Length(), find.Length());
+    }
+
     void Append(char c)
     {
         GrowIfNecessarry(1);
@@ -322,8 +330,6 @@ public:
         {
             ptr[i++] = ptr[j++];
         }
-
-        this->size = newSize;
     }
 
     void OpenSpace(int _index, int _count)

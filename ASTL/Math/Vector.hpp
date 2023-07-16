@@ -25,14 +25,14 @@ struct Vector2
 	T  operator[] (int index) const { return arr[index]; }
 
 	static FINLINE float Distance(Vector2 a, Vector2 b) {
-		float diffx = a.x - b.x;
-		float diffy = a.y - b.y;
+		float diffx = (float)(a.x - b.x);
+		float diffy = (float)(a.y - b.y);
 		return Sqrt(diffx * diffx + diffy * diffy);
 	}
 
 	static FINLINE float DistanceSq(Vector2 a, Vector2 b) {
-		float diffx = a.x - b.x;
-		float diffy = a.y - b.y;
+		float diffx = (float)(a.x - b.x);
+		float diffy = (float)(a.y - b.y);
 		return diffx * diffx + diffy * diffy;
 	}
 
@@ -323,7 +323,7 @@ AX_ALIGNED(32) struct Vector4d
 	constexpr Vector4d(__m256d _vec) : vec(_vec) {}
 	constexpr Vector4d(double _x, double _y, double _z, double _w) : x(_x), y(_y), z(_z), w(_w) {}
 
-	float Length() const { return _mm256_cvtsd_f64(_mm256_sqrt_pd(Dot(this->vec, this->vec))); }
+	double Length() const { return _mm256_cvtsd_f64(_mm256_sqrt_pd(Dot(this->vec, this->vec))); }
 
 	FINLINE static __m256d VECTORCALL Normalize(__m256d V)
 	{

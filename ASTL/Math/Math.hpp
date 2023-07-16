@@ -82,7 +82,7 @@ FINLINE constexpr float Pow(float a, float b)
 		e >>= 1;
 	}
 
-	return r * u.d;
+	return (float)(u.d * r);
 }
 
 // https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81 <--you can find double versions

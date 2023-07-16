@@ -60,6 +60,14 @@ public:
 		FillN(arr, val, m_count);
 	}
 
+	Array(Iterator _begin, Iterator _end)
+	{
+		m_count = PointerDistance(_begin, _end);
+		m_capacity = m_count + (m_count / 2);
+		arr = allocator.AllocateUninitialized(m_capacity);
+		MoveArray(arr, _begin, m_count);
+	}
+
 	Array(ConstIterator _begin, ConstIterator _end)
 	{
 		m_count = PointerDistance(_begin, _end);

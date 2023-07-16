@@ -109,7 +109,7 @@ inline T* BinarySearch(T* begin, int len, T value)
 
 	while (low < high)
 	{
-        T mid = (low + high) / 2;
+        T mid = (low + high) >> 1;
         if (begin[mid] < value) low = mid + 1;
         else if (begin[mid] > value) high = mid - 1;
         else return begin + mid; // (begin[mid] == value)
