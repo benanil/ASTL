@@ -80,7 +80,9 @@ for (int j = boundsMin.x; j <= boundsMax.x; ++j)
 }
 printf("Day15 result: %i\n ", result);
 fclose(file);
-// more example
+
+// ----   more examples  ----
+
 HashSet<int> testSet{};
 testSet.Insert(213444590);
 PassingToConstFunction(testSet);
@@ -97,10 +99,7 @@ ASSERT(num == String("no its five"));
 String val1 = ourMap.At(4);
 ourMap.TryEmplace(33, "33ull");
 ASSERT(val1 == String("no its five"));
-
-bool contains1 = ourMap.Contains(33);
 ourMap.Erase(33);
-ASSERT(contains1);
 ```
 data structures and algorithms are tested with many algorithms<br>
 you can see more examples in AdventOfCodeTests.cpp<br>
