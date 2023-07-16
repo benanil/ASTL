@@ -219,11 +219,10 @@ and color packing and unpacking.
 
 The Random component of the ASTL library provides functionalities for generating random numbers and hash functions. It includes various algorithms and utilities to handle randomness effectively. Here are the key features of the Random.hpp header:
 
-Random Number Generation
-Improved hash functions: The library incorporates improved hash functions from the article https://nullprogram.com/blog/2018/07/31/, including MurmurHash, WangHash, and their inverses.
-Random seeding: The Random namespace provides functions for seeding the random number generator, such as Random::Seed32 and Random::Seed64.
-32-bit random number generation: The Random::PCG structure and related functions, such as Random::PCGInitialize and Random::PCGNext, enable the generation of 32-bit random numbers.
-64-bit random number generation: The Random::Xoroshiro128Plus algorithm and the accompanying Random::Xoroshiro128PlusInit function facilitate 64-bit random number generation.
+* Improved hash functions: The library incorporates improved hash functions from the article https://nullprogram.com/blog/2018/07/31/, including MurmurHash, WangHash, and their inverses.
+* Random seeding: The Random namespace provides functions for seeding the random number generator, such as Random::Seed32 and Random::Seed64.
+* 32-bit random number generation: The Random::PCG structure and related functions, such as Random::PCGInitialize and Random::PCGNext, enable the generation of 32-bit random numbers.
+* 64-bit random number generation: The Random::Xoroshiro128Plus algorithm and the accompanying Random::Xoroshiro128PlusInit function facilitate 64-bit random number generation.
 
 Usage Examples:
 
@@ -374,8 +373,8 @@ struct FixedSizeGrowableAllocator // for red black tree
 
 # Algorithms
 
-"Algorithms.hpp" Header is simple, only 280 line open to sugesstions and improvements.
-it includes number parsing, sorting it does the job of <algorithm> header 
+The "Algorithm.hpp" header offers additional algorithms, including number parsing and sorting.<br>
+The header file is concise, with only 280 lines, providing a simple and efficient implementation.<br>
 
 Also Bitset.hpp for fast bitsets (SIMD optimized). Bitset1024, Bitset512, Bitset256 or Bitset<1234> instead of std::bitset <br>
 
