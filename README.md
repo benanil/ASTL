@@ -1,7 +1,7 @@
 
 # ASTL standard library
 
-Astl is a data structures, algorithms and math library that is targeting high performance<br>
+Astl is header only data structures, algorithms and math library that is targeting high performance<br>
 faster compile times and ease of use, the code is writen in a way that is easier to read<br>
 modify and use, there is no other external dependencies C++ headers are not included<br>
 not even C headers included, so everything is from scratch. this should work with C++14 and above<br>
@@ -460,6 +460,10 @@ it will return mesh index, hit position hit color etc. algorithm located in BVH 
 note: I haven't touched multi threading code for a while<br>
 <br>
 Overall this is an hidden game for C++ and awesome to use with games and performance required programs.<br> 
+
+# How to Use
+just include the headers to your project, currently project has some test data as well you can remove those<br>
+and you can also delete the ASTL.cpp and AdventOfCodeTests.cpp as well
 
 # Contributing
 
