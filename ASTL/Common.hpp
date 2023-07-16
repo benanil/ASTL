@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IntFltTypesLimits.h"
+#include "IntFltTypesLimits.hpp"
 
 #if AX_SHARED
 #ifdef AX_EXPORT
