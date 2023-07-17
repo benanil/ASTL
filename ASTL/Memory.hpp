@@ -346,7 +346,8 @@ struct FixedSizeGrowableAllocator
         if (current->size + count >= currentCapacity)
         {
             currentCapacity <<= 1;
-            current = new Fragment();
+            current->next = new Fragment();
+            current = current->next;
             current->next = nullptr;
             current->ptr  = new T[currentCapacity];
             current->size = 0;

@@ -120,6 +120,7 @@ The library offers various math structures to support common mathematical operat
 * Quaternion
 * Transform
 * Camera
+
 The vectors are defined in the "Vector.hpp" header, while Matrix4 and Matrix3 are defined in the "Matrix.hpp" header.<br>
 Other math structures have headers with the same name for easy access and organization.<br>
 
