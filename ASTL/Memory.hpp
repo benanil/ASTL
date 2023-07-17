@@ -43,11 +43,11 @@ inline void MemSetAligned64(void* dst, unsigned char val, uint64_t sizeInBytes)
     // we want an offset because the while loop below iterates over 4 uint64 at a time
     const uint64_t* end = (uint64_t*)((char*)dst) + (sizeInBytes >> 3);
     uint64_t* dp = (uint64_t*)dst;
-    uint64_t  d4 = (uint64_t)val;
 #ifdef _MSC_VER
+    uint64_t  d4;
     __stosb((unsigned char*)&d4, val, 8);
 #else
-    d4 |= d4 << 8ull; d4 |= d4 << 16ull; d4 |= d4 << 32ull;
+    uint64_t  d4 = val; d4 |= d4 << 8ull; d4 |= d4 << 16ull; d4 |= d4 << 32ull;
 #endif
 
     while (dp < end)
@@ -72,11 +72,11 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
 {
     const uint32_t* end = (uint32_t*)((char*)dst) + (sizeInBytes >> 2);
     uint32_t* dp = (uint32_t*)dst;
-    uint32_t  d4 = (uint32_t)val;
 #ifdef _MSC_VER
+    uint32_t  d4;
     __stosb((unsigned char*)&d4, val, 4);
 #else
-    d4 |= d4 << 8ull; d4 |= d4 << 16ull;
+    uint32_t  d4 = val; d4 |= d4 << 8ull; d4 |= d4 << 16ull;
 #endif
     while (dp < end)
     {
@@ -126,7 +126,7 @@ inline void MemCpyAligned64(void* dst, const void* src, uint64_t sizeInBytes)
     const uint64_t* sp  = (const uint64_t*)src;
     const uint64_t* end = (const uint64_t*)((char*)src) + (sizeInBytes >> 3);
         
-    while (sp + 4 < end)
+    while (sp < end)
     {
         dp[0] = sp[0];
         dp[1] = sp[1];
