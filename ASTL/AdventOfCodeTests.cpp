@@ -70,7 +70,7 @@ inline int ManhattanDistance(Vector2<T> a, const Vector2<T>& b)
     return Abs(a.x - b.x) + Abs(a.y - b.y);
 }
 
-static void Day15()
+static void Day15() // result 5511201
 {
     FILE* file = fopen("TestData/AOC15.txt", "r");
     CSTIMER("day 15");
@@ -116,7 +116,8 @@ static void Day15()
             if (columnToSensor > 0 && columnToSensor <= dist) { result++; break; }
         }
     }
-    printf("Day15 result: %i\n ", result);
+    printf("Day15 result: %i\n ", result); // result should be 5511201
+	ASSERT(result == 5511201);
     fclose(file);
 }
 
@@ -136,7 +137,7 @@ struct APoint
 
 using DistanceAndPoint = APoint;
 
-static int Day12()
+static int Day12() // result should be 534
 {
     FILE* file = fopen("TestData/AOC12.txt", "r");
 	CSTIMER("day12");
@@ -214,10 +215,11 @@ static int Day12()
 		currentPoint = map[currentPoint].cameFrom;
 	}
 	printf("Day 12 min steps: %d\n", result);
+	ASSERT(result == 534);
 	return result;
 }
 
-static int Day17()
+static int Day17() // result should be 3157
 {
     char* pattern = ReadAllFile("TestData/AOC17.txt");
 	
@@ -318,7 +320,8 @@ static int Day17()
 	// }
 	// fclose(file);
 	free(pattern);
-	printf("Day17 result is: %d\n", mapBounds.y+1);
+	printf("Day17 result is: %d\n", mapBounds.y+1); // result should be 3157
+	ASSERT(mapBounds.y + 1 == 3157);
 	return mapBounds.y;
 }
 
@@ -425,7 +428,8 @@ int Day22()
 	currentPosition += Vector2i::One(); // result = one indexed array
 	int result = 1000 * currentPosition.y + (4 * currentPosition.x) + currentDirection;
 
-	printf("day22 result: %d\n", result);
+	printf("day22 result: %d\n", result); 
+	ASSERT(result == 58248);
 	return 0;
 }
 

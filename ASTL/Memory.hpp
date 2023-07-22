@@ -114,7 +114,7 @@ inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
         else if (!(uptr & 3) && uptr >= 4)  MemSetAligned32(dst, val, sizeInBytes);
         else
         {
-            char* dp = (char*)dst;
+            unsigned char* dp = (unsigned char*)dst;
             while (sizeInBytes--)
                 *dp++ = val;
         }
@@ -220,8 +220,6 @@ struct Allocator
         return _new;
     }
 };
-
-#include <memory.h>
 
 template<typename T>
 struct MallocAllocator

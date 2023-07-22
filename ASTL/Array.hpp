@@ -188,13 +188,14 @@ public:
 	void InsertUnordered(int index, const ValueT& value)
 	{
 		GrowIfNecessary(m_count + 1);
-		arr[m_count++] = Forward<ValueT>(arr[index]);
+		arr[m_count++] = (ValueT&&)arr[index];
 		arr[index] = value;
 	}
+	
+	typedef bool(*RemoveFunc)(const ValueT& val);
 
 	// <summary> returns number of elements removed </summary>
-	template<typename Func_t>
-	int RemoveAll(const Func_t& match)
+	int RemoveAll(RemoveFunc match)
 	{
 		int freeIndex = 0;   // the first free slot in items array
 
@@ -307,7 +308,7 @@ public:
 	void          PopBack()        { arr[--m_count].~ValueT(); }
 
 	const ValueT& Front()    const { return arr[0]; }
-	ValueT& Front() { return arr[0]; }
+	ValueT& Front()                { return arr[0]; }
 	void          PopFront() { RemoveAt(0); }
 
 	int           Size()     const { return m_count; }
@@ -368,11 +369,12 @@ private:
 		long i = m_count + _count;
 		int  j = m_count;
 		ASSERT(i <= INT32_MAX);
-
+		
 		GrowIfNecessary((int)i);
+
 		while (j >= _index)
 		{
-			arr[--i] = Forward<ValueT>(arr[--j]);
+			arr[--i] = (ValueT&&) arr[--j];
 		}
 		m_count += _count;
 	}
@@ -388,7 +390,7 @@ private:
 		// *******i****j***   < opens space with incrementing both of the pointers (two pointer algorithm)
 		while (j < m_count)
 		{
-			arr[i++] = Forward<ValueT>(arr[j++]);
+			arr[i++] = (ValueT&&) arr[j++];
 		}
 
 		if constexpr (!AllocatorT::IsPOD)

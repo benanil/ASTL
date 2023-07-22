@@ -93,7 +93,7 @@ int main()
     AdventOfCodeTests();
     String testStr = "floating test: ";
     testStr += 1234.567f;
-    testStr.Replace("floating", "integing");
+    testStr.Replace("floating", "integing len oglim hiqqqqqqqlen oglim asdfasdasdfasdfasdasdf");
     testStr.Replace("1234", "43210");
 
     printf("%s\n", testStr.CStr());

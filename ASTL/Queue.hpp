@@ -44,10 +44,10 @@ public:
 		ConstIterator& operator ++()        { m_rear = (m_rear + 1) & m_mod; return *this; }  
 		ConstIterator  operator ++(int)     { ConstIterator tmp = *this; ++(*this); return tmp; }
 		
-		friend bool operator == (const ConstIterator& a, const ConstIterator & b)
+		friend bool operator == (const ConstIterator& a, const ConstIterator& b)
         { return (a.m_rear == b.m_rear) & (a.m_ptr == b.m_ptr); };
 		
-		friend bool operator != (const ConstIterator& a, const ConstIterator & b)
+		friend bool operator != (const ConstIterator& a, const ConstIterator& b)
         { return (a.m_rear != b.m_rear) | (a.m_ptr != b.m_ptr); };
 
 	private:

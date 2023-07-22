@@ -174,16 +174,16 @@ public:
     bool operator >= (const BasicString& other) { return StringCompare(ptr, other.ptr) >= 0; }
     bool operator <= (const BasicString& other) { return StringCompare(ptr, other.ptr) <= 0; }
 
-    BasicString operator + (const BasicString& other) { BasicString cpy(other.size + size + 1);          cpy.Append(ptr); cpy.Append(other.ptr); return cpy; }
-    BasicString operator + (const char*        other) { BasicString cpy(StringLength(other) + size + 1); cpy.Append(ptr); cpy.Append(other); return cpy; }
+    BasicString operator + (const BasicString& other) { BasicString cpy(other.size + size + 1);          cpy.Append(ptr); cpy.Append(other.ptr); return (BasicString&&)cpy; }
+    BasicString operator + (const char*        other) { BasicString cpy(StringLength(other) + size + 1); cpy.Append(ptr); cpy.Append(other); return (BasicString&&)cpy; }
     
     BasicString& operator += (const BasicString& other) { Append(other.ptr); return *this; }
     BasicString& operator += (const char*       other)  { Append(ptr);       return *this; }
 
     BasicString operator += (float f) { char arr[16]{}; FloatToString(arr, f); Append(arr); return *this; }
     BasicString operator += (int   i) { char arr[16]{}; IntToString(arr, i);   Append(arr); return *this; }
-    BasicString operator +  (float f) { char arr[16]{}; FloatToString(arr, f); BasicString cpy = *this; cpy.Append(arr); return cpy; }
-    BasicString operator +  (int   i) { char arr[16]{}; IntToString(arr, i);   BasicString cpy = *this; cpy.Append(arr); return cpy; }
+    BasicString operator +  (float f) { char arr[16]{}; FloatToString(arr, f); BasicString cpy = *this; cpy.Append(arr); return (BasicString&&)cpy; }
+    BasicString operator +  (int   i) { char arr[16]{}; IntToString(arr, i);   BasicString cpy = *this; cpy.Append(arr); return (BasicString&&)cpy; }
 
     void Append(float f) { char arr[16]{}; FloatToString(arr, f); Append(arr); }
     void Append(int i)   { char arr[16]{}; IntToString(arr, i);   Append(arr); }
@@ -205,14 +205,19 @@ public:
         return -1;
     }
 
+    int IndexOf(const BasicString& other) const 
+    {
+        return IndexOf(other.CStr()) != -1;
+    }
+
     bool Contains(const char* other) const
     {
         return IndexOf(other) != -1;
     }
-
-    bool Contains(const BasicString& other) const 
+    
+    bool Contains(const BasicString& other) const
     {
-        return Contains(other) != -1; 
+        return IndexOf(other.CStr()) != -1;
     }
 
     void Reserve(int size)
@@ -241,7 +246,6 @@ public:
 
     void Insert(int index, char c)
     {
-        GrowIfNecessarry(1);
         OpenSpace(index, 1);
         ptr[size++] = c;
     }
@@ -249,10 +253,8 @@ public:
     void Insert(int index, const char* ptr)
     {
         int size = StringLength(ptr);
-        GrowIfNecessarry(size);
         OpenSpace(index, size);
         Copy(this->ptr + index, ptr, size);
-        this->size += size;
     }
 
     void Insert(int index, const BasicString& other) 
@@ -317,8 +319,7 @@ public:
     void Append(const char* other, int count)
     {
         GrowIfNecessarry(count);
-        for (int i = 0; i < count; i++)
-            ptr[size + i] = other[i];
+        Copy(ptr + size, other, count);
         size += count;
     }
 
@@ -346,11 +347,12 @@ public:
 
     void OpenSpace(int _index, int _count)
     {
-        long i = size + _count;
+        GrowIfNecessarry(_count);
+
+        long i = Min(size + _count, capacity);
         int  j = size;
         ASSERT(i <= INT32_MAX);
 
-        GrowIfNecessarry(_count);
         while (j >= _index)
         {
             ptr[--i] = ptr[--j];
@@ -368,7 +370,10 @@ public:
                 ptr = allocator.Reallocate(ptr, capacity, newSize);
             else
                 ptr = allocator.Allocate(newSize);
-            MemSet(ptr + size, 0, newSize - size);
+            
+            for (int i = size; i < newSize; i++)
+                ptr[i] = 0;
+
             capacity    = newSize; 
         }   
     }
