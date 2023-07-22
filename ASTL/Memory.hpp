@@ -91,7 +91,7 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
         case 1: *dp   = d4;
     };
 }
-#include <memory.h>
+
 // use size for struct/class types such as Vector3 and Matrix4, 
 // leave as zero size constant for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
@@ -109,8 +109,9 @@ inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
         MemSetAligned32(dst, val, sizeInBytes);
     else
     {
-        if ((((uint64_t)dst) & 7) == 0)       MemSetAligned64(dst, val, sizeInBytes);
-        else if ((((uint64_t)dst) & 3) == 0)  MemSetAligned32(dst, val, sizeInBytes);
+        uint64_t uptr = (uint64_t)dst;
+        if (!(uptr & 7) && uptr >= 8) MemSetAligned64(dst, val, sizeInBytes);
+        else if (!(uptr & 3) && uptr >= 4)  MemSetAligned32(dst, val, sizeInBytes);
         else
         {
             char* dp = (char*)dst;
@@ -135,16 +136,7 @@ inline void MemCpyAligned64(void* dst, const void* src, uint64_t sizeInBytes)
         dp += 4, sp += 4;
     }
 
-    switch (sizeInBytes & 7)
-    {
-        case 7: *dp++ = *sp++;
-        case 6: *dp++ = *sp++;
-        case 5: *dp++ = *sp++;
-        case 4: *dp++ = *sp++;
-        case 3: *dp++ = *sp++;
-        case 2: *dp++ = *sp++;
-        case 1: *dp = *sp;
-    };
+    SmallMemCpy(dp, sp, sizeInBytes & 7);
 }
 
 inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
@@ -187,19 +179,11 @@ inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
         MemCpyAligned32(dst, src, sizeInBytes);
     else
     {
-        const uint64_t alignXor = uint64_t(dst) ^ uint64_t(src); // to check if both has same alignment
-        if (!(alignXor & 7))
-            MemCpyAligned64(dst, src, sizeInBytes);
-        else if (!(alignXor & 3))
-            MemCpyAligned32(dst, src, sizeInBytes);
-        else
-        {
-            const char* cend = (char*)((char*)src + sizeInBytes);
-            const char* scp = (const char*)src;
-            char* dcp = (char*)dst;
+        const char* cend = (char*)((char*)src + sizeInBytes);
+        const char* scp = (const char*)src;
+        char* dcp = (char*)dst;
         
-            while (scp < cend) *dcp++ = *scp++;
-        }
+        while (scp < cend) *dcp++ = *scp++;
     }
 }
 
@@ -228,33 +212,34 @@ struct Allocator
     {
         T* old  = ptr;
         T* _new = new T[count];
-        while (oldCount > count) // delete remaining memory if new count is less than count (reduced)
-        {
-            old[--oldCount].~T();
-        }
         for (int i = 0; i < Min(count, oldCount); ++i)
         {
-            _new[i] = Forward<T>(old[i]);
+            _new[i] = (T&&)old[i];
         }
         delete[] old;
         return _new;
     }
 };
 
+#include <memory.h>
+
 template<typename T>
 struct MallocAllocator
 {
     static constexpr bool IsPOD = true;
 
-    T* Allocate(int count) const {
+    T* Allocate(int count) const 
+    {
         return new T[count]{};
     }
 
-    T* AllocateUninitialized(int count) const {
+    T* AllocateUninitialized(int count) const 
+    {
         return new T[count];
     }
       
-    void Deallocate(T* ptr, int count) const {
+    void Deallocate(T* ptr, int count) const 
+    {
         delete[] ptr;
     }
       

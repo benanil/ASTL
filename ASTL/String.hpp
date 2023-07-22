@@ -78,7 +78,7 @@ inline int StrCmp(const char* a, const char* b)
             else         return +1; // greater
         }
     }
-    return 0;// strings are equal
+    return *a == *b;// strings are equal
 }
 #endif
 
@@ -134,7 +134,7 @@ public:
     }
 
     // move constructor
-    BasicString(BasicString&& other)
+    BasicString(BasicString&& other) noexcept
     {
         capacity = other.capacity;
         size = other.size;
@@ -234,12 +234,14 @@ public:
         if (ptr)
         {
             allocator.Deallocate(ptr, size);
-            ptr = nullptr; size = capacity = 0;
+            ptr = nullptr;
+            size = capacity = 0;
         }
     }
 
     void Insert(int index, char c)
     {
+        GrowIfNecessarry(1);
         OpenSpace(index, 1);
         ptr[size++] = c;
     }
@@ -247,6 +249,7 @@ public:
     void Insert(int index, const char* ptr)
     {
         int size = StringLength(ptr);
+        GrowIfNecessarry(size);
         OpenSpace(index, size);
         Copy(this->ptr + index, ptr, size);
         this->size += size;
@@ -255,6 +258,15 @@ public:
     void Insert(int index, const BasicString& other) 
     {
         Insert(index, other.ptr); 
+    }
+    
+    BasicString SubString(int index)
+    {
+        int count = size - index;
+        ASSERT(index + count <= size);
+        BasicString ret(count + 2);
+        ret.Append(ptr + index, size - count);
+        return ret;
     }
 
     BasicString SubString(int index, int count)
@@ -352,8 +364,11 @@ public:
         {
             constexpr int InitialSize = 64;
             int newSize = Max(CalculateArrayGrowth(size + _size), InitialSize);
-            if (ptr) ptr = allocator.Reallocate(ptr, capacity, newSize);
-            else     ptr = allocator.Allocate(newSize);
+            if (ptr) 
+                ptr = allocator.Reallocate(ptr, capacity, newSize);
+            else
+                ptr = allocator.Allocate(newSize);
+            MemSet(ptr + size, 0, newSize - size);
             capacity    = newSize; 
         }   
     }

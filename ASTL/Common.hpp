@@ -185,6 +185,20 @@
     #endif
 #endif
 
+#ifdef _MSC_VER
+#define __MOVSB(dst, src, size) __movsb((unsigned char*)dst, src, size);
+#else
+#define __MOVSB(dst, src, size) __builtin_memcpy(dst, src, size);
+#endif
+
+template<typename T, uint64_t N>
+constexpr uint64_t ArraySize(const T (&)[N]) { return N; }
+
+inline void SmallMemCpy(void* dst, const void* src, uint64_t size)
+{
+    __MOVSB((unsigned char*)dst, (unsigned char const*)src, size);
+}
+
 template<typename T>
 FINLINE constexpr T PopCount(T x)
 {
@@ -296,7 +310,7 @@ inline uint PointerDistance(const T* begin, const T* end)
 
 inline constexpr int CalculateArrayGrowth(int _size)
 {
-    const int addition = _size / 2;
+    const int addition = _size >> 1;
     if (AX_UNLIKELY(_size > (INT32_MAX - addition))) {
         return INT32_MAX; // growth would overflow
     }
@@ -335,7 +349,7 @@ struct KeyValuePair
 
     KeyValuePair() {}
     KeyValuePair(KeyT ky, ValueT val) : key((KeyT&&)ky), value((ValueT&&)val) {}
-    
+
     bool operator == (const KeyValuePair& other) {
         return key == other.key && value == other.value;
     }

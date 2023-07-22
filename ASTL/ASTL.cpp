@@ -91,15 +91,17 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
 int main()
 {
     AdventOfCodeTests();
-
     String testStr = "floating test: ";
     testStr += 1234.567f;
-    testStr.Replace("1234", "4321");
-    printf("%s\n", testStr.CStr());
+    testStr.Replace("floating", "integing");
+    testStr.Replace("1234", "43210");
 
+    printf("%s\n", testStr.CStr());
+    
     String testStr1 = "int test: ";
     testStr1 += 1234567;
     printf("%s\n", testStr1.CStr());
+    
 
     static const KeyValuePair<int, String> testMapInitializer[13] =
     {
@@ -118,7 +120,8 @@ int main()
         { 99999  , "monkey"   }
     };
 
-    static HashMap<int, String> testMap(testMapInitializer, 13);
+    static uint64_t arraySize = ArraySize(testMapInitializer);
+    HashMap<int, String> testMap(testMapInitializer, arraySize);
 
     testMap[4] = "no its five";
 

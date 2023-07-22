@@ -410,7 +410,7 @@ public:
 		iter->SetBlack();
 	}
 
-#if 1 && defined(_DEBUG)
+#if 0 && defined(_DEBUG)
 	void ValidateNodeRec(Node* n) const
 	{
 		if (m_root == nullptr || m_root == &m_protect) return;

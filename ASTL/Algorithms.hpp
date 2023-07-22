@@ -120,17 +120,17 @@ inline T* BinarySearch(T* begin, int len, T value)
 // String to number functions
 inline int ParseNumber(const char*& curr)
 {
-	while (*curr && (*curr != '-' && !IsNumber(*curr))) curr++; // skip whitespace
+  while (*curr && (*curr != '-' && !IsNumber(*curr))) curr++; // skip whitespace
     
-    int val = 0l;
-	bool negative = false;
-	
-    if (*curr == '-') curr++, negative = true;
-	
-    while (*curr > '\n' && IsNumber(*curr))
-		val = val * 10 + (*curr++ - '0');
-    
-    return negative ? -val : val;
+  int val = 0l;
+  bool negative = false;
+  
+  if (*curr == '-') curr++, negative = true;
+  
+  while (*curr > '\n' && IsNumber(*curr))
+  val = val * 10 + (*curr++ - '0');
+  
+  return negative ? -val : val;
 }
 
 inline bool IsParsable(const char*& curr)

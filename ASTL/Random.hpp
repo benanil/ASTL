@@ -167,11 +167,13 @@ namespace Random
 } // namespace Random end
 
 inline uint32_t murmur_32_scramble(uint32_t k) {
-	k *= 0xcc9e2d51;
-	k = (k << 15) | (k >> 17);
-	k *= 0x1b873593;
+	k *= 0xcc9e2d51u;
+	k = (k << 15u) | (k >> 17u);
+	k *= 0x1b873593u;
 	return k;
 }
+
+// I recommend to use murmur hash with small strings
 // https://en.wikipedia.org/wiki/MurmurHash
 inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
 {
@@ -181,33 +183,28 @@ inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
 	for (size_t i = len >> 2; i; i--) {
 		// Here is a source of differing results across endiannesses.
 		// A swap here has no effects on hash properties though.
-#ifdef _MSC_VER // MemCpy<4, 4>(&k, key, 4);
-		__movsb((unsigned char*)&k, key, sizeof(uint64));
-#else
-		__builtin_memcpy(&k, key, sizeof(uint64_t));
-#endif
+		SmallMemCpy(&k, key, sizeof(uint32_t));
 		key += sizeof(uint32_t);
 		h ^= murmur_32_scramble(k);
-		h = (h << 13) | (h >> 19);
-		h = h * 5 + 0xe6546b64;
+		h = (h << 13u) | (h >> 19u);
+		h = h * 5u + 0xe6546b64u;
 	}
 	/* Read the rest. */
-	k = 0;
-	for (size_t i = len & 3; i; i--) {
-		k <<= 8;
-		k |= key[i - 1];
+	k = 0u;
+	for (size_t i = len & 3u; i; i--) {
+		k <<= 8u;
+		k |= key[i - 1u];
 	}
 	// A swap is *not* necessary here because the preceding loop already
 	// places the low bytes in the low places according to whatever endianness
 	// we use. Swaps only apply when the memory is copied in a chunk.
-	h ^= murmur_32_scramble(k);
+	h ^= murmur_32_scramble(k) ^ len; 
 	/* Finalize. */
-	h ^= len;
-	h ^= h >> 16;
+	h ^= h >> 16u;
 	h *= 0x7feb352du;
 	h ^= h >> 15u;
 	h *= 0x846ca68bu;
-	h ^= h >> 16;
+	h ^= h >> 16u;
 	return h;
 }
 
@@ -215,19 +212,15 @@ inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
 {
 	const uint64 m = 0xc6a4a7935bd1e995ULL;
 	const int    r = 47;
-	uint64 h = seed ^ (len * m);
+	uint64       h = seed ^ (len * m);
 
 	const uint64 * data = (const uint64 *)key;
-	const uint64 * end = data + (len / 8);
+	const uint64 * end = data + (len >> 3);
 
 	while (data != end)
 	{
 		uint64 k;
-#ifdef _MSC_VER // MemCpy<8, 8>(&k, data++);
-		__movsb((unsigned char*)&k, (unsigned char const*)data, sizeof(uint64)); data++;
-#else
-		__builtin_memcpy(&k, data++, sizeof(uint64_t));
-#endif
+		SmallMemCpy(&k, data++, sizeof(uint64));
 		k *= m;
 		k ^= k >> r;
 		k *= m;
@@ -237,22 +230,13 @@ inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
 	}
 
 	const unsigned char * data2 = (const unsigned char*)data;
-
-	switch (len & 7)
-	{
-		case 7: h ^= uint64(data2[6]) << 48;
-		case 6: h ^= uint64(data2[5]) << 40;
-		case 5: h ^= uint64(data2[4]) << 32;
-		case 4: h ^= uint64(data2[3]) << 24;
-		case 3: h ^= uint64(data2[2]) << 16;
-		case 2: h ^= uint64(data2[1]) << 8;
-		case 1: h ^= uint64(data2[0]);
-			h *= m;
-	};
-
-	h ^= h >> r;
+	uint64_t d;
+	SmallMemCpy(&d, data, len & 7);
+	h ^= d;
 	h *= m;
 	h ^= h >> r;
+	h *= 0x94d049bb133111ebULL;
+	h ^= h >> 31ULL;
 	return h;
 }
 

@@ -148,6 +148,12 @@ FINLINE __m128 VECTORCALL SSEVectorLength(const __m128 V)
 	return _mm_sqrt_ps(_mm_dp_ps(V, V, 0x7f));
 }
 
+FINLINE __m128 VECTORCALL SSEVectorDistance(const __m128 A, const __m128 B)
+{
+  __m128 diff = _mm_sub_ps(A, B);
+  return _mm_sqrt_ps(_mm_dp_ps(diff, diff, 0x7f));
+}
+
 FINLINE __m128 VECTORCALL SSEVectorNormalize(const __m128 V)
 {
 	return _mm_mul_ps(_mm_rsqrt_ps(_mm_dp_ps(V, V, 0x7f)), V);
