@@ -10,7 +10,7 @@
 #include "String.hpp"
 
 #include <stdio.h>
-#include "Timer.hpp"
+#include "Profiler.hpp"
 
 extern void AdventOfCodeTests();
 
@@ -41,59 +41,79 @@ void PassingToConstFunction(HashSet<int>& testSet)
 template <typename MapT> void TestMap(const char* name, MapT& map) {
     printf("\n%s BEGIN\n", name);
 
-    CSTIMER("total speed: ");
+    // {
+    //     TimeBlock("Testmap HashMap insert speed: ");
+    //     uint64 pw = 1ull;
+    //     for (uint64 i = 0ull; i < 90000ull; ++i) {
+    //         map.TryEmplace(pw, "123");
+    //         pw += 331ull;
+    //     }
+    // }
+    // 
+    // {
+    //     TimeBlock("Testmap HashMap contains speed: ");
+    //     uint64 pw = 1ull;
+    //     uint64 numContains = 0ull;
+    // 
+    //     for (uint64 i = 0ull; i < 90000ull; ++i) {
+    //         numContains += map.Find(pw) != map.cend();
+    //         pw += 331ull;
+    //     }
+    //     printf("numContains: %i\n", numContains);
+    // }
+    // 
+    // {
+    //     TimeBlock("Testmap HashMap Iteration speed: ");
+    //     uint64 keySum = 0ull;
+    //     uint64 valueSum = 0ull;
+    // 
+    //     for (const auto& val : map) {
+    //         keySum += val.key;
+    //         valueSum += val.value.Length();
+    //     }
+    //     printf("key sum: %lu, value sum: %lu\n", keySum, valueSum);
+    // }
+    // 
+    // {
+    //     TimeBlock("Testmap HashMap Erase speed: ");
+    //     uint64 pw = 1ull;
+    //     for (uint64 i = 0ull; i < 90000ull; ++i) {
+    //         map.Erase((int)pw);
+    //         pw += 331ull;
+    //     }
+    // }
 
-    {
-        CSTIMER("insert speed: ");
-        uint64 pw = 1ull;
-        for (uint64 i = 0ull; i < 90000ull; ++i) {
-            map.TryEmplace(pw, "123");
-            pw += 331ull;
-        }
-    }
+    String num = map[4];
+    ASSERT(num == String("no its five"));
+    bool finded1 = map.Find(5ull) != map.end();
+    ASSERT(finded1 == false);
 
-    {
-        CSTIMER("contains speed: ");
-        uint64 pw = 1ull;
-        uint64 numContains = 0ull;
-
-        for (uint64 i = 0ull; i < 90000ull; ++i) {
-            numContains += map.Find(pw) != map.cend();
-            pw += 331ull;
-        }
-        printf("numContains: %i\n", numContains);
-    }
-
-    {
-        CSTIMER("Iteration speed: ");
-        uint64 keySum = 0ull;
-        uint64 valueSum = 0ull;
-
-        for (const auto& val : map) {
-            keySum += val.key;
-            valueSum += val.value.Length();
-        }
-        printf("key sum: %lu, value sum: %lu\n", keySum, valueSum);
-    }
-
-    {
-        CSTIMER("Erase speed: ");
-        uint64 pw = 1ull;
-        for (uint64 i = 0ull; i < 90000ull; ++i) {
-            map.Erase((int)pw);
-            pw += 331ull;
-        }
-    }
+    // String val1 = map.At(4);
+    // ASSERT(val1 == String("no its five"));
+    // 
+    // map.TryEmplace(33, "33ull");
+    // 
+    // bool contains1 = map.Contains(33);
+    // ASSERT(contains1);
+    // map.Erase(33);
+    // 
+    // contains1 = map.Contains(33ull);
+    // ASSERT(!contains1);
+    // 
+    // map.Insert(33, "33ull");
+    // contains1 = map.Contains(33ull);
+    // ASSERT(contains1);
 
     printf("%s END\n", name);
 }
 
 #include "Aditional.hpp"
 
+
 int main()
 {
-    //AdventOfCodeTests();
-    
+    AdventOfCodeTests();
+
     String testStr = "floating test: ";
     testStr += 1234.567f;
     testStr.Replace("floating", "integing");
@@ -117,83 +137,63 @@ int main()
         printf("walk[i]: %c  ", (char)*walk++);
 
     allocator.Allocate(1);
-
-    static const KeyValuePair<int, String> testMapInitializer[13] =
-    {
-        { 23     , "apple"    },
-        { 456    , "banana"   },
-        { 789    , "cherry"   },
-        { 42     , "dog"      },
-        { 8675309, "elephant" },
-        { 555    , "frog"     },
-        { 999    , "guitar"   },
-        { 314159 , "house"    },
-        { 271828 , "igloo"    },
-        { 777    , "jigsaw"   },
-        { 888    , "kangaroo" },
-        { 666    , "lemon"    },
-        { 99999  , "monkey"   }
-    };
-
-    static uint64_t arraySize = ArraySize(testMapInitializer);
-    HashMap<int, String> testMap(testMapInitializer, arraySize);
-
-    testMap[4] = "no its five";
-
-    String strings[13] = {
-        "apple", "banana", "cherry", "dog", "elephant", "frog", "guitar",
-        "house", "igloo", "jigsaw", "kangaroo", "lemon", "monkey"
-    };
-
-    Array<String> strs(strings, strings+13);
-
-    strs.RemoveAt(3, 3);
-
-    for (int i = 0; i < strs.Size(); ++i)
-    {
-        printf("%s \n", strs[i].c_str());
-    }
-
-    for (const KeyValuePair<int, String>& x : testMap)
-    {
-        printf("%i, %s\n", x.key, x.value.CStr());
-    }
-
-    String doozyuzdoksandooz = testMap[99999];
     
-    ASSERT(testMap[99999] == String("monkey"));
+    BeginProfile();
+    {
+        static const KeyValuePair<int, String> testMapInitializer[13] =
+        {
+            { 23     , "apple"    },
+            { 456    , "banana"   },
+            { 789    , "cherry"   },
+            { 42     , "dog"      },
+            { 8675309, "elephant" },
+            { 555    , "frog"     },
+            { 999    , "guitar"   },
+            { 314159 , "house"    },
+            { 271828 , "igloo"    },
+            { 777    , "jigsaw"   },
+            { 888    , "kangaroo" },
+            { 666    , "lemon"    },
+            { 99999  , "monkey"   }
+        };
+
+        static uint64_t arraySize = ArraySize(testMapInitializer);
+        HashMap<int, String> testMap(testMapInitializer, arraySize);
+
+        testMap[4] = "no its five";
+
+        String strings[13] = {
+            "apple", "banana", "cherry", "dog", "elephant", "frog", "guitar",
+            "house", "igloo", "jigsaw", "kangaroo", "lemon", "monkey"
+        };
+
+        Array<String> strs(strings, strings+13);
+
+        strs.RemoveAt(3, 3);
+
+        for (int i = 0; i < strs.Size(); ++i)
+        {
+            printf("%s \n", strs[i].c_str());
+        }
+
+        for (const KeyValuePair<int, String>& x : testMap)
+        {
+            printf("%i, %s\n", x.key, x.value.CStr());
+        }
+
+        String doozyuzdoksandooz = testMap[99999];
+    
+        ASSERT(testMap[99999] == String("monkey"));
+
+        HashMap<int, String> ourMap = testMap;
+        TestMap("ourMap", ourMap);
+    } // begin profile
+    EndAndPrintProfile();
 
     HashSet<int> testSet{};
     testSet.Insert(213444590);
 
     PassingToConstFunction(testSet);
-
-    HashMap<int, String> ourMap = testMap;
-
-    TestMap("ourMap", ourMap);
-
-    PassingToConstFunction(testSet);
-
-    String num = ourMap[4];
-    ASSERT(num == String("no its five"));
-    bool finded1 = ourMap.Find(5ull) != ourMap.end();
-    ASSERT(finded1 == false);
-
-    String val1 = ourMap.At(4);
-    ASSERT(val1 == String("no its five"));
-
-    ourMap.TryEmplace(33, "33ull");
-
-    bool contains1 = ourMap.Contains(33);
-    ASSERT(contains1);
-    ourMap.Erase(33);
-
-    contains1 = ourMap.Contains(33ull);
-    ASSERT(!contains1);
-
-    ourMap.Insert(33, "33ull");
-    contains1 = ourMap.Contains(33ull);
-    ASSERT(contains1);
 
     return 0;
 }

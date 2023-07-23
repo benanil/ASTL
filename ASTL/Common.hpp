@@ -185,18 +185,25 @@
     #endif
 #endif
 
-#ifdef _MSC_VER
-#define __MOVSB(dst, src, size) __movsb((unsigned char*)dst, src, size);
-#else
-#define __MOVSB(dst, src, size) __builtin_memcpy(dst, src, size);
-#endif
-
 template<typename T, uint64_t N>
 constexpr uint64_t ArraySize(const T (&)[N]) { return N; }
 
 inline void SmallMemCpy(void* dst, const void* src, uint64_t size)
 {
-    __MOVSB((unsigned char*)dst, (unsigned char const*)src, size);
+#ifdef _MSC_VER
+    __movsb((unsigned char*)dst, (unsigned char*)src, size);
+#else
+    __builtin_memcpy(dst, src, size);
+#endif
+}
+
+inline void SmallMemSet(void* dst, unsigned char val, uint64_t size)
+{
+#ifdef _MSC_VER
+    __stosb((unsigned char*)dst, val, size);
+#else
+    __builtin_memset(dst, val, sizeInBytes);
+#endif
 }
 
 template<typename T>

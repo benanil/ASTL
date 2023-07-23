@@ -165,11 +165,11 @@ inline int SampleSkyboxPixel(float3 rayDirection, Texture texture)
 	return (phi * texture.width) + theta + 2;
 }
 
-#include "Timer.hpp"
+#include "Profiler.hpp"
 // todo ignore mask
 HitRecord CPU_RayCast(RaySSE ray)
 {
-	CSTIMER("raycast speed: ");
+	TimeBlock("raycast speed: ");
 	RayHit besthit = CreateRayHit();
 	HitRecord record = CreateHitRecord();
 	

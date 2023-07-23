@@ -10,7 +10,7 @@
 #include "Math/Vector.hpp"
 
 #include <stdio.h>
-#include "Timer.hpp"
+#include "Profiler.hpp"
 
 template<> struct Hasher<Vector2i>
 {
@@ -73,7 +73,6 @@ inline int ManhattanDistance(Vector2<T> a, const Vector2<T>& b)
 static void Day15() // result 5511201
 {
     FILE* file = fopen("TestData/AOC15.txt", "r");
-    CSTIMER("day 15");
     char line[120];
     HashMap<Vector2i, int> sensors{};
     Set<int> beaconXs{};
@@ -98,7 +97,7 @@ static void Day15() // result 5511201
         boundsMax = Max(boundsMax, beaconPos + distance);
     }
 
-    int result = 0;
+	int result = 0;
     // check each column if it contains # or not
     for (int j = boundsMin.x; j <= boundsMax.x; ++j)
     {
@@ -140,7 +139,7 @@ using DistanceAndPoint = APoint;
 static int Day12() // result should be 534
 {
     FILE* file = fopen("TestData/AOC12.txt", "r");
-	CSTIMER("day12");
+	TimeBlock("day12");
 	Vector2s startPos, targetPos;
 	short numRows = 0, numColumns = 0;
 	char grid[42][167]; // for now constant size, std::string may used for bigger grids
@@ -222,7 +221,8 @@ static int Day12() // result should be 534
 static int Day17() // result should be 3157
 {
     char* pattern = ReadAllFile("TestData/AOC17.txt");
-	
+	TimeBlock("Day17")
+
 	const Vector2s shapes[5][5] = {
 		{ Vector2s(0, 0), Vector2s(1, 0), Vector2s(2, 0), Vector2s(3, 0) }, // ####
 		{ Vector2s(1, 0), Vector2s(0, 1), Vector2s(1, 1), Vector2s(2, 1), Vector2s(1, 2) }, // + shape
@@ -332,6 +332,8 @@ int Day22()
 {
 	FILE* file = fopen("TestData/AOC22.txt", "r");
 	char line[5666];
+	
+	TimeFunction
 
 	HashMap<Vector2i, char> map;
 	Vector2i mapBounds = 0;
@@ -435,9 +437,14 @@ int Day22()
 
 void AdventOfCodeTests()
 {
-	Day12();
 	Day15();
+	
+	BeginProfile();
+
+	Day12();
 	Day17();
 	Day22();
+
+	EndAndPrintProfile();
 }
     
