@@ -89,36 +89,47 @@ inline int StrCmp(const char* a, const char* b)
 class String
 {
 public:
-    uint32_t capacity = 0u;
-    int size = 0;
     
     union
     {
         char stack[16]{};
         char* ptr[2];
+        uint64_t lowHigh[2]; // when using heap high part is =  capacity | (size << 31);
     };
 
-    static constexpr uint32_t LastBit = 1u << 31u;
+    static constexpr uint32_t LastBit32 = 1u << 31u;
 
     uint32_t GetCapacity() const
     {
-        return capacity & (~LastBit);
+        return (uint32_t)((lowHigh[1] >> 32) & ~LastBit32);
     }
     
     void SetCapacity(int cap) 
     {
-        uint32_t ucap = (uint32_t)cap;
-        capacity = ucap | (capacity & LastBit);
+        lowHigh[1] &= (uint64_t)(~1u) | (1ull << 63ull);
+        lowHigh[1] |= (((uint64_t)cap) << 32ull);
+    }
+
+    uint32_t GetSize() const 
+    {
+        return !UsingHeap() ? StringLength(stack) : (uint32_t)(lowHigh[1] & (~1u));
+    }
+    
+    void SetSize(uint32_t size) 
+    {
+        if (!UsingHeap()) return;
+        lowHigh[1] &= (uint64_t)(~1u) << 32ull; 
+        lowHigh[1] |= size;
     }
 
     bool UsingHeap() const
     {
-        return !!(capacity & LastBit);
+        return lowHigh[1] & (1ull << 63ull);
     }
 
     void SetUsingHeap()
     {
-        capacity = capacity | LastBit;
+        lowHigh[1] |= (1ull << 63ull);
     }
 
     const char* GetPtr() const
@@ -133,52 +144,54 @@ public:
 
     void Allocate(int size)
     {
-        TimeFunction;
-        if (size < 16)
+        // TimeFunction;
+        if (size < 15)
             return;
 
+        int oldSize = GetSize();
         ptr[0] = new char[size] {};
-        ptr[1] = nullptr;
         SetUsingHeap();
     }
     
     void Deallocate()
     {
-        TimeFunction;
-        if (UsingHeap() == false)
-            ptr[0] = ptr[1] = nullptr; // MemSet 0
-        else
-            delete[] ptr[0];
+        // TimeFunction;
+        if (UsingHeap())
+            delete[] GetPtr();
+
+        ptr[0] = ptr[1] = nullptr;
     }
 
     void Reallocate(int oldCount, int count)
     {
-        TimeFunction;
+        //         TimeFunction;
 
         if (UsingHeap())
         {
             char* newPtr = new char[count] {};
-            MemCpy<1>(newPtr, ptr[0], oldCount);
-            delete[] ptr[0];
-            ptr[0] = newPtr;
+            char* ptr = GetPtr();
+            MemCpy<1>(newPtr, ptr, oldCount);
+            delete[] ptr;
+            this->ptr[0] = newPtr;
+            SetUsingHeap();
         }
-        else if (count > 16) // was stack allocating but bigger memory requested
+        else if (count > 15) // was stack allocating but bigger memory requested
         {
             char* newPtr = new char[count] {};
             MemCpy<1>(newPtr, stack, oldCount);
             ptr[0] = newPtr;
-            ptr[1] = nullptr;
+            lowHigh[1] = oldCount;
             SetUsingHeap();
         }
     }
 
 public:
-    String() : capacity(0), size(0)
+    String() 
     { }
 
     ~String() { Clear(); }
     
-    explicit String(int _capacity) : capacity(_capacity), size(0)
+    explicit String(int _capacity) 
     {
         Allocate(_capacity + 1);
     }
@@ -189,7 +202,7 @@ public:
         Allocate(clen + 1);
         Copy(GetPtr(), cstr, clen);
         SetCapacity(clen); 
-        size = clen;
+        SetSize(clen);
     }
 
     String(const char* cstr)
@@ -197,8 +210,8 @@ public:
         int clen = StringLength(cstr);
         Allocate(clen + 1);
         SmallMemCpy(GetPtr(), cstr, clen);
-        SetCapacity(clen); 
-        size = clen;
+        SetCapacity(clen);
+        SetSize(clen);
     }
 
     String(const char* begin, int count)
@@ -206,7 +219,7 @@ public:
         Allocate(count + 1);
         Copy(GetPtr(), begin, count);
         SetCapacity(count); 
-        size = count;
+        SetSize(count);
     }
 
     // copy constructor
@@ -218,26 +231,23 @@ public:
     // move constructor
     String(String&& other) noexcept
     {
-        capacity = other.capacity;
-        size = other.size;
         SmallMemCpy(stack, other.stack, 16);
-        SmallMemSet(other.stack, 0, 16);
-        other.size = other.capacity = 0;
+        other.ptr[0] = other.ptr[1] = nullptr;
     }
 
     const char* begin() const { return GetPtr(); }
-    const char* end()   const { return GetPtr() + size; }
+    const char* end()   const { return GetPtr() + GetSize(); }
     char*       begin() { return GetPtr(); }
-    char*       end()   { return GetPtr() + size; }
+    char*       end()   { return GetPtr() + GetSize(); }
 
-    int  Length() const { return size; }
-    bool Empty()  const { return size == 0; }
+    int  Length() const { return GetSize(); }
+    bool Empty()  const { return GetSize() == 0; }
     
           char* CStr()        { return GetPtr(); }
     const char* CStr()  const { return GetPtr(); }
 
-    const char& operator[] (int index) const { ASSERT(index < size && index > 0); return GetPtr()[index]; }
-          char& operator[] (int index)       { ASSERT(index < size && index > 0); return GetPtr()[index]; }
+    const char& operator[] (int index) const { ASSERT(index < GetSize() && index > 0); return GetPtr()[index]; }
+          char& operator[] (int index)       { ASSERT(index < GetSize() && index > 0); return GetPtr()[index]; }
 
     String& operator = (const String& right) 
     {
@@ -254,7 +264,7 @@ public:
 
     String operator + (const String& other) 
     {
-        String cpy(other.size + size + 1);
+        String cpy(other.GetSize() + GetSize() + 1);
         cpy.Append(GetPtr()); 
         cpy.Append(other.GetPtr()); 
         return (String&&)cpy; 
@@ -262,7 +272,7 @@ public:
 
     String operator + (const char* other)
     {
-        String cpy(StringLength(other) + size + 1); 
+        String cpy(StringLength(other) + GetSize() + 1);
         cpy.Append(GetPtr()); 
         cpy.Append(other); 
         return (String&&)cpy; 
@@ -278,24 +288,24 @@ public:
 
     void Asign(const String& other)
     {
-        TimeFunction
+        // TimeFunction
 
         if (&other == this) 
             return;
         
-        if (other.size >= size)
-            GrowIfNecessarry(other.size - size);
+        if (other.GetSize() >= GetSize())
+            GrowIfNecessarry(other.GetSize() - GetSize());
         else // size > other.size
-            MemSet(GetPtr() + other.size, 0, size - other.size); // set rest of the characters to 0
+            MemSet(GetPtr() + other.GetSize(), 0, GetSize() - other.GetSize()); // set rest of the characters to 0
 
-        if (other.size >= 16)
-            Copy(GetPtr(), other.GetPtr(), other.size);
+        if (other.GetSize() >= 16)
+            Copy(GetPtr(), other.GetPtr(), other.GetSize());
         else
         {
             MemCpy<1, 16>(GetPtr(), other.stack, 16);
         }
 
-        size = other.size;
+        SetSize(other.GetSize());
     }
 
     void Append(float f) { char arr[16]{}; FloatToString(arr, f); Append(arr); }
@@ -312,6 +322,9 @@ public:
     {
         int otherLen = StringLength(other);
         const char* ptr = GetPtr();
+        uint32_t size = GetSize();
+
+        if (otherLen > size) return -1;
 
         for (int i = size - otherLen; i >= 0; i--) {
             if (CompareN(ptr + i, other, otherLen))
@@ -341,9 +354,9 @@ public:
         {
             Allocate(size);
         }
-        else if (capacity < size)
+        else if (GetCapacity() < size)
         {
-            Reallocate(this->size, size);
+            Reallocate(this->GetSize(), size);
             SetCapacity(size);
         }
     }
@@ -351,13 +364,15 @@ public:
     void Clear()
     {
         Deallocate();
-        size = capacity = 0;
+        this->ptr[0] = this->ptr[1] = nullptr;
     }
 
     void Insert(int index, char c)
     {
         OpenSpace(index, 1);
+        int size = GetSize();
         GetPtr()[size++] = c;
+        SetSize(size);
     }
 
     void Insert(int index, const char* ptr)
@@ -374,16 +389,16 @@ public:
     
     String SubString(int index)
     {
-        int count = size - index;
-        ASSERT(index + count <= size);
+        int count = GetSize() - index;
+        ASSERT(index + count <= GetSize());
         String ret(count + 2);
-        ret.Append(GetPtr() + index, size - count);
+        ret.Append(GetPtr() + index, GetSize() - count);
         return ret;
     }
 
     String SubString(int index, int count)
     {
-        ASSERT(index + count <= size);
+        ASSERT(index + count <= GetSize());
         String ret(count + 2);
         ret.Append(GetPtr() + index, count);
         return ret;
@@ -393,8 +408,10 @@ public:
     {
         RemoveSpace(index, count);
         char* ptr = GetPtr();
+        int size = (int)GetSize();
         while (count--)
             ptr[--size] = 0;
+        SetSize(size);
     }
 
     void Remove(const char* find)
@@ -424,14 +441,17 @@ public:
     void Append(char c)
     {
         GrowIfNecessarry(1);
+        uint32_t size = (uint32_t)GetSize();
         GetPtr()[size++] = c;
+        SetSize(size);
     }
 
     void Append(const char* other, int count)
     {
         GrowIfNecessarry(count);
+        uint32_t size = GetSize();
         Copy(GetPtr() + size, other, count);
-        size += count;
+        SetSize(size + count);
     }
 
     void Append(const char* other)
@@ -443,15 +463,16 @@ public:
 
     void RemoveSpace(int _index, int _count)
     {
-        ASSERT((_index + _count) <= this->size);
-        int newSize = Max(this->size - _count, 0);
+        uint32_t size = this->GetSize();
+        ASSERT((_index + _count) <= size);
+        int newSize = Max(this->GetSize() - _count, 0u);
 
         int i = _index;
         int j = _index + _count;
 
         char* ptr = GetPtr();
         // *******i****j***   < opens space with incrementing both of the pointers (two pointer algorithm)
-        while (j < this->size)
+        while (j < size)
         {
             ptr[i++] = ptr[j++];
         }
@@ -460,7 +481,7 @@ public:
     void OpenSpace(int _index, int _count)
     {
         GrowIfNecessarry(_count);
-
+        uint32_t size = this->GetSize();
         long i = Min((long)size + _count, (long)GetCapacity());
         int  j = size;
         ASSERT(i <= INT32_MAX);
@@ -470,22 +491,22 @@ public:
         {
             ptr[--i] = ptr[--j];
         }
-        size += _count;
+        SetSize(size + _count);
     }
 
     void GrowIfNecessarry(int _size)
     {
-        int newSize = size + _size + 1;
+        int newSize = GetSize() + _size + 1;
         
-        if (newSize <= 16)
+        if (newSize <= 15)
             return;
-
-        if (newSize >= GetCapacity())
+        uint32_t capacity = GetCapacity();
+        if (newSize >= capacity)
         {
             constexpr int InitialSize = 64;
-            newSize = Max(CalculateArrayGrowth(size + _size), InitialSize);
-            if (size != 0) 
-                Reallocate(GetCapacity(), newSize);
+            newSize = Max(CalculateArrayGrowth(GetSize() + _size), InitialSize);
+            if (GetSize() != 0) 
+                Reallocate(capacity, newSize);
             else
                 Allocate(newSize);
 
@@ -496,7 +517,7 @@ public:
     char* c_str()             { return GetPtr(); }
     const char* c_str() const { return GetPtr(); }
 #ifdef ASTL_STL_COMPATIBLE
-    bool empty()       const  { return size == 0; }
+    bool empty()       const  { return GetSize()  == 0; }
 #endif
 };
 
