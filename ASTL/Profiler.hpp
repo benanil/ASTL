@@ -1,11 +1,20 @@
 #pragma once
 
 // from Casey Muratori's Computer Enhance course
-// define AX_PROFILER_DISABLE to disable the profiler
 
 //#define AX_PROFILER_DISABLE
 
 #include "IntFltTypesLimits.hpp"
+
+#ifdef AX_PROFILER_DISABLE
+#    define TimeBlock(Name) 
+#    define TimeFunction 
+#else
+#    define NameConcat2(A, B) A##B
+#    define NameConcat(A, B) NameConcat2(A, B)
+#    define TimeBlock(Name) profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
+#    define TimeFunction TimeBlock(__func__)
+#endif
 
 struct profile_anchor
 {
@@ -37,15 +46,6 @@ struct profile_block
     uint32_t AnchorIndex;
 };
 
-#ifdef AX_PROFILER_DISABLE
-#    define TimeBlock(Name) 
-#    define TimeFunction 
-#else
-#    define NameConcat2(A, B) A##B
-#    define NameConcat(A, B) NameConcat2(A, B)
-#    define TimeBlock(Name) profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
-#    define TimeFunction TimeBlock(__func__)
-#endif
 
 void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor);
 

@@ -105,6 +105,7 @@ public:
     
     void SetCapacity(int cap) 
     {
+        if (!UsingHeap()) return;
         lowHigh[1] &= 0xFFFFFFFFull | (1ull << 63ull);
         lowHigh[1] |= uint64_t(cap) << 32ull;
     }
@@ -129,7 +130,6 @@ public:
 
     void Allocate(int size)
     {
-        // TimeFunction;
         if (size < 23)
             return;
 
@@ -143,7 +143,6 @@ public:
     
     void Deallocate()
     {
-        // TimeFunction;
         if (UsingHeap())
             delete[] GetPtr();
 
@@ -152,7 +151,6 @@ public:
 
     void Reallocate(int oldCount, int count)
     {
-        //         TimeFunction;
         if (UsingHeap())
         {
             char* newPtr = new char[count] {};
@@ -187,26 +185,26 @@ public:
     {
         int clen = StringLength(cstr);
         Allocate(clen + 1);
-        Copy(GetPtr(), cstr, clen);
         SetCapacity(clen); 
         SetSize(clen);
+        Copy(GetPtr(), cstr, clen);
     }
 
     String(const char* cstr)
     {
         int clen = StringLength(cstr);
         Allocate(clen + 1);
-        SmallMemCpy(GetPtr(), cstr, clen);
         SetCapacity(clen);
         SetSize(clen);
+        SmallMemCpy(GetPtr(), cstr, clen);
     }
 
     String(const char* begin, int count)
     {
         Allocate(count + 1);
-        Copy(GetPtr(), begin, count);
         SetCapacity(count); 
         SetSize(count);
+        Copy(GetPtr(), begin, count);
     }
 
     // copy constructor
@@ -224,8 +222,8 @@ public:
 
     const char* begin() const { return GetPtr(); }
     const char* end()   const { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
-    char*       begin() { return GetPtr(); }
-    char*       end()   { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
+    char*       begin()       { return GetPtr(); }
+    char*       end()         { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
 
     int  Length() const { return GetSize(); }
     bool Empty()  const { return GetSize() == 0; }
@@ -345,7 +343,7 @@ public:
         else if (GetCapacity() < size)
         {
             Reallocate(GetCapacity(), size);
-            SetCapacity(size);
+            if (UsingHeap()) SetCapacity(size);
         }
     }
 
@@ -484,7 +482,8 @@ public:
 
     void GrowIfNecessarry(int _size)
     {
-        int newSize = GetSize() + _size + 1;
+        uint32_t size = GetSize();
+        int newSize = size + _size + 1;
         
         if (newSize <= 23)
             return;
@@ -492,9 +491,9 @@ public:
         uint32_t capacity = GetCapacity();
         if (newSize >= capacity)
         {
-            constexpr int InitialSize = 64;
-            newSize = Max(CalculateArrayGrowth(GetSize() + _size), InitialSize);
-            int size = GetSize();
+            constexpr int InitialSize = 48;
+            newSize = Max(CalculateArrayGrowth(size + _size), InitialSize);
+            
             if (size != 0) 
                 Reallocate(size, newSize);
             else
