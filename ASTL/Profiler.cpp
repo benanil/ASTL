@@ -119,11 +119,6 @@ profile_block::~profile_block(void)
 
 #ifndef AX_PROFILER_DISABLE
 
-#define NameConcat2(A, B) A##B
-#define NameConcat(A, B) NameConcat2(A, B)
-#define TimeBlock(Name) profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
-#define TimeFunction TimeBlock(__func__)
-
 #include <stdio.h>
 
 void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor)
@@ -167,9 +162,6 @@ void EndAndPrintProfile()
     GlobalProfilerParent = 0;
 }
 #else
-
-#define TimeBlock(Name) 
-#define TimeFunction 
 
 void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor) {}
 

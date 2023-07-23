@@ -276,9 +276,30 @@ FINLINE constexpr To BitCast(const From& _Val) {
 template<typename T> FINLINE constexpr T Min(T a, T b) { return a < b ? a : b; }
 template<typename T> FINLINE constexpr T Max(T a, T b) { return a > b ? a : b; }
 template<typename T> FINLINE constexpr T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
-template<typename T> FINLINE constexpr T Abs(T x) { return x < T(0) ? -x : x; }
 
-constexpr int NextPowerOf2(int x)
+constexpr int64_t Abs(int64_t x) 
+{
+    return (x < 0l) ? -x : x;
+}
+
+FINLINE constexpr int Abs(int x)
+{
+    return (x < 0) ? -x : x;
+}
+
+FINLINE constexpr float Abs(float x)
+{
+    int ix = BitCast<int>(x) & 0x7FFFFFFF; // every bit except sign mask
+    return BitCast<float>(ix);
+}
+
+FINLINE constexpr double Abs(double x)
+{
+    uint64 ix = BitCast<uint64>(x) & (~(1ull << 63ull));// every bit except sign mask
+    return BitCast<double>(ix);
+}
+
+FINLINE constexpr int NextPowerOf2(int x)
 {
     x--;
     x |= x >> 1; x |= x >> 2; x |= x >> 4;
@@ -292,18 +313,6 @@ constexpr int64_t NextPowerOf2(int64_t x)
     x |= x >> 1; x |= x >> 2;  x |= x >> 4;
     x |= x >> 8; x |= x >> 16; x |= x >> 32;
     return ++x;
-}
-
-template<> FINLINE constexpr float Abs(float x)
-{ 
-    int ix = BitCast<int>(x) & 0x7FFFFFFF; // every bit except sign mask
-    return BitCast<float>(ix);
-}
-
-template<> FINLINE constexpr double Abs(double x)
-{ 
-    uint64 ix = BitCast<uint64>(x) & (~(1ull << 63ull));// every bit except sign mask
-    return BitCast<double>(ix);
 }
 
 // maybe we should move this to Algorithms.hpp
