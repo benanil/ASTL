@@ -88,13 +88,17 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
     printf("%s END\n", name);
 }
 
+#include "Aditional.hpp"
+
 int main()
 {
-    AdventOfCodeTests();
+    //AdventOfCodeTests();
+    
     String testStr = "floating test: ";
     testStr += 1234.567f;
-    testStr.Replace("floating", "integing len oglim hiqqqqqqqlen oglim asdfasdasdfasdfasdasdf");
+    testStr.Replace("floating", "integing");
     testStr.Replace("1234", "43210");
+    testStr.Insert(testStr.Length()-2, "long string verry verry long it is huge that I can test it with this string so it will pass and works fine yeah just for test you now I'm sayin");
 
     printf("%s\n", testStr.CStr());
     
@@ -102,6 +106,17 @@ int main()
     testStr1 += 1234567;
     printf("%s\n", testStr1.CStr());
     
+    GrowablePoolAllocator<uint64_t> allocator(10);
+    
+    for (int i = 0; i < 9; i++)
+        *allocator.Allocate(1) = i + '0';
+
+    uint64_t* walk = allocator.firstBlock->data;
+
+    for (int i = 0; i < 9; i++)
+        printf("walk[i]: %c  ", (char)*walk++);
+
+    allocator.Allocate(1);
 
     static const KeyValuePair<int, String> testMapInitializer[13] =
     {
@@ -143,6 +158,9 @@ int main()
     {
         printf("%i, %s\n", x.key, x.value.CStr());
     }
+
+    String doozyuzdoksandooz = testMap[99999];
+    
     ASSERT(testMap[99999] == String("monkey"));
 
     HashSet<int> testSet{};

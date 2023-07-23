@@ -303,9 +303,7 @@ template<> FINLINE constexpr double Abs(double x)
 template<typename T>
 inline uint PointerDistance(const T* begin, const T* end)
 {
-    uint result = 0;
-    while (begin++ < end) result++;
-	  return result;
+    return uint((char*)end - (char*)begin) / sizeof(T);
 }
 
 inline constexpr int CalculateArrayGrowth(int _size)

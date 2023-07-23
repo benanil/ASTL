@@ -270,7 +270,7 @@ private:
             else if (distAndFootprint > bucket.distAndFingerprint)
             {
                 KeyValuePair<KeyT, ValueT> p(key, value);
-                m_values.EmplaceBack(Forward<KeyValuePair<KeyT, ValueT>>(p));
+                m_values.EmplaceBack((KeyValuePair<KeyT, ValueT>&&)p);
                 uint32 valueIdx = uint32(m_values.Size()) - 1;
                 PlaceAndShiftUp({distAndFootprint, valueIdx}, bucketIdx);
                 return { begin() + valueIdx, true };

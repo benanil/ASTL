@@ -20,6 +20,8 @@
 #define DELETE_ALL(...) FOR_EACH(delete, __VA_ARGS__)
 #define FREE_ALL(...) FOR_EACH(free, __VA_ARGS__)
 
+// Mersene twister is default random number generator in C++ stl but I don't recommend to use it
+// use PCG or XoroshiroShift128 instead
 
 // Copyright (c) 2011, 2013 Mutsuo Saito, Makoto Matsumoto,
 // Hiroshima University and The University of Tokyo. All rights reserved.
@@ -168,4 +170,144 @@ private:
 
 		m_Index = 0;
 	}
+};
+
+
+// if you remove too much you can use this allocator with red black tree.
+// this will use less memory compared to FixedSizeGrowableAllocator because this allocator handles deallocations better
+// also can be used for entity systems
+// Warning sizeof(T) must be equal or greater than 8 byte
+template<typename T>
+struct GrowablePoolAllocator
+{
+	struct Fragment
+	{
+		Fragment* next;
+	};
+
+	struct Block
+	{
+		T* data;
+		Fragment* freeFragment;
+		uint32_t numUsed;
+		uint32_t capacity;
+		Block* nextBlock;
+	};
+
+	static constexpr int InitialSize = 1024 / Min((int)sizeof(T), 128);
+
+	Block* firstBlock = nullptr;
+	Block* currentBlock = nullptr;
+
+public:
+
+	GrowablePoolAllocator() : GrowablePoolAllocator(InitialSize)
+	{ }
+    
+	explicit GrowablePoolAllocator(int blockSize)
+	{
+		firstBlock = CreateNewBlock(blockSize);
+		currentBlock = firstBlock;
+	}
+
+	~GrowablePoolAllocator()
+	{
+		Block* walk = firstBlock;
+
+		while (walk)
+		{
+			delete[] walk->data;
+			Block* nextWalk = walk->nextBlock;
+			delete walk;
+			walk = nextWalk;
+		}
+	}
+
+	Block* CreateNewBlock(int blockSize)
+	{
+		Block* block = new Block;
+        
+		block->data = new T[blockSize];
+		block->freeFragment = (Fragment*)block->data;
+		block->numUsed = 0;
+		block->capacity = blockSize;
+		block->nextBlock = nullptr;
+
+		Fragment* walk      = block->freeFragment;
+		Fragment* nextBlock = ((Fragment*)walk) + 1;
+
+		for (int i = 0; i < blockSize-1; i++)
+		{
+			walk->next = nextBlock;
+			walk = nextBlock;
+			nextBlock = nextBlock + 1;
+		}
+
+		walk->next = nullptr;
+		return block;
+	}
+
+	T* Allocate(int count)
+	{
+		Fragment* currentFragment = currentBlock->freeFragment;
+		T* newObj = (T*)currentFragment;
+		currentBlock->freeFragment = currentFragment->next;
+
+		if (++currentBlock->numUsed >= currentBlock->capacity)
+		{
+			if (currentBlock->nextBlock == nullptr)
+			{
+				Block* newBlock = CreateNewBlock(CalculateArrayGrowth(currentBlock->capacity));
+				currentBlock->nextBlock = newBlock;
+				currentBlock = newBlock;
+			}
+			else
+			{
+				currentBlock = currentBlock->nextBlock;
+			}
+		}
+        
+		return newObj;
+	}
+
+	void Deallocate(T* ptr, int count)
+	{
+		Block* containingBlock = nullptr;
+		// find containing block
+		{
+			Block* walk = firstBlock;
+        
+			while (walk)
+			{
+				if (ptr >= walk->data && ptr <= (walk->data + walk->capacity))
+					break;
+				walk = walk->nextBlock;
+			}
+			containingBlock = walk;
+			ASSERT(containingBlock);
+		}
+
+		Fragment* mem = (Fragment*)ptr;
+		mem->next  = containingBlock->freeFragment->next;
+		containingBlock->freeFragment = mem;
+
+		if (--containingBlock->numUsed == 0)
+		{
+			Block* walk = firstBlock;
+			if (walk == containingBlock) // this is the only block
+			{
+				return;
+			}
+
+			// search for blocks before this block, if it has space, we will use it
+			while (walk)
+			{
+				if (walk->numUsed < walk->capacity)
+					break;
+				walk = walk->nextBlock;
+			}
+			currentBlock = walk;
+		}
+	}
+
 };

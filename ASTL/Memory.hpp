@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Common.hpp"
- 
+
 template<typename T> struct RemoveRef      { typedef T Type; };
 template<typename T> struct RemoveRef<T&>  { typedef T Type; };
 template<typename T> struct RemoveRef<T&&> { typedef T Type; };
@@ -30,10 +30,54 @@ FINLINE constexpr T Exchange(T& obj, U&& new_value)
   return old_value;
 }
 
-// Aligns the size by the machine word.
-inline uint64_t Align(uint64_t n, uint64_t alignment = 64) 
+// Shift the given address upwards if/as necessary to// ensure it is aligned to the given number of bytes.
+inline uint64_t AlignAddress(uint64_t addr, uint64_t align)
 {
-    return (n + alignment - 1) & ~(alignment - 1);
+    const uint64_t mask = align - 1;
+    ASSERT((align & mask) == 0); // pwr of 2
+    return (addr + mask) & ~mask;
+}
+
+// Shift the given pointer upwards if/as necessary to// ensure it is aligned to the given number of bytes.
+template<typename T>
+inline T* AlignPointer(T* ptr, uint64_t align)
+{
+    const uint64_t addr = (uint64_t)ptr;
+    const uint64_t addrAligned = AlignAddress(addr, align);
+    return (T*)addrAligned;
+}
+
+// Aligned allocation function. IMPORTANT: 'align'// must be a power of 2 (typically 4, 8 or 16).
+inline void* AllocAligned(uint64_t bytes, uint64_t align)
+{
+    // Allocate 'align' more bytes than we need.
+    uint64_t actualBytes = bytes + align;
+    // Allocate unaligned block.
+    uint8* pRawMem = new uint8[actualBytes];
+    // Align the block. If no alignment occurred,// shift it up the full 'align' bytes so we// always have room to store the shift.
+    uint8* pAlignedMem = AlignPointer(pRawMem, align);
+    
+    if (pAlignedMem == pRawMem)
+        pAlignedMem += align;
+    // Determine the shift, and store it.// (This works for up to 256-byte alignment.)
+    uint8 shift = pAlignedMem - pRawMem;
+    ASSERT(shift > 0 && shift <= 256);
+    pAlignedMem[-1] = (uint8)(shift & 0xFF);
+    return pAlignedMem;
+}
+
+inline void FreeAligned(void* pMem)
+{
+    ASSERT(pMem);
+    // Convert to U8 pointer.
+    uint8* pAlignedMem = (uint8*)pMem;
+    // Extract the shift.
+    uint64_t shift = pAlignedMem[-1];
+    if (shift == 0)
+        shift = 256;
+    // Back up to the actual allocated address,
+    uint8* pRawMem = pAlignedMem - shift;
+    delete[] pRawMem;
 }
 
 // if you want memmove it is here with simd version: https://hackmd.io/@AndybnA/0410
@@ -261,12 +305,12 @@ struct FixedSizeGrowableAllocator
     struct Fragment
     {
         Fragment* next;
-        T*        ptr ;
+        T* ptr;
         int64_t   size; // used like a index until we fill the fragment
     };
 
-    int currentCapacity   = 0;
-    Fragment* base    = nullptr;
+    int currentCapacity = 0;
+    Fragment* base = nullptr;
     Fragment* current = nullptr;
 
     FixedSizeGrowableAllocator()
@@ -274,9 +318,9 @@ struct FixedSizeGrowableAllocator
         currentCapacity = InitialSize;
         base = new Fragment;
         current = base;
-        base->next  = nullptr;
-        base->ptr   = new T[InitialSize];
-        base->size  = 0;
+        base->next = nullptr;
+        base->ptr = new T[InitialSize];
+        base->size = 0;
     }
 
     ~FixedSizeGrowableAllocator()
@@ -305,17 +349,17 @@ struct FixedSizeGrowableAllocator
         }
 
         currentCapacity = NextPowerOf2(totalSize);
-        
+
         // even though other contains multiple fragments we will fit all data into one fragment
         base = new Fragment;
         base->next = nullptr;
-        base->ptr  = new T[currentCapacity]; 
+        base->ptr = new T[currentCapacity];
         base->size = totalSize;
         current = base;
-        
+
         // copy other's memory to ours
         T* curr = base->ptr;
-        start   = other.base;
+        start = other.base;
         while (start)
         {
             Copy(curr, start->ptr, start->size);
@@ -332,7 +376,7 @@ struct FixedSizeGrowableAllocator
             current->next = new Fragment();
             current = current->next;
             current->next = nullptr;
-            current->ptr  = new T[currentCapacity];
+            current->ptr = new T[currentCapacity];
             current->size = 0;
         }
     }
@@ -367,6 +411,7 @@ struct FixedSizeGrowableAllocator
         return Allocate(count);
     }
 };
+
 
 // todo add ScopedPtr
 // todo add ScopedFn

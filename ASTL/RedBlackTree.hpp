@@ -69,7 +69,7 @@ public:
 
 	~RedBlackTree()
 	{
-		Clear();
+		// Clear();
 	}
 
 	const Node* Nil() const { return &m_protect; }
