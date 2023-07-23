@@ -85,71 +85,59 @@ inline int StrCmp(const char* a, const char* b)
 #include "Profiler.hpp"
 
 // small string optimization
-
 class String
 {
 public:
     
     union
     {
-        char stack[16]{};
-        char* ptr[2];
-        uint64_t lowHigh[2]; // when using heap high part is =  capacity | (size << 31);
+        char stack[24]{};
+        char* ptr[3];
+        uint64_t lowHigh[3]; // when using heap high part is =  capacity | (size << 31);
     };
 
     static constexpr uint32_t LastBit32 = 1u << 31u;
 
     uint32_t GetCapacity() const
     {
-        return (uint32_t)((lowHigh[1] >> 32) & ~LastBit32);
+        return uint32_t(lowHigh[1] >> 32ull) & ~LastBit32;
     }
     
     void SetCapacity(int cap) 
     {
-        lowHigh[1] &= (uint64_t)(~1u) | (1ull << 63ull);
-        lowHigh[1] |= (((uint64_t)cap) << 32ull);
+        lowHigh[1] &= 0xFFFFFFFFull | (1ull << 63ull);
+        lowHigh[1] |= uint64_t(cap) << 32ull;
     }
 
     uint32_t GetSize() const 
     {
-        return !UsingHeap() ? StringLength(stack) : (uint32_t)(lowHigh[1] & (~1u));
+        return !UsingHeap() ? StringLength(stack) : (uint32_t)(lowHigh[1] & 0xFFFFFFFFull);
     }
     
     void SetSize(uint32_t size) 
     {
         if (!UsingHeap()) return;
-        lowHigh[1] &= (uint64_t)(~1u) << 32ull; 
+        lowHigh[1] &= 0xFFFFFFFFull << 32ull; 
         lowHigh[1] |= size;
     }
 
-    bool UsingHeap() const
-    {
-        return lowHigh[1] & (1ull << 63ull);
-    }
+    bool UsingHeap() const { return lowHigh[1] &  (1ull << 63ull); }
+    void SetUsingHeap()    {        lowHigh[1] |= (1ull << 63ull); }
 
-    void SetUsingHeap()
-    {
-        lowHigh[1] |= (1ull << 63ull);
-    }
-
-    const char* GetPtr() const
-    {
-        return UsingHeap() ? ptr[0] : stack;
-    }
-
-    char* GetPtr()
-    {
-        return UsingHeap() ? ptr[0] : stack;
-    }
+    const char* GetPtr() const { return UsingHeap() ? ptr[0] : stack; }
+          char* GetPtr()       { return UsingHeap() ? ptr[0] : stack; }
 
     void Allocate(int size)
     {
         // TimeFunction;
-        if (size < 15)
+        if (size < 23)
             return;
 
         int oldSize = GetSize();
         ptr[0] = new char[size] {};
+        ptr[2] = nullptr;
+        lowHigh[1] = oldSize;
+
         SetUsingHeap();
     }
     
@@ -159,27 +147,26 @@ public:
         if (UsingHeap())
             delete[] GetPtr();
 
-        ptr[0] = ptr[1] = nullptr;
+        ptr[0] = ptr[1] = ptr[2] = nullptr;
     }
 
     void Reallocate(int oldCount, int count)
     {
         //         TimeFunction;
-
         if (UsingHeap())
         {
             char* newPtr = new char[count] {};
-            char* ptr = GetPtr();
+            char* ptr = this->ptr[0];
             MemCpy<1>(newPtr, ptr, oldCount);
             delete[] ptr;
             this->ptr[0] = newPtr;
-            SetUsingHeap();
         }
-        else if (count > 15) // was stack allocating but bigger memory requested
+        else if (count > 23) // was stack allocating but bigger memory requested
         {
             char* newPtr = new char[count] {};
             MemCpy<1>(newPtr, stack, oldCount);
             ptr[0] = newPtr;
+            ptr[2] = nullptr;
             lowHigh[1] = oldCount;
             SetUsingHeap();
         }
@@ -231,14 +218,14 @@ public:
     // move constructor
     String(String&& other) noexcept
     {
-        SmallMemCpy(stack, other.stack, 16);
-        other.ptr[0] = other.ptr[1] = nullptr;
+        SmallMemCpy(stack, other.stack, 24);
+        other.ptr[0] = other.ptr[1] = other.ptr[2] = nullptr;
     }
 
     const char* begin() const { return GetPtr(); }
-    const char* end()   const { return GetPtr() + GetSize(); }
+    const char* end()   const { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
     char*       begin() { return GetPtr(); }
-    char*       end()   { return GetPtr() + GetSize(); }
+    char*       end()   { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
 
     int  Length() const { return GetSize(); }
     bool Empty()  const { return GetSize() == 0; }
@@ -289,23 +276,26 @@ public:
     void Asign(const String& other)
     {
         // TimeFunction
-
         if (&other == this) 
             return;
         
-        if (other.GetSize() >= GetSize())
-            GrowIfNecessarry(other.GetSize() - GetSize());
+        uint32_t otherSize = other.GetSize();
+        uint32_t size      = GetSize();
+
+        if (otherSize >= size)
+            GrowIfNecessarry(otherSize - size);
         else // size > other.size
-            MemSet(GetPtr() + other.GetSize(), 0, GetSize() - other.GetSize()); // set rest of the characters to 0
+            MemSet(GetPtr() + otherSize, 0, size - otherSize); // set rest of the characters to 0
 
-        if (other.GetSize() >= 16)
-            Copy(GetPtr(), other.GetPtr(), other.GetSize());
-        else
+        if (UsingHeap())
         {
-            MemCpy<1, 16>(GetPtr(), other.stack, 16);
+            Copy(ptr[0], other.GetPtr(), otherSize);
         }
-
-        SetSize(other.GetSize());
+        else 
+        {
+            MemCpy<1, 24>(GetPtr(), other.stack, 24);
+        }
+        SetSize(otherSize);
     }
 
     void Append(float f) { char arr[16]{}; FloatToString(arr, f); Append(arr); }
@@ -322,9 +312,7 @@ public:
     {
         int otherLen = StringLength(other);
         const char* ptr = GetPtr();
-        uint32_t size = GetSize();
-
-        if (otherLen > size) return -1;
+        int size = (int)GetSize();
 
         for (int i = size - otherLen; i >= 0; i--) {
             if (CompareN(ptr + i, other, otherLen))
@@ -350,13 +338,13 @@ public:
 
     void Reserve(int size)
     {
-        if (ptr[0] == nullptr && ptr[1] == nullptr)
+        if (GetSize() == 0)
         {
             Allocate(size);
         }
         else if (GetCapacity() < size)
         {
-            Reallocate(this->GetSize(), size);
+            Reallocate(GetCapacity(), size);
             SetCapacity(size);
         }
     }
@@ -364,7 +352,7 @@ public:
     void Clear()
     {
         Deallocate();
-        this->ptr[0] = this->ptr[1] = nullptr;
+        this->ptr[0] = this->ptr[1] = this->ptr[2] = nullptr;
     }
 
     void Insert(int index, char c)
@@ -441,7 +429,7 @@ public:
     void Append(char c)
     {
         GrowIfNecessarry(1);
-        uint32_t size = (uint32_t)GetSize();
+        uint32_t size = GetSize();
         GetPtr()[size++] = c;
         SetSize(size);
     }
@@ -498,15 +486,17 @@ public:
     {
         int newSize = GetSize() + _size + 1;
         
-        if (newSize <= 15)
+        if (newSize <= 23)
             return;
+
         uint32_t capacity = GetCapacity();
         if (newSize >= capacity)
         {
             constexpr int InitialSize = 64;
             newSize = Max(CalculateArrayGrowth(GetSize() + _size), InitialSize);
-            if (GetSize() != 0) 
-                Reallocate(capacity, newSize);
+            int size = GetSize();
+            if (size != 0) 
+                Reallocate(size, newSize);
             else
                 Allocate(newSize);
 

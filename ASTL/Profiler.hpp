@@ -3,7 +3,7 @@
 // from Casey Muratori's Computer Enhance course
 // define AX_PROFILER_DISABLE to disable the profiler
 
-// #define AX_PROFILER_DISABLE
+//#define AX_PROFILER_DISABLE
 
 #include "IntFltTypesLimits.hpp"
 
