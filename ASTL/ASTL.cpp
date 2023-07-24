@@ -108,7 +108,7 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
 }
 
 #include "Aditional.hpp"
-
+#include <string>
 
 int main()
 {

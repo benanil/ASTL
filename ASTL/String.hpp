@@ -85,34 +85,31 @@ inline int StrCmp(const char* a, const char* b)
 #include "Profiler.hpp"
 
 // small string optimization
+AX_ALIGNED(1) 
 class String
 {
 public:
     
-    union
-    {
-        char stack[24]{};
-        char* ptr[3];
-        uint64_t lowHigh[3]; // when using heap high part is =  capacity | (size << 31);
-    };
+    uint64_t lowHigh[3]{}; // when using heap high part is =  capacity | (size << 31);
 
     static constexpr uint32_t LastBit32 = 1u << 31u;
+    static constexpr uint64_t LastBit64 = 1ull << 63ull;
 
     uint32_t GetCapacity() const
     {
-        return uint32_t(lowHigh[1] >> 32ull) & ~LastBit32;
+        return UsingHeap() ? uint32_t(lowHigh[1] >> 32ull) & ~LastBit32 : 23;
     }
     
     void SetCapacity(int cap) 
     {
         if (!UsingHeap()) return;
-        lowHigh[1] &= 0xFFFFFFFFull | (1ull << 63ull);
+        lowHigh[1] &= 0xFFFFFFFFull | LastBit64;
         lowHigh[1] |= uint64_t(cap) << 32ull;
     }
 
     uint32_t GetSize() const 
     {
-        return !UsingHeap() ? StringLength(stack) : (uint32_t)(lowHigh[1] & 0xFFFFFFFFull);
+        return !UsingHeap() ? StringLength((char*)lowHigh) : (uint32_t)(lowHigh[1] & 0xFFFFFFFFull);
     }
     
     void SetSize(uint32_t size) 
@@ -122,11 +119,11 @@ public:
         lowHigh[1] |= size;
     }
 
-    bool UsingHeap() const { return lowHigh[1] &  (1ull << 63ull); }
-    void SetUsingHeap()    {        lowHigh[1] |= (1ull << 63ull); }
+    bool UsingHeap() const { return lowHigh[1] &  LastBit64; }
+    void SetUsingHeap()    {        lowHigh[1] |= LastBit64; }
 
-    const char* GetPtr() const { return UsingHeap() ? ptr[0] : stack; }
-          char* GetPtr()       { return UsingHeap() ? ptr[0] : stack; }
+    const char* GetPtr() const { return UsingHeap() ? (char*)lowHigh[0] : (char*)lowHigh; }
+          char* GetPtr()       { return UsingHeap() ? (char*)lowHigh[0] : (char*)lowHigh; }
 
     void Allocate(int size)
     {
@@ -134,9 +131,10 @@ public:
             return;
 
         int oldSize = GetSize();
-        ptr[0] = new char[size] {};
-        ptr[2] = nullptr;
+        char* ptr = new char[size]{};
+        lowHigh[0] = (uint64_t)ptr;
         lowHigh[1] = oldSize;
+        lowHigh[2] = 0;
 
         SetUsingHeap();
     }
@@ -146,7 +144,7 @@ public:
         if (UsingHeap())
             delete[] GetPtr();
 
-        ptr[0] = ptr[1] = ptr[2] = nullptr;
+        lowHigh[0] = lowHigh[1] = lowHigh[2] = 0;
     }
 
     void Reallocate(int oldCount, int count)
@@ -154,17 +152,17 @@ public:
         if (UsingHeap())
         {
             char* newPtr = new char[count] {};
-            char* ptr = this->ptr[0];
+            char* ptr = (char*)this->lowHigh[0];
             MemCpy<1>(newPtr, ptr, oldCount);
             delete[] ptr;
-            this->ptr[0] = newPtr;
+            this->lowHigh[0] = (uint64_t)newPtr;
         }
         else if (count > 23) // was stack allocating but bigger memory requested
         {
             char* newPtr = new char[count] {};
-            MemCpy<1>(newPtr, stack, oldCount);
-            ptr[0] = newPtr;
-            ptr[2] = nullptr;
+            SmallMemCpy(newPtr, lowHigh, oldCount);
+            lowHigh[0] = (uint64_t)newPtr;
+            lowHigh[2] = 0;
             lowHigh[1] = oldCount;
             SetUsingHeap();
         }
@@ -216,14 +214,14 @@ public:
     // move constructor
     String(String&& other) noexcept
     {
-        SmallMemCpy(stack, other.stack, 24);
-        other.ptr[0] = other.ptr[1] = other.ptr[2] = nullptr;
+        SmallMemCpy(lowHigh, other.lowHigh, 24);
+        other.lowHigh[0] = other.lowHigh[1] = other.lowHigh[2] = 0;
     }
 
     const char* begin() const { return GetPtr(); }
-    const char* end()   const { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
+    const char* end()   const { return UsingHeap() ? (const char*)(lowHigh[0] + (lowHigh[1] & 0xFFFFFFFFull)) : (char*)lowHigh; }
     char*       begin()       { return GetPtr(); }
-    char*       end()         { return UsingHeap() ? ptr[0] + (lowHigh[1] & 0xFFFFFFFFull) : stack; }
+    char*       end()         { return UsingHeap() ? (char*)(lowHigh[0] + (lowHigh[1] & 0xFFFFFFFFull)) : (char*)lowHigh; }
 
     int  Length() const { return GetSize(); }
     bool Empty()  const { return GetSize() == 0; }
@@ -287,11 +285,11 @@ public:
 
         if (UsingHeap())
         {
-            Copy(ptr[0], other.GetPtr(), otherSize);
+            Copy((char*)lowHigh[0], other.GetPtr(), otherSize);
         }
         else 
         {
-            MemCpy<1, 24>(GetPtr(), other.stack, 24);
+            SmallMemCpy(GetPtr(), other.lowHigh, 24);
         }
         SetSize(otherSize);
     }
@@ -319,20 +317,9 @@ public:
         return -1;
     }
 
-    int IndexOf(const String& other) const 
-    {
-        return IndexOf(other.CStr()) != -1;
-    }
-
-    bool Contains(const char* other) const
-    {
-        return IndexOf(other) != -1;
-    }
-    
-    bool Contains(const String& other) const
-    {
-        return IndexOf(other.CStr()) != -1;
-    }
+    int IndexOf(const String& other)   const { return IndexOf(other.CStr()) != -1; }
+    bool Contains(const char* other)   const { return IndexOf(other) != -1; }
+    bool Contains(const String& other) const { return IndexOf(other.CStr()) != -1; }
 
     void Reserve(int size)
     {
@@ -350,7 +337,7 @@ public:
     void Clear()
     {
         Deallocate();
-        this->ptr[0] = this->ptr[1] = this->ptr[2] = nullptr;
+        lowHigh[0] = lowHigh[1] = lowHigh[2] = 0;
     }
 
     void Insert(int index, char c)
@@ -518,3 +505,5 @@ template<> struct Hasher<String>
         // return MurmurHash64(x.CStr(), x.Length(), 0xa0761d6478bd642full);
     }
 };
+
+// todo StringView
