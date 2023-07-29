@@ -44,8 +44,8 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
 
     // {
     //     TimeBlock("Testmap HashMap insert speed: ");
-    //     uint64 pw = 1ull;
-    //     for (uint64 i = 0ull; i < 90000ull; ++i) {
+    //     uint64_t pw = 1ull;
+    //     for (uint64_t i = 0ull; i < 90000ull; ++i) {
     //         map.TryEmplace(pw, "123");
     //         pw += 331ull;
     //     }
@@ -53,10 +53,10 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
     // 
     // {
     //     TimeBlock("Testmap HashMap contains speed: ");
-    //     uint64 pw = 1ull;
-    //     uint64 numContains = 0ull;
+    //     uint64_t pw = 1ull;
+    //     uint64_t numContains = 0ull;
     // 
-    //     for (uint64 i = 0ull; i < 90000ull; ++i) {
+    //     for (uint64_t i = 0ull; i < 90000ull; ++i) {
     //         numContains += map.Find(pw) != map.cend();
     //         pw += 331ull;
     //     }
@@ -65,8 +65,8 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
     // 
     // {
     //     TimeBlock("Testmap HashMap Iteration speed: ");
-    //     uint64 keySum = 0ull;
-    //     uint64 valueSum = 0ull;
+    //     uint64_t keySum = 0ull;
+    //     uint64_t valueSum = 0ull;
     // 
     //     for (const auto& val : map) {
     //         keySum += val.key;
@@ -77,8 +77,8 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
     // 
     // {
     //     TimeBlock("Testmap HashMap Erase speed: ");
-    //     uint64 pw = 1ull;
-    //     for (uint64 i = 0ull; i < 90000ull; ++i) {
+    //     uint64_t pw = 1ull;
+    //     for (uint64_t i = 0ull; i < 90000ull; ++i) {
     //         map.Erase((int)pw);
     //         pw += 331ull;
     //     }
@@ -134,12 +134,12 @@ int main()
     testStr1 += 1234567;
     StrViewTest(testStr1);
     
-    GrowablePoolAllocator<uint64_t> allocator(10);
+    GrowablePoolAllocator<uint64_t > allocator(10);
     
     for (int i = 0; i < 9; i++)
         *allocator.Allocate(1) = i + '0';
 
-    uint64_t* walk = allocator.firstBlock->data;
+    uint64_t * walk = allocator.firstBlock->data;
 
     for (int i = 0; i < 9; i++)
         printf("walk[i]: %c  ", (char)*walk++);
@@ -166,7 +166,7 @@ int main()
             { 99999  , "monkey"   }
         };
 
-        static uint64_t arraySize = ArraySize(testMapInitializer);
+        static uint64_t  arraySize = ArraySize(testMapInitializer);
         HashMap<int, String> testMap(testMapInitializer, arraySize);
 
         testMap[4] = "no its five";
@@ -203,6 +203,8 @@ int main()
     testSet.Insert(213444590);
 
     PassingToConstFunction(testSet);
+    
+    getchar();
 
     return 0;
 }
@@ -224,12 +226,12 @@ int main()
 #define QUALITY   18   // 2^N iterations of estimate samples
 #define RESETMINS 90   // Reset pool after this many minutes of no progress
 
-static uint64_t
-rand64(uint64_t s[4])
+static uint64_t 
+rand64(uint64_t  s[4])
 {
-    uint64_t x = s[1] * 5;
-    uint64_t r = ((x << 7) | (x >> 57)) * 9;
-    uint64_t t = s[1] << 17;
+    uint64_t  x = s[1] * 5;
+    uint64_t  r = ((x << 7) | (x >> 57)) * 9;
+    uint64_t  t = s[1] << 17;
     s[2] ^= s[0];
     s[3] ^= s[1];
     s[1] ^= s[2];
@@ -275,7 +277,7 @@ static __m256i SIMDhash(const struct gene* g, __m256i x)
 
 #include <string.h>
 
-static double estimate_bias32SIMD(const struct gene* g, uint64_t rng[4])
+static double estimate_bias32SIMD(const struct gene* g, uint64_t  rng[4])
 {
     const long n = 1L << QUALITY;
     static const __m256i m1   = _mm256_set1_epi32(0xed5ad4bbu), 
@@ -344,7 +346,7 @@ static double estimate_bias32SIMD(const struct gene* g, uint64_t rng[4])
 }
 
 static double
-estimate_bias32(const struct gene* g, uint64_t rng[4])
+estimate_bias32(const struct gene* g, uint64_t  rng[4])
 {
     long n = 1L << QUALITY;
     long bins[32][32] = { {0} };
@@ -374,11 +376,11 @@ static double
 exact_bias32(const struct gene* g)
 {
     long long bins[32][32] = { {0} };
-    static const uint64_t range = (UINT64_C(1) << 32) / EXACT_SPLIT;
+    static const uint64_t  range = (UINT64_C(1) << 32) / EXACT_SPLIT;
 #pragma omp parallel for
     for (int i = 0; i < EXACT_SPLIT; i++) {
         long long b[32][32] = { {0} };
-        for (uint64_t x = i * range; x < (i + 1) * range; x++) {
+        for (uint64_t  x = i * range; x < (i + 1) * range; x++) {
             uint32_t h0 = hash(g, x);
             for (int j = 0; j < 32; j++) {
                 uint32_t bit = UINT32_C(1) << j;
@@ -410,11 +412,11 @@ SIMDexact_bias32(const struct gene* g)
     __m256i vbins[8][8];
     {
         long long bins[32][32] = { {0} };
-        static const uint64_t range = (UINT64_C(1) << 32) / EXACT_SPLIT;
+        static const uint64_t  range = (UINT64_C(1) << 32) / EXACT_SPLIT;
         #pragma omp parallel for
         for (int i = 0; i < EXACT_SPLIT; i++) {
             long long b[32][32] = { {0} };
-            for (uint64_t x = i * range; x < (i + 1) * range; x++) {
+            for (uint64_t  x = i * range; x < (i + 1) * range; x++) {
                 uint32_t h0 = hash(g, x);
                 for (int j = 0; j < 32; j++) {
                     uint32_t bit = UINT32_C(1) << j;
@@ -461,10 +463,10 @@ SIMDexact_bias32(const struct gene* g)
 }
 
 static void
-gene_gen(struct gene* g, uint64_t rng[4])
+gene_gen(struct gene* g, uint64_t  rng[4])
 {
-    uint64_t s = rand64(rng);
-    uint64_t c = rand64(rng);
+    uint64_t  s = rand64(rng);
+    uint64_t  c = rand64(rng);
     g->s[0] = 10 + (s >> 0) % 10;
     g->s[1] = 10 + (s >> 24) % 10;
     g->s[2] = 10 + (s >> 48) % 10;
@@ -482,16 +484,16 @@ gene_print(const struct gene* g, FILE* f)
 }
 
 static int
-small(uint64_t r)
+small(uint64_t  r)
 {
     static const int v[] = { -3, -2, -1, +1, +2, +3 };
     return v[r % 6];
 }
 
 static void
-gene_mutate(struct gene* g, uint64_t rng[4])
+gene_mutate(struct gene* g, uint64_t  rng[4])
 {
-    uint64_t r = rand64(rng);
+    uint64_t  r = rand64(rng);
     int s = r % 5;
     r >>= 3;
     switch (s) {
@@ -518,9 +520,9 @@ static void
 gene_cross(struct gene* g,
     const struct gene* a,
     const struct gene* b,
-    uint64_t rng[4])
+    uint64_t  rng[4])
 {
-    uint64_t r = rand64(rng);
+    uint64_t  r = rand64(rng);
     *g = *a;
     switch (r & 2) {
     case 0: g->c[0] = b->c[0]; /* FALLTHROUGH */
@@ -547,11 +549,11 @@ static void
 rng_init(void* p, size_t len)
 {
     using namespace Random;
-    uint64_t xoro[2];
+    uint64_t  xoro[2];
     Xoroshiro128PlusInit(xoro);
-    uint64_t* ip = (uint64_t*)p;
+    uint64_t * ip = (uint64_t *)p;
 
-    for (uint64_t i = 0; i < len / sizeof(uint64_t); i++)
+    for (uint64_t  i = 0; i < len / sizeof(uint64_t ); i++)
     {
         *ip++ = Xoroshiro128Plus(xoro);
     }
@@ -570,7 +572,7 @@ cmp(const void* pa, const void* pb)
 }
 
 static void
-undup(struct gene* pool, uint64_t rng[4])
+undup(struct gene* pool, uint64_t  rng[4])
 {
     for (int i = 0; i < POOL; i++)
         for (int j = i + 1; j < POOL; j++)
@@ -586,7 +588,7 @@ main(void)
     int verbose = 1;
     double best = 1000.0;
     time_t best_time = time(0);
-    uint64_t rng[POOL][4];
+    uint64_t  rng[POOL][4];
     struct gene pool[POOL];
 
     rng_init(rng, sizeof(rng));

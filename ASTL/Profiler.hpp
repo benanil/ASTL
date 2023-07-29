@@ -18,17 +18,17 @@
 
 struct profile_anchor
 {
-    uint64_t TSCElapsedExclusive; // NOTE(casey): Does NOT include children
-    uint64_t TSCElapsedInclusive; // NOTE(casey): DOES include children
-    uint64_t HitCount;
+    uint64_t  TSCElapsedExclusive; // NOTE(casey): Does NOT include children
+    uint64_t  TSCElapsedInclusive; // NOTE(casey): DOES include children
+    uint64_t  HitCount;
     char const* Label;
 };
 
 struct profiler
 {
     profile_anchor Anchors[2048];
-    uint64_t StartTSC;
-    uint64_t EndTSC;
+    uint64_t  StartTSC;
+    uint64_t  EndTSC;
 };
 
 extern profiler GlobalProfiler;
@@ -40,14 +40,14 @@ struct profile_block
     ~profile_block(void);
 
     char const* Label;
-    uint64_t OldTSCElapsedInclusive;
-    uint64_t StartTSC;
+    uint64_t  OldTSCElapsedInclusive;
+    uint64_t  StartTSC;
     uint32_t ParentIndex;
     uint32_t AnchorIndex;
 };
 
 
-void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor);
+void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor);
 
 void BeginProfile(void);
 

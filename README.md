@@ -18,6 +18,9 @@ I've tried to use templates as less as possible, but library has templates but w
 
 what pushed me into this is compile times of standard library and its slow performance <br>
 with debug mode<br>
+# Here is how you can run test code:
+g++ -std=c++17 -w -O3 -mavx2 ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl_test
+
 ## Appendix
 All data structures has custom allocator support, but RedBlackTree has Growable fixed Size allocator that Stewart Lynch mentioned one of his videos,<br>
 it is fast to allocate and RedBlackTree is fast because of this.

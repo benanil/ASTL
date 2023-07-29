@@ -7,14 +7,14 @@
 #include <intrin.h>
 #include <windows.h>
 
-static uint64_t GetOSTimerFreq(void)
+static uint64_t  GetOSTimerFreq(void)
 {
     LARGE_INTEGER Freq;
     QueryPerformanceFrequency(&Freq);
     return Freq.QuadPart;
 }
 
-static uint64_t ReadOSTimer(void)
+static uint64_t  ReadOSTimer(void)
 {
     LARGE_INTEGER Value;
     QueryPerformanceCounter(&Value);
@@ -24,18 +24,18 @@ static uint64_t ReadOSTimer(void)
 #include <x86intrin.h>
 #include <sys/time.h>
 
-static uint64_t GetOSTimerFreq(void)
+static uint64_t  GetOSTimerFreq(void)
 {
     return 1000000;
 }
 
-static uint64_t ReadOSTimer(void)
+static uint64_t  ReadOSTimer(void)
 {
     // NOTE(casey): The "struct" keyword is not necessary here when compiling in C++,
     // but just in case anyone is using this file from C, I include it.
     struct timeval Value;
     gettimeofday(&Value, 0);
-    uint64_t Result = GetOSTimerFreq() * (uint64_t)Value.tv_sec + (uint64_t)Value.tv_usec;
+    uint64_t  Result = GetOSTimerFreq() * (uint64_t )Value.tv_sec + (uint64_t )Value.tv_usec;
     return Result;
 }
 #endif
@@ -44,7 +44,7 @@ static uint64_t ReadOSTimer(void)
    because compilers will inline it anyway. But compilers will warn about
    static functions that aren't used. So "inline" is just the simplest way
    to tell them to stop complaining about that. */
-inline uint64_t ReadCPUTimer(void)
+inline uint64_t  ReadCPUTimer(void)
 {
     // NOTE(casey): If you were on ARM, you would need to replace __rdtsc
     // with one of their performance counter read instructions, depending
@@ -52,26 +52,26 @@ inline uint64_t ReadCPUTimer(void)
     return __rdtsc();
 }
 
-static uint64_t EstimateCPUTimerFreq(void)
+static uint64_t  EstimateCPUTimerFreq(void)
 {
-    uint64_t MillisecondsToWait = 100;
-    uint64_t OSFreq = GetOSTimerFreq();
+    uint64_t  MillisecondsToWait = 100;
+    uint64_t  OSFreq = GetOSTimerFreq();
 
-    uint64_t CPUStart = ReadCPUTimer();
-    uint64_t OSStart = ReadOSTimer();
-    uint64_t OSEnd = 0;
-    uint64_t OSElapsed = 0;
-    uint64_t OSWaitTime = OSFreq * MillisecondsToWait / 1000;
+    uint64_t  CPUStart = ReadCPUTimer();
+    uint64_t  OSStart = ReadOSTimer();
+    uint64_t  OSEnd = 0;
+    uint64_t  OSElapsed = 0;
+    uint64_t  OSWaitTime = OSFreq * MillisecondsToWait / 1000;
     while (OSElapsed < OSWaitTime)
     {
         OSEnd = ReadOSTimer();
         OSElapsed = OSEnd - OSStart;
     }
 
-    uint64_t CPUEnd = ReadCPUTimer();
-    uint64_t CPUElapsed = CPUEnd - CPUStart;
+    uint64_t  CPUEnd = ReadCPUTimer();
+    uint64_t  CPUElapsed = CPUEnd - CPUStart;
 
-    uint64_t CPUFreq = 0;
+    uint64_t  CPUFreq = 0;
     if (OSElapsed)
     {
         CPUFreq = OSFreq * CPUElapsed / OSElapsed;
@@ -100,7 +100,7 @@ profile_block::profile_block(char const* Label_, uint32_t AnchorIndex_)
 
 profile_block::~profile_block(void)
 {
-    uint64_t Elapsed = ReadCPUTimer() - StartTSC;
+    uint64_t  Elapsed = ReadCPUTimer() - StartTSC;
     GlobalProfilerParent = ParentIndex;
 
     profile_anchor* Parent = GlobalProfiler.Anchors + ParentIndex;
@@ -120,7 +120,7 @@ profile_block::~profile_block(void)
 
 #ifndef AX_PROFILER_DISABLE
 
-void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor)
+void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor)
 {
     double Percent = 100.0 * ((double)Anchor->TSCElapsedExclusive / (double)TotalTSCElapsed);
     printf("  %s[%llu]: %llu (%.2f%%", Anchor->Label, Anchor->HitCount, Anchor->TSCElapsedExclusive, Percent);
@@ -140,9 +140,9 @@ void BeginProfile(void)
 void EndAndPrintProfile()
 {
     GlobalProfiler.EndTSC = ReadCPUTimer();
-    uint64_t CPUFreq = EstimateCPUTimerFreq();
+    uint64_t  CPUFreq = EstimateCPUTimerFreq();
 
-    uint64_t TotalCPUElapsed = GlobalProfiler.EndTSC - GlobalProfiler.StartTSC;
+    uint64_t  TotalCPUElapsed = GlobalProfiler.EndTSC - GlobalProfiler.StartTSC;
 
     if (CPUFreq)
     {
@@ -165,7 +165,7 @@ void EndAndPrintProfile()
 #else
 
 
-void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor) {}
+void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor) {}
 
 
 void BeginProfile(void) {}

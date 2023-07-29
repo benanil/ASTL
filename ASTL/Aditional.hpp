@@ -32,12 +32,12 @@ AX_NAMESPACE
 class MTwister64
 {
 	static const int N = 624, M = 367;
-	uint64 m_MT[N];
+	uint64_t m_MT[N];
 	int m_Index = N + 1;
 
 public:
 	// any non zero integer can be used as a seed
-	MTwister64(uint64 seed = 4357ul)
+	MTwister64(uint64_t seed = 4357ul)
 	{
 		m_MT[0] = seed & ~0ul;
 		for (m_Index = 1; m_Index < N; ++m_Index)
@@ -47,7 +47,7 @@ public:
 	uint32 Next()
 	{
 		if (m_Index >= N) GenerateNumbers();
-		uint64 x = m_MT[m_Index++];
+		uint64_t x = m_MT[m_Index++];
 		x ^= x >> 11;
 		x ^= x << 7 & 0x9d2c5680ul;
 		x ^= x << 15 & 0xefc60000ul;
@@ -55,14 +55,14 @@ public:
 		return int(x >> 16);
 	}
 
-	uint64 Next64() { return uint32(Next() >> 16); }
+	uint64_t Next64() { return uint32(Next() >> 16); }
 
 private:
 
 	void GenerateNumbers()
 	{
-		static const uint64 mag01[2] = { 0x0, 0x9908b0dful };
-		int kk = 0; uint64 y;
+		static const uint64_t mag01[2] = { 0x0, 0x9908b0dful };
+		int kk = 0; uint64_t y;
 
 		while (kk < N - M) // unrolled for chace line optimizations
 		{
@@ -127,12 +127,12 @@ public:
 		return y ^ (y >> 18u);
 	}
 
-	uint64 Next64()
+	uint64_t Next64()
 	{
 		if (AX_UNLIKELY(m_Index + 1 >= SIZE))
 			GenerateNumbers();
 
-		uint64 y = m_MT[m_Index++] & (uint64(m_MT[m_Index++]) << 32ul);
+		uint64_t y = m_MT[m_Index++] & (uint64(m_MT[m_Index++]) << 32ul);
 		y ^= y >> 11ul;
 		y ^= y << 7ul & (0x9d2c5680ull & (0x9d2c5680ull << 32ull));
 		y ^= y << 15ul & (0xefc60000ull & (0xefc60000ull << 32ull));

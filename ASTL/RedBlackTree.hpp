@@ -34,24 +34,24 @@ public:
 		Node*  right;
 		ValueT value;
 
-		bool IsRed()  const { return ((uint64_t)parent) & 0x1ull; }
+		bool IsRed()  const { return ((uint64_t )parent) & 0x1ull; }
 		bool IsBlack() const { return !IsRed(); }
 
-		void SetRed()   { parent = (Node*)((uint64_t)parent | 0x1ull); }  
-		void SetBlack() { parent = (Node*)((uint64_t)parent & ~0x1ull); }
+		void SetRed()   { parent = (Node*)((uint64_t )parent | 0x1ull); }  
+		void SetBlack() { parent = (Node*)((uint64_t )parent & ~0x1ull); }
 
 		bool GetColor() const { return IsRed(); }
 		void SetColor(bool isRed)
 		{
-			parent = (Node*)(uint64_t(isRed) | ((uint64_t)parent & ~0x1ull));
+			parent = (Node*)(uint64_t (isRed) | ((uint64_t )parent & ~0x1ull));
 		}
 
 		void SetParent(Node* newParent) {
-			parent = (Node*)((uint64_t)newParent | (((uint64_t)parent) & 0x1));
+			parent = (Node*)((uint64_t )newParent | (((uint64_t )parent) & 0x1));
 		}
 
 		Node* GetParent() const {
-			return (Node*)(((uint64_t)parent) & ~0x1);
+			return (Node*)(((uint64_t )parent) & ~0x1);
 		}
 	};
 

@@ -1,63 +1,31 @@
 #pragma once
 
 #ifndef _STDINT
-
-#if defined(_MSC_VER)
-#if _MSC_VER < 1300
 typedef unsigned char      uint8   ;
 typedef unsigned char      uint8_t ;
 typedef unsigned short     uint16  ;
 typedef unsigned short     uint16_t;
 typedef unsigned int       uint32  ;
 typedef unsigned int       uint32_t;
-typedef unsigned long long uint64  ;
+typedef unsigned long long uint64;
 typedef unsigned long long uint64_t;
 typedef char      int8   ;
-typedef char      int8_t ;
+typedef signed char int8_t;
 typedef short     int16  ;
 typedef short     int16_t;
 typedef int       int32  ;
 typedef int       int32_t;
 typedef long long int64  ;
 typedef long long int64_t;
-#else
-typedef unsigned __int8  uint8   ;
-typedef unsigned __int8  uint8_t ;
-typedef unsigned __int16 uint16  ;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int32 uint32  ;
-typedef unsigned __int32 uint32_t;
-typedef unsigned __int64 uint64  ;
-typedef unsigned __int64 uint64_t;
-typedef signed __int8  int8   ;
-typedef signed __int8  int8_t ;
-typedef signed __int16 int16  ;
-typedef signed __int16 int16_t;
-typedef signed __int32 int32  ;
-typedef signed __int32 int32_t;
-typedef signed __int64 int64  ;
-typedef signed __int64 int64_t;
-#endif
-#else
-#include <stdint.h>
-typedef uint8_t  uint8 ;
-typedef int8_t   int8  ;
-typedef uint16_t uint16;
-typedef int16_t  int16 ;
-typedef uint32_t uint32;
-typedef int32_t  int32 ;
-typedef uint64_t unt64 ;
-typedef int64_t  int64 ;
-#endif
 
-#define INT8_MIN   (-127i8 - 1)
-#define INT16_MIN  (-32767i16 - 1)
-#define INT32_MIN  (-2147483647i32 - 1)
-#define INT64_MIN  (-9223372036854775807i64 - 1)
-#define INT8_MAX   127i8
-#define INT16_MAX  32767i16
-#define INT32_MAX  2147483647i32
-#define INT64_MAX  9223372036854775807i64
+#define INT8_MIN   (-127 - 1)
+#define INT16_MIN  (-32767 - 1)
+#define INT32_MIN  (-2147483647 - 1)
+#define INT64_MIN  (-9223372036854775807 - 1)
+#define INT8_MAX   127
+#define INT16_MAX  32767
+#define INT32_MAX  2147483647
+#define INT64_MAX  9223372036854775807
                    
 #define UINT8_MAX  0xffui8
 #define UINT16_MAX 0xffffui16

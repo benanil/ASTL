@@ -6,7 +6,7 @@
 
 #ifdef _WIN32
 extern "C" {
-	__declspec(dllimport) uint64 __stdcall SetThreadAffinityMask(void* thread, uint64 mask);
+	__declspec(dllimport) uint64_t __stdcall SetThreadAffinityMask(void* thread, uint64_t mask);
 	__declspec(dllimport) int   __stdcall SetThreadPriority(void* thread, int priority);
 	__declspec(dllimport) long  __stdcall SetThreadDescription(void* thread, const wchar_t* description);
 }
@@ -27,8 +27,8 @@ inline void SetToUniqueCore(std::thread& worker, int coreIndex)
 	// Do Windows-specific thread setup:
 	// Put each thread on to dedicated core
 	void* handle = worker.native_handle();
-	uint64 affinityMask = 1ull << coreIndex;
-	uint64 affinity_result = SetThreadAffinityMask(handle, affinityMask);
+	uint64_t affinityMask = 1ull << coreIndex;
+	uint64_t affinity_result = SetThreadAffinityMask(handle, affinityMask);
 	assert(affinity_result > 0);
 
 	//// Increase thread priority:

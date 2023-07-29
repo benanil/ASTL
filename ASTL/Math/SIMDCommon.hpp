@@ -66,38 +66,39 @@ AX_ALIGNED(16) struct Vector432F
 	__constexpr Vector432F(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 };
 
-AXGLOBALCONST uint32_t AX_SELECT_0 = 0x00000000;
-AXGLOBALCONST uint32_t AX_SELECT_1 = 0xFFFFFFFF;
+constexpr uint32_t AX_SELECT_0 = 0x00000000;
+constexpr uint32_t AX_SELECT_1 = 0xFFFFFFFF;
 
-AXGLOBALCONST Vector4UI g_XMSelect1000 = { AX_SELECT_1, AX_SELECT_0, AX_SELECT_0, AX_SELECT_0 };
-AXGLOBALCONST Vector4UI g_XMSelect1100 = { AX_SELECT_1, AX_SELECT_1, AX_SELECT_0, AX_SELECT_0 };
-AXGLOBALCONST Vector4UI g_XMSelect1110 = { AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0 };
-AXGLOBALCONST Vector4UI g_XMSelect1011 = { AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1 };
+#define g_XMSelect1000 Vector4UI(AX_SELECT_1, AX_SELECT_0, AX_SELECT_0, AX_SELECT_0)
+#define g_XMSelect1100 Vector4UI(AX_SELECT_1, AX_SELECT_1, AX_SELECT_0, AX_SELECT_0)
+#define g_XMSelect1110 Vector4UI(AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0)
+#define g_XMSelect1011 Vector4UI(AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1)
 
-AXGLOBALCONST Vector432F g_XMIdentityR0 = { 1.0f, 0.0f, 0.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMIdentityR1 = { 0.0f, 1.0f, 0.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMIdentityR2 = { 0.0f, 0.0f, 1.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMIdentityR3 = { 0.0f, 0.0f, 0.0f, 1.0f };
+#define g_XMIdentityR0 Vector432F(1.0f, 0.0f, 0.0f, 0.0f);
+#define g_XMIdentityR1 Vector432F(0.0f, 1.0f, 0.0f, 0.0f);
+#define g_XMIdentityR2 Vector432F(0.0f, 0.0f, 1.0f, 0.0f);
+#define g_XMIdentityR3 Vector432F(0.0f, 0.0f, 0.0f, 1.0f);
 
-AXGLOBALCONST Vector4UI g_XMMaskXY = { 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMask3  = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskX  = { 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskY  = { 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskZ  = { 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000 };
-AXGLOBALCONST Vector4UI g_XMMaskW  = { 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF };
+#define g_XMMaskXY Vector4UI(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)
+#define g_XMMask3  Vector4UI(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000)
+#define g_XMMaskX  Vector4UI(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)
+#define g_XMMaskY  Vector4UI(0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000)
+#define g_XMMaskZ  Vector4UI(0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000)
+#define g_XMMaskW  Vector4UI(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF)
 
-AXGLOBALCONST Vector432F g_XMOne         = { 1.0f, 1.0f, 1.0f, 1.0f };
-AXGLOBALCONST Vector432F g_XMOne3        = { 1.0f, 1.0f, 1.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMZero        = { 0.0f, 0.0f, 0.0f, 0.0f };
-AXGLOBALCONST Vector432F g_XMTwo         = { 2.0f, 2.0f, 2.0f, 2.0f };
-AXGLOBALCONST Vector432F g_XMFour        = { 4.0f, 4.0f, 4.0f, 4.0f };
-AXGLOBALCONST Vector432F g_XMSix         = { 6.0f, 6.0f, 6.0f, 6.0f };
-AXGLOBALCONST Vector432F g_XMNegativeOne = { -1.0f, -1.0f, -1.0f, -1.0f };
-AXGLOBALCONST Vector432F g_XMOneHalf     = { 0.5f, 0.5f, 0.5f, 0.5f };
+#define g_XMOne         Vector432F( 1.0f, 1.0f, 1.0f, 1.0f)
+#define g_XMOne3        Vector432F( 1.0f, 1.0f, 1.0f, 0.0f)
+#define g_XMZero        Vector432F( 0.0f, 0.0f, 0.0f, 0.0f)
+#define g_XMTwo         Vector432F( 2.0f, 2.0f, 2.0f, 2.0f)
+#define g_XMFour        Vector432F( 4.0f, 4.0f, 4.0f, 4.0f)
+#define g_XMSix         Vector432F( 6.0f, 6.0f, 6.0f, 6.0f)
+#define g_XMNegativeOne Vector432F( -1.0f, -1.0f, -1.0f, -1.0f)
+#define g_XMOneHalf     Vector432F( 0.5f, 0.5f, 0.5f, 0.5f)
 
 __forceinline __m128 VECTORCALL SSESelect(const __m128 V1, const __m128 V2, const __m128& Control)
 {
-	return _mm_or_ps(_mm_andnot_ps(Control, V1), _mm_and_ps(V2, Control));
+    return _mm_blendv_ps(V1, V2, Control);
+    // return _mm_or_ps(_mm_andnot_ps(Control, V1), _mm_and_ps(V2, Control));
 }
 
 #if __cplusplus >= 201703L
@@ -233,9 +234,17 @@ __forceinline float VECTORCALL hsum_ps_sse3(__m128 v) {
 
 __forceinline __m256i VECTORCALL SSESelect(const __m256i V1, const __m256i V2, const __m256i& Control)
 {
-	__m256i vTemp1 = _mm256_andnot_epi32(Control, V1);
-	__m256i vTemp2 = _mm256_and_epi32(V2, Control);
-	return _mm256_or_epi32(vTemp1, vTemp2);
+    __m256i result;
+
+    asm volatile(
+        "vandnps %2, %0, %0\n\t"
+        "vandps %1, %2, %1\n\t"
+        "vpor %1, %0, %0"
+        : "=x" (result)
+    : "x" (V2), "x" (Control), "0" (V1)
+    );
+
+    return result;
 }
 
 

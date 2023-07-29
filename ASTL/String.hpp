@@ -90,10 +90,10 @@ class String
 {
 public:
     
-    uint64_t lowHigh[3]{}; // when using heap high part is =  capacity | (size << 31);
+    uint64_t  lowHigh[3]{}; // when using heap high part is =  capacity | (size << 31);
 
     static const uint32_t LastBit32 = 1u << 31u;
-    static const uint64_t LastBit64 = 1ull << 63ull;
+    static const uint64_t  LastBit64 = 1ull << 63ull;
 
     uint32_t GetCapacity() const
     {
@@ -104,7 +104,7 @@ public:
     {
         if (!UsingHeap()) return;
         lowHigh[1] &= 0xFFFFFFFFull | LastBit64;
-        lowHigh[1] |= uint64_t(cap) << 32ull;
+        lowHigh[1] |= uint64_t (cap) << 32ull;
     }
 
     uint32_t GetSize() const 
@@ -132,7 +132,7 @@ public:
 
         int oldSize = GetSize();
         char* ptr = new char[size]{};
-        lowHigh[0] = (uint64_t)ptr;
+        lowHigh[0] = (uint64_t )ptr;
         lowHigh[1] = oldSize;
         lowHigh[2] = 0;
 
@@ -155,13 +155,13 @@ public:
             char* ptr = (char*)this->lowHigh[0];
             MemCpy<1>(newPtr, ptr, oldCount);
             delete[] ptr;
-            this->lowHigh[0] = (uint64_t)newPtr;
+            this->lowHigh[0] = (uint64_t )newPtr;
         }
         else if (count > 23) // was stack allocating but bigger memory requested
         {
             char* newPtr = new char[count] {};
             SmallMemCpy(newPtr, lowHigh, oldCount);
-            lowHigh[0] = (uint64_t)newPtr;
+            lowHigh[0] = (uint64_t )newPtr;
             lowHigh[2] = 0;
             lowHigh[1] = oldCount;
             SetUsingHeap();
@@ -499,7 +499,7 @@ public:
 
 template<> struct Hasher<String>
 {
-    static __forceinline uint64 Hash(const String& x)
+    static __forceinline uint64_t Hash(const String& x)
     {
         return WYHash::Hash(x.CStr(), x.Length());
         // return MurmurHash64(x.CStr(), x.Length(), 0xa0761d6478bd642full);

@@ -37,7 +37,7 @@ AX_NAMESPACE
 * example custom hasher
 template<> struct Hasher<int> 
 {
-    static __forceinline uint64 Hash(int obj) {
+    static __forceinline uint64_t Hash(int obj) {
         return uint64(Random::WangHash(x)) * 0x9ddfea08eb382d69ull;
     }
 };
@@ -77,18 +77,18 @@ private:
 
     uint32 DistDec(uint32 x) const { return x - Bucket::DistInc; }
 
-    uint32 DistAndFingerprintFromHash(uint64 hash) const {
+    uint32 DistAndFingerprintFromHash(uint64_t hash) const {
         return Bucket::DistInc | (hash & Bucket::FingerprintMask);
     }
 
     Bucket& BucketAt(uint32 index) { return m_buckets[index]; }
     const Bucket& BucketAt(uint32 index) const { return m_buckets[index]; }
 
-    uint32 BucketIdxFromHash(uint64 hash) const { return uint32(hash >> m_shifts); }
+    uint32 BucketIdxFromHash(uint64_t hash) const { return uint32(hash >> m_shifts); }
     
     Bucket NextWhileLess(const KeyT& key) const
     {
-        uint64 hash               = HasherT::Hash(key);
+        uint64_t hash               = HasherT::Hash(key);
         uint32 distAndFingerprint = DistAndFingerprintFromHash(hash);
         uint32 bucketIdx          = BucketIdxFromHash(hash);
 
@@ -203,7 +203,7 @@ private:
             KeyT& key = m_keys[valueIdxToRemove];
             key = Move(m_keys.Back());
 
-            uint64 mh = HasherT::Hash(key);
+            uint64_t mh = HasherT::Hash(key);
             bucketIdx = BucketIdxFromHash(mh);
 
             const uint32 valuesIdxBack = uint32(m_keys.Size()) - 1;
@@ -223,7 +223,7 @@ private:
             IncreaseSize();
 
         KeyT key(Forward<Args>(args)...);
-        uint64 hash             = HasherT::Hash(key);
+        uint64_t hash             = HasherT::Hash(key);
         uint32 distAndFootprint = DistAndFingerprintFromHash(hash);
         uint32 bucketIdx        = BucketIdxFromHash(hash);
         Bucket bucket           = BucketAt(bucketIdx);
@@ -250,7 +250,7 @@ private:
         if (AX_UNLIKELY(IsFull())) 
             IncreaseSize();
     
-        uint64 hash             = HasherT::Hash(key);
+        uint64_t hash             = HasherT::Hash(key);
         uint32 distAndFootprint = DistAndFingerprintFromHash(hash);
         uint32 bucketIdx        = BucketIdxFromHash(hash);
     
@@ -279,7 +279,7 @@ private:
         if (AX_UNLIKELY(Empty()))
             return cend();
 
-        uint64 mh                 = HasherT::Hash(key);
+        uint64_t mh                 = HasherT::Hash(key);
         uint32 distAndFingerPrint = DistAndFingerprintFromHash(mh);
         uint32 bucketIdx          = BucketIdxFromHash(mh);
         const Bucket* bucket      = &BucketAt(bucketIdx);
@@ -409,7 +409,7 @@ public:
 
     ConstIterator Erase(ConstIterator it)
     {
-        uint64 hash             = HasherT::Hash(*it);
+        uint64_t hash             = HasherT::Hash(*it);
         uint32 bucketIdx        = BucketIdxFromHash(hash);
         uint32 valueIdxToRemove = uint32(PointerDistance(cbegin(), it));
 

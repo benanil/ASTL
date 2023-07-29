@@ -10,13 +10,13 @@
 AX_NAMESPACE 
 
 // constants
-AXGLOBALCONST float PI = 3.14159265358f;
-AXGLOBALCONST float RadToDeg = 180.0f / PI;
-AXGLOBALCONST float DegToRad = PI / 180.0f;
-AXGLOBALCONST float OneDivPI = 1.0f / PI;
-AXGLOBALCONST float PIDiv2 = PI / 2.0f;
-AXGLOBALCONST float TwoPI = PI * 2.0f;
-AXGLOBALCONST float Sqrt2 = 1.414213562f;
+constexpr float PI = 3.14159265358f;
+constexpr float RadToDeg = 180.0f / PI;
+constexpr float DegToRad = PI / 180.0f;
+constexpr float OneDivPI = 1.0f / PI;
+constexpr float PIDiv2 = PI / 2.0f;
+constexpr float TwoPI = PI * 2.0f;
+constexpr float Sqrt2 = 1.414213562f;
 // for integer constants use stdint.h's INT32_MIN, INT64_MIN, INT32_MAX...
 // for float constants use float.h's FLT_MAX, FLT_MIN, DBL_MAX, DBL_MIN
 
@@ -163,7 +163,7 @@ __forceinline __constexpr float ATan2(float y, float x) {
 	return CopySign(th, y);          // [-π,π] 
 }
 
-__forceinline __constexpr float ASin(float z)
+__forceinline float ASin(float z)
 {
 	return ATan2(z, Sqrt(1.0f-(z * z)));
 }
@@ -211,10 +211,10 @@ __forceinline __constexpr float Tan(float radians)
 
 // inspired from Casey Muratori's performance aware programming
 // this functions makes the code more readable. OpenCL and Cuda has the same functions as well
-__forceinline __constexpr float ATan2PI(float y, float x) { return ATan2(y, x) / PI; }
-__forceinline __constexpr float ASinPI(float z) { return ASin(z) / PI; }
-__forceinline __constexpr float ACos(float x)   { return PIDiv2 - ASin(x); }
-__forceinline __constexpr float ACosPI(float x) { return ACos(x) / PI; }
+__forceinline float ATan2PI(float y, float x) { return ATan2(y, x) / PI; }
+__forceinline float ASinPI(float z) { return ASin(z) / PI; }
+__forceinline float ACos(float x)   { return PIDiv2 - ASin(x); }
+__forceinline float ACosPI(float x) { return ACos(x) / PI; }
 __forceinline __constexpr float CosPI(float x)  { return Cos(x) / PI; }
 __forceinline __constexpr float SinPI(float x)  { return Sin(x) / PI; }
 
@@ -226,15 +226,15 @@ typedef ushort half;
 
 __forceinline float ConvertHalfToFloat(half x)
 {
-#ifdef AX_SUPPORT_SSE
+#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
 	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); // MSVC does not have scalar instructions.
 #else
 	uint Mantissa, Exponent, Result;
-	Mantissa = (uint)(Value & 0x03FF);
+	Mantissa = (uint)(x & 0x03FF);
 
-	if ((Value & 0x7C00) != 0)  // The value is normalized
+	if ((x & 0x7C00) != 0)  // The value is normalized
 	{
-		Exponent = (uint)((Value >> 10) & 0x1F);
+		Exponent = (uint)((x >> 10) & 0x1F);
 	}
 	else if (Mantissa != 0)     // The value is denormalized
 	{
@@ -251,7 +251,7 @@ __forceinline float ConvertHalfToFloat(half x)
 		Exponent = (uint)-112;
 	}
 
-	Result = ((Value & 0x8000) << 16) | ((Exponent + 112) << 23) | (Mantissa << 13);
+	Result = ((x & 0x8000) << 16) | ((Exponent + 112) << 23) | (Mantissa << 13);
 	return *(float*)&Result;
 	// faster but not always safe version. taken from: https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
 	// const uint e = (x & 0x7C00) >> 10; // exponent
@@ -266,7 +266,7 @@ __forceinline float ConvertHalfToFloat(half x)
 // converts maximum 4 float
 __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 {
-#ifdef AX_SUPPORT_SSE
+#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
 	alignas(16) float a[4];
     half b[8]; 
 	SmallMemCpy(b, x, n * sizeof(half));
@@ -280,7 +280,7 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 
 __forceinline half ConvertFloatToHalf(float Value)
 {
-#ifdef AX_SUPPORT_SSE
+#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
 	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0); // MSVC does not have scalar instructions.
 #else
 	// taken from XNA math
@@ -317,7 +317,7 @@ __forceinline half ConvertFloatToHalf(float Value)
 // converts maximum 4 half
 __forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
 {
-#ifdef AX_SUPPORT_SSE
+#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
 	alignas(16) half a[8];
 	float b[8]; 
 	SmallMemCpy(b, x, n * sizeof(float));

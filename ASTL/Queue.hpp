@@ -84,29 +84,29 @@ public:
 		}
 	}
 
-	explicit Queue(uint _capacity) : capacity(NextPowerOf2(_capacity + 1)), front(0), rear(0)
+	explicit Queue(int _capacity) : capacity(NextPowerOf2(_capacity + 1)), front(0), rear(0)
 	{
 		ptr = allocator.AllocateUninitialized((int)capacity);
 	}
 
-	Queue(uint _capacity, uint count) : capacity(NextPowerOf2(_capacity + 1)), front(count), rear(0)
+	Queue(int _capacity, uint count) : capacity((uint)NextPowerOf2(_capacity + 1)), front(count), rear(0)
 	{
 		ptr = allocator.Allocate((int)capacity);
 	}
 
-	Queue(uint _size, const ValueT& val) 
-	: capacity(NextPowerOf2(_size + (_size / 2))), front(0), rear(0)
+	Queue(int _size, const ValueT& val) 
+	: capacity((uint)NextPowerOf2(_size + (_size / 2))), front(0), rear(0)
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
 		
-		for (; front < _size; front++)
+		for (; front < (uint)_size; front++)
 		{
 			ptr[front] = val;
 		}
 	}
 
-	Queue(ValueT* p, uint size)
-	: capacity(NextPowerOf2(size + (size / 2))), front(size), rear(0)
+	Queue(ValueT* p, int size)
+	: capacity((uint)NextPowerOf2(size + (size / 2))), front((uint)size), rear(0)
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
 		Copy(ptr, p, size);

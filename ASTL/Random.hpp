@@ -26,13 +26,13 @@ __constexpr __forceinline uint WangHashInverse(uint x)  {
 	return x ^ (x >> 16u);
 }
 
-__constexpr __forceinline uint64 MurmurHash(uint64 x) {
+__constexpr __forceinline uint64_t MurmurHash(uint64_t x) {
 	x ^= x >> 30ULL; x *= 0xbf58476d1ce4e5b9ULL;
 	x ^= x >> 27ULL; x *= 0x94d049bb133111ebULL;
 	return x ^ (x >> 31ULL);
 }
 
-__constexpr __forceinline uint64 MurmurHashInverse(uint64 x) {
+__constexpr __forceinline uint64_t MurmurHashInverse(uint64_t x) {
 	x ^= x >> 31ULL ^ x >> 62ULL; x *= 0x319642b2d24d8ec3ULL;
 	x ^= x >> 27ULL ^ x >> 54ULL; x *= 0x96de1b173f119089ULL;
 	return x ^ (x >> 30ULL ^ x >> 60ULL);
@@ -53,8 +53,8 @@ namespace Random
 		return result;
 	}
 
-	__forceinline uint64 Seed64() {
-		uint64 result;
+	__forceinline uint64_t Seed64() {
+		uint64_t result;
 		_rdseed64_step(&result);// or faster __rdtsc
 		return result;
 	}
@@ -67,16 +67,16 @@ namespace Random
 		return min + (NextFloat01(next) * Abs(min - max));
 	}
 	
-	__forceinline double NextDouble01(uint64 next) {
+	__forceinline double NextDouble01(uint64_t next) {
 		return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
 	}
 	
-	__forceinline double RepatMinMax(uint64 next, double min, double max) {
+	__forceinline double RepatMinMax(uint64_t next, double min, double max) {
 		return min + (NextDouble01(next) * Abs(min - max));
 	}
 	
 	__forceinline uint32 RepatMinMax(uint32 next, uint32 min, uint32 max) { return min + (next % (max - min)); }
-	__forceinline uint64 RepatMinMax(uint64 next, uint64 min, uint64 max) { return min + (next % (max - min)); }
+	__forceinline uint64_t RepatMinMax(uint64_t next, uint64_t min, uint64_t max) { return min + (next % (max - min)); }
 	__forceinline int    RepatMinMax(int next, int _min, int _max) { return _min + (next % (_max - _min)); }
 
 	// https://www.pcg-random.org/index.html
@@ -84,8 +84,8 @@ namespace Random
 	// compared to m_MT chace friendly
 	struct PCG 
 	{
-		uint64 state = 0x853c49e6748fea9bULL;
-		uint64 inc = 0xda3e39cb94b95bdbULL;
+		uint64_t state = 0x853c49e6748fea9bULL;
+		uint64_t inc = 0xda3e39cb94b95bdbULL;
 	};            
 	
 	// usage:
@@ -95,10 +95,10 @@ namespace Random
 
 	__forceinline uint32 PCGNext(PCG& pcg)
 	{
-		uint64 oldstate = pcg.state;
+		uint64_t oldstate = pcg.state;
 		pcg.state = oldstate * 6364136223846793005ULL + (pcg.inc | 1);
-		uint64 xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
-		uint64 rot = oldstate >> 59u;
+		uint64_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+		uint64_t rot = oldstate >> 59u;
 #pragma warning(disable : 4146) // unary minus warning fix
 		// if you get unary minus error disable sdl checks from msvc settings
 		return uint32((xorshifted >> rot) | (xorshifted << ((-rot) & 31)));
@@ -112,26 +112,26 @@ namespace Random
 		return (word >> 22u) ^ word;
 	}
 
-	__forceinline void PCGInitialize(PCG& pcg, uint64 initstate, uint64 seed)
+	__forceinline void PCGInitialize(PCG& pcg, uint64_t initstate, uint64_t seed)
 	{
 		pcg.inc = (seed << 1u) | 1u;
 		pcg.state = initstate;
 		PCGNext(pcg);
 	}
 
-	__forceinline void PCGInitialize(PCG& pcg, uint64 seed) 
+	__forceinline void PCGInitialize(PCG& pcg, uint64_t seed) 
 	{
 		pcg.state = 0x853c49e6748fea9bULL;
 		pcg.inc = seed << 1 | 1u;
 	}
 
-	__forceinline void Xoroshiro128PlusInit(uint64_t s[2])
+	__forceinline void Xoroshiro128PlusInit(uint64_t  s[2])
 	{
 		s[0] += Seed64(); s[1] += Seed64();
 		s[0] |= 1; // non zero
 	}
 	
-	__forceinline void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t seed)
+	__forceinline void Xoroshiro128PlusSeed(uint64_t  s[2], uint64_t  seed)
 	{
 		s[0] |= 1; // non zero
 		s[0] = MurmurHash(seed); 
@@ -139,11 +139,11 @@ namespace Random
 	}
 	
 	// concise hashing function. https://nullprogram.com/blog/2017/09/21/
-	__forceinline uint64_t Xoroshiro128Plus(uint64_t s[2])
+	__forceinline uint64_t  Xoroshiro128Plus(uint64_t  s[2])
 	{
-		uint64_t s0 = s[0];
-		uint64_t s1 = s[1];
-		uint64_t result = s0 + s1;
+		uint64_t  s0 = s[0];
+		uint64_t  s1 = s[1];
+		uint64_t  result = s0 + s1;
 		s1 ^= s0;
 		s[0] = ((s0 << 55) | (s0 >> 9)) ^ s1 ^ (s1 << 14);
 		s[1] = (s1 << 36) | (s1 >> 28);
@@ -153,14 +153,14 @@ namespace Random
 	// too see alternative random number generator look at Aditional.hpp for mersene twister pseudo random number generators
 
 	template<typename T>
-	inline void Suffle(T* begin, uint64 len)
+	inline void Suffle(T* begin, uint64_t len)
 	{
-		uint64_t xoro[2];
+		uint64_t  xoro[2];
 		Xoroshiro128PlusInit(xoro);
-		const uint64_t halfLen = len / 2;
+		const uint64_t  halfLen = len / 2;
 
 		// swap %60 of the array
-		for (uint64 i = 0; i < (halfLen + (halfLen / 3)); ++i)
+		for (uint64_t i = 0; i < (halfLen + (halfLen / 3)); ++i)
 		{
 			Swap(begin[Xoroshiro128Plus(xoro) % len],
 			     begin[Xoroshiro128Plus(xoro) % len]);
@@ -210,18 +210,18 @@ inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
 	return h;
 }
 
-inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
+inline uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
 {
-	const uint64 m = 0xc6a4a7935bd1e995ULL;
+	const uint64_t m = 0xc6a4a7935bd1e995ULL;
 	const int    r = 47;
-	uint64       h = seed ^ (len * m);
+	uint64_t       h = seed ^ (len * m);
 
-	const uint64 * data = (const uint64 *)key;
-	const uint64 * end = data + (len >> 3);
+	const uint64_t * data = (const uint64_t *)key;
+	const uint64_t * end = data + (len >> 3);
 
 	while (data != end)
 	{
-		uint64 k;
+		uint64_t k;
 		SmallMemCpy(&k, data++, sizeof(uint64));
 		k *= m;
 		k ^= k >> r;
@@ -232,7 +232,7 @@ inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
 	}
 
 	const unsigned char * data2 = (const unsigned char*)data;
-	uint64_t d;
+	uint64_t  d;
 	SmallMemCpy(&d, data, len & 7);
 	h ^= d;
 	h *= m;
@@ -248,48 +248,48 @@ inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
 // hardcodes seed and the secret, reformattes the code, and clang-tidy fixes.
 namespace WYHash
 {
-	__forceinline void mum(uint64_t* RESTRICT a, uint64_t* RESTRICT b)
+	__forceinline void mum(uint64_t * RESTRICT a, uint64_t * RESTRICT b)
 	{
 #if defined(__SIZEOF_INT128__)
 		__uint128_t r = *a;
 		r *= *b;
-		*a = static_cast<uint64_t>(r);
-		*b = static_cast<uint64_t>(r >> 64U);
+		*a = static_cast<uint64_t >(r);
+		*b = static_cast<uint64_t >(r >> 64U);
 #elif defined(_MSC_VER) && defined(_M_X64)
 		*a = _umul128(*a, *b, b);
 #else
-		uint64_t ha = *a >> 32U;
-		uint64_t hb = *b >> 32U;
-		uint64_t la = static_cast<uint32_t>(*a);
-		uint64_t lb = static_cast<uint32_t>(*b);
-		uint64_t hi{}, lo{};
-		uint64_t rh = ha * hb;
-		uint64_t rm0 = ha * lb;
-		uint64_t rm1 = hb * la;
-		uint64_t rl = la * lb;
-		uint64_t t = rl + (rm0 << 32U);
-		auto c = static_cast<uint64_t>(t < rl);
+		uint64_t  ha = *a >> 32U;
+		uint64_t  hb = *b >> 32U;
+		uint64_t  la = static_cast<uint32_t>(*a);
+		uint64_t  lb = static_cast<uint32_t>(*b);
+		uint64_t  hi{}, lo{};
+		uint64_t  rh = ha * hb;
+		uint64_t  rm0 = ha * lb;
+		uint64_t  rm1 = hb * la;
+		uint64_t  rl = la * lb;
+		uint64_t  t = rl + (rm0 << 32U);
+		auto c = static_cast<uint64_t >(t < rl);
 		lo = t + (rm1 << 32U);
-		c += static_cast<uint64_t>(lo < t);
+		c += static_cast<uint64_t >(lo < t);
 		hi = rh + (rm0 >> 32U) + (rm1 >> 32U) + c;
 		*a = lo;
 		*b = hi;
 #endif
 	}
 
-	__forceinline uint64 mix(uint64 a, uint64 b) { mum(&a, &b); return a ^ b; }
-	__forceinline uint64 r8(const uint8* p) { return *(uint64*)p; }
-	__forceinline uint64 r4(const uint8* p) { return (uint64)*(uint32*)p; }
+	__forceinline uint64_t mix(uint64_t a, uint64_t b) { mum(&a, &b); return a ^ b; }
+	__forceinline uint64_t r8(const uint8* p) { return *(uint64*)p; }
+	__forceinline uint64_t r4(const uint8* p) { return (uint64)*(uint32*)p; }
 	// reads 1, 2, or 3 bytes
-	__forceinline uint64 r3(const uint8* p, size_t k) 
+	__forceinline uint64_t r3(const uint8* p, size_t k) 
 	{
-		return (uint64_t(p[0]) << 16U) | (uint64_t(p[k >> 1U]) << 8U) | p[k - 1]; 
+		return (uint64_t (p[0]) << 16U) | (uint64_t (p[k >> 1U]) << 8U) | p[k - 1]; 
 	}
 
 	// alternative algorithm for this is xxHash which is really efficient
 	// https://github.com/Cyan4973/xxHash
 
-	[[nodiscard]] __forceinline uint64 Hash(void const* key, size_t len)
+	[[nodiscard]] __forceinline uint64_t Hash(void const* key, size_t len)
 	{
         const size_t secret[4] = { 0xa0761d6478bd642full,
                                    0xe7037ed1a0b428dbull,
@@ -297,8 +297,8 @@ namespace WYHash
                                    0x589965cc75374cc3ull };
 
 		uint8 const* p = (uint8 const*)key;
-		uint64_t seed = secret[0];
-		uint64_t a{}, b{};
+		uint64_t  seed = secret[0];
+		uint64_t  a{}, b{};
 
 		if (AX_LIKELY(len <= 16)) {
 			if (AX_LIKELY(len >= 4)) {
@@ -314,8 +314,8 @@ namespace WYHash
 		} else {
 			size_t i = len;
 			if (AX_UNLIKELY(i > 48)) {
-				uint64_t see1 = seed;
-				uint64_t see2 = seed;
+				uint64_t  see1 = seed;
+				uint64_t  see2 = seed;
 				do {
 					seed = mix(r8(p) ^ secret[1], r8(p + 8) ^ seed);
 					see1 = mix(r8(p + 16) ^ secret[2], r8(p + 24) ^ see1);
@@ -337,7 +337,7 @@ namespace WYHash
 		return mix(secret[1] ^ len, mix(a ^ secret[1], b ^ seed));
 	}
 
-	[[nodiscard]] __forceinline uint64 Hash(uint64 x) 
+	[[nodiscard]] __forceinline uint64_t Hash(uint64_t x) 
 	{
 		return mix(x, UINT64_C(0x9E3779B97F4A7C15));
 	}
@@ -376,7 +376,7 @@ __constexpr inline uint PathToHash(const char* str)
 
 template<typename T> struct  Hasher
 {
-	static __forceinline uint64 Hash(const T& x)
+	static __forceinline uint64_t Hash(const T& x)
 	{
 		if __constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
 		else if      (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));

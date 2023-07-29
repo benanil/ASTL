@@ -129,8 +129,10 @@
 // AX_CPUID(1, arr);
 // int numCores = (arr[1] >> 16) & 0xff; // virtual cores included
 #if defined(__clang__) || defined(__GNUC__)
-#   include <cpuid.h>
-#   define AX_CPUID(num, regs) __cpuid(num, regs[0], regs[1], regs[2], regs[3])
+//#   include <cpuid.h>
+//#   define AX_CPUID(num, regs)       __cpuid(num, regs[0], regs[1], regs[2], regs[3])
+//#   define AX_CPUID2(num, sub, regs) __cpuid_count(num, sub, regs[0], regs[1], regs[2], regs[3])
+#   define AX_CPUID(num, regs)       
 #else
 #   define AX_CPUID(num, regs) __cpuid(regs, num)
 #endif
@@ -178,6 +180,8 @@
 
     #if defined(AX_SUPPORT_AVX2) || defined(AX_SUPPORT_AVX)
         #include <immintrin.h>
+        #include <x86intrin.h>
+
     #elif defined(AX_SUPPORT_SSE)
         #include <emmintrin.h>
     #endif
@@ -188,9 +192,7 @@
     #define AX_CPP14 201402L
     #define AX_CPP17 201703L
     #define AX_CPP20 202002L
-#endif
-
-#if defined(_MSC_VER)
+#elif defined(_MSC_VER)
     #define AX_CPP_VERSION _MSC_VER
     #define AX_CPP14 1900
     #define AX_CPP17 1910
@@ -211,10 +213,10 @@
 
 AX_NAMESPACE
 
-template<typename T, uint64_t N>
-__constexpr uint64_t ArraySize(const T (&)[N]) { return N; }
+template<typename T, uint64_t  N>
+__constexpr uint64_t  ArraySize(const T (&)[N]) { return N; }
 
-inline void SmallMemCpy(void* dst, const void* src, uint64_t size)
+inline void SmallMemCpy(void* dst, const void* src, uint64_t  size)
 {
 #ifdef _MSC_VER
     __movsb((unsigned char*)dst, (unsigned char*)src, size);
@@ -223,12 +225,12 @@ inline void SmallMemCpy(void* dst, const void* src, uint64_t size)
 #endif
 }
 
-inline void SmallMemSet(void* dst, unsigned char val, uint64_t size)
+inline void SmallMemSet(void* dst, unsigned char val, uint64_t  size)
 {
 #ifdef _MSC_VER
     __stosb((unsigned char*)dst, val, size);
 #else
-    __builtin_memset(dst, val, sizeInBytes);
+    __builtin_memset(dst, val, size);
 #endif
 }
 
@@ -297,7 +299,7 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 
 template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) {
-#if AX_CPP_VERSION >= AX_CPP17
+#if defined(__clang__) && AX_CPP_VERSION >= AX_CPP17
     return __builtin_bit_cast(To, _Val);
 #else
     return *(const To*)&_Val;
@@ -332,7 +334,7 @@ __forceinline __constexpr float Abs(float x)
 
 __forceinline __constexpr double Abs(double x)
 {
-    uint64 ix = BitCast<uint64>(x) & (~(1ull << 63ull));// every bit except sign mask
+    uint64_t  ix = BitCast<uint64_t >(x) & (~(1ull << 63ull));// every bit except sign mask
     return BitCast<double>(ix);
 }
 

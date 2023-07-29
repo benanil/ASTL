@@ -33,27 +33,27 @@ __forceinline __constexpr T Exchange(T& obj, U&& new_value)
 }
 
 // Shift the given address upwards if/as necessary to// ensure it is aligned to the given number of bytes.
-inline uint64_t AlignAddress(uint64_t addr, uint64_t align)
+inline uint64_t  AlignAddress(uint64_t  addr, uint64_t  align)
 {
-    const uint64_t mask = align - 1;
+    const uint64_t  mask = align - 1;
     ASSERT((align & mask) == 0); // pwr of 2
     return (addr + mask) & ~mask;
 }
 
 // Shift the given pointer upwards if/as necessary to// ensure it is aligned to the given number of bytes.
 template<typename T>
-inline T* AlignPointer(T* ptr, uint64_t align)
+inline T* AlignPointer(T* ptr, uint64_t  align)
 {
-    const uint64_t addr = (uint64_t)ptr;
-    const uint64_t addrAligned = AlignAddress(addr, align);
+    const uint64_t  addr = (uint64_t )ptr;
+    const uint64_t  addrAligned = AlignAddress(addr, align);
     return (T*)addrAligned;
 }
 
 // Aligned allocation function. IMPORTANT: 'align'// must be a power of 2 (typically 4, 8 or 16).
-inline void* AllocAligned(uint64_t bytes, uint64_t align)
+inline void* AllocAligned(uint64_t  bytes, uint64_t  align)
 {
     // Allocate 'align' more bytes than we need.
-    uint64_t actualBytes = bytes + align;
+    uint64_t  actualBytes = bytes + align;
     // Allocate unaligned block.
     uint8* pRawMem = new uint8[actualBytes];
     // Align the block. If no alignment occurred,// shift it up the full 'align' bytes so we// always have room to store the shift.
@@ -74,7 +74,7 @@ inline void FreeAligned(void* pMem)
     // Convert to U8 pointer.
     uint8* pAlignedMem = (uint8*)pMem;
     // Extract the shift.
-    uint64_t shift = pAlignedMem[-1];
+    uint64_t  shift = pAlignedMem[-1];
     if (shift == 0)
         shift = 256;
     // Back up to the actual allocated address,
@@ -84,16 +84,16 @@ inline void FreeAligned(void* pMem)
 
 // if you want memmove it is here with simd version: https://hackmd.io/@AndybnA/0410
 
-inline void MemSetAligned64(void* dst, unsigned char val, uint64_t sizeInBytes)
+inline void MemSetAligned64(void* dst, unsigned char val, uint64_t  sizeInBytes)
 {
-    // we want an offset because the while loop below iterates over 4 uint64 at a time
-    const uint64_t* end = (uint64_t*)((char*)dst) + (sizeInBytes >> 3);
-    uint64_t* dp = (uint64_t*)dst;
+    // we want an offset because the while loop below iterates over 4 uint64_t at a time
+    const uint64_t * end = (uint64_t *)((char*)dst) + (sizeInBytes >> 3);
+    uint64_t * dp = (uint64_t *)dst;
 #ifdef _MSC_VER
-    uint64_t  d4;
+    uint64_t   d4;
     __stosb((unsigned char*)&d4, val, 8);
 #else
-    uint64_t  d4 = val; d4 |= d4 << 8ull; d4 |= d4 << 16ull; d4 |= d4 << 32ull;
+    uint64_t   d4 = val; d4 |= d4 << 8ull; d4 |= d4 << 16ull; d4 |= d4 << 32ull;
 #endif
 
     while (dp < end)
@@ -114,7 +114,7 @@ inline void MemSetAligned64(void* dst, unsigned char val, uint64_t sizeInBytes)
     };
 }
 
-inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
+inline void MemSetAligned32(void* dst, unsigned char val, uint64_t  sizeInBytes)
 {
     const uint32_t* end = (uint32_t*)((char*)dst) + (sizeInBytes >> 2);
     uint32_t* dp = (uint32_t*)dst;
@@ -141,7 +141,7 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
 // use size for struct/class types such as Vector3 and Matrix4, 
 // leave as zero size constant for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
-inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
+inline void MemSet(void* dst, unsigned char val, uint64_t  sizeInBytes)
 {
     if __constexpr (size)
     #ifdef _MSC_VER
@@ -155,7 +155,7 @@ inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
         MemSetAligned32(dst, val, sizeInBytes);
     else
     {
-        uint64_t uptr = (uint64_t)dst;
+        uint64_t  uptr = (uint64_t )dst;
         if (!(uptr & 7) && uptr >= 8) MemSetAligned64(dst, val, sizeInBytes);
         else if (!(uptr & 3) && uptr >= 4)  MemSetAligned32(dst, val, sizeInBytes);
         else
@@ -167,11 +167,11 @@ inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
     }
 }
 
-inline void MemCpyAligned64(void* dst, const void* src, uint64_t sizeInBytes)
+inline void MemCpyAligned64(void* dst, const void* src, uint64_t  sizeInBytes)
 {
-    uint64_t*       dp  = (uint64_t*)dst;
-    const uint64_t* sp  = (const uint64_t*)src;
-    const uint64_t* end = (const uint64_t*)((char*)src) + (sizeInBytes >> 3);
+    uint64_t *       dp  = (uint64_t *)dst;
+    const uint64_t * sp  = (const uint64_t *)src;
+    const uint64_t * end = (const uint64_t *)((char*)src) + (sizeInBytes >> 3);
         
     while (sp < end)
     {
@@ -185,7 +185,7 @@ inline void MemCpyAligned64(void* dst, const void* src, uint64_t sizeInBytes)
     SmallMemCpy(dp, sp, sizeInBytes & 7);
 }
 
-inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
+inline void MemCpyAligned32(void* dst, const void* src, uint64_t  sizeInBytes)
 {
     uint32_t*       dp  = (uint32_t*)dst;
     const uint32_t* sp  = (const uint32_t*)src;
@@ -211,7 +211,7 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
 // use size for struct/class types such as Vector3 and Matrix4,
 // and use MemCpy for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
-inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
+inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
 {
     if __constexpr (size != 0)
 #ifdef _MSC_VER

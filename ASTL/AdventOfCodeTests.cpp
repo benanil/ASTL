@@ -19,9 +19,9 @@ AX_NAMESPACE
 
 template<> struct Hasher<Vector2i>
 {
-    static __forceinline uint64 Hash(Vector2i vec)
+    static __forceinline uint64_t Hash(Vector2i vec)
     {
-        uint64 x = (uint64(vec.y) << 32) | vec.x;
+        uint64_t x = (uint64(vec.y) << 32) | vec.x;
         x *= 0xbf58476d1ce4e5b9ULL;
         x ^= x >> 30ULL;
         return x;
@@ -30,9 +30,9 @@ template<> struct Hasher<Vector2i>
 
 template<> struct Hasher<Vector2s>
 {
-	static __forceinline uint64 Hash(Vector2s vec)
+	static __forceinline uint64_t Hash(Vector2s vec)
 	{
-		uint64 x = (uint64(vec.y) << 16) | vec.x;
+		uint64_t x = (uint64(vec.y) << 16) | vec.x;
 		x ^= x << 30ULL;
 		x *= 0xbf58476d1ce4e5b9ULL;
 		return x;
@@ -440,9 +440,6 @@ int Day22()
 }
 
 AX_END_NAMESPACE
-
-extern void BeginProfile(void);
-extern void EndAndPrintProfile();
 
 void AdventOfCodeTests()
 {
