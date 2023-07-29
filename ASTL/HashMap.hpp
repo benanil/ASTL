@@ -31,10 +31,12 @@
 #include "Random.hpp"
 #include "Array.hpp"
 
+AX_NAMESPACE 
+
 /* example custom hasher
 template<> struct Hasher<int> 
 {
-    static FINLINE uint64 Hash(int obj)  {
+    static __forceinline uint64 Hash(int obj)  {
         return uint64(WangHash(x)) * 0x9ddfea08eb382d69ull;
     }
 };
@@ -50,21 +52,20 @@ class HashMap
     
     struct Bucket
     {
-        static constexpr uint32_t DistInc = 1u << 8u;             // skip 1 byte fingerprint
-        static constexpr uint32_t FingerprintMask = DistInc - 1u; // mask for 1 byte of fingerprint
+        static const uint32_t DistInc = 1u << 8u;             // skip 1 byte fingerprint
+        static const uint32_t FingerprintMask = DistInc - 1u; // mask for 1 byte of fingerprint
         uint32_t distAndFingerprint; // upper 3 byte: distance to original bucket. lower byte: fingerprint from hash
         uint32_t valueIdx;           // index into the m_values vector.
     };
 
-    static constexpr uint8 initial_shifts = 64u - 3u; // 2^(64-m_shift) number of buckets
-    static constexpr float default_max_load_factor = 0.8F;
+    static const uint8 initial_shifts = 64u - 3u; // 2^(64-m_shift) number of buckets
 
     Array<KeyValuePair<KeyT, ValueT>, AllocatorT> m_values{};
     Array<Bucket, MallocAllocator<Bucket>> m_buckets{};
 
     uint32 m_num_buckets         = 0u;
     uint32 m_max_bucket_capacity = 0u;
-    float m_max_load_factor      = default_max_load_factor;
+    float m_max_load_factor      = 0.8f; // max load factor
     uint8 m_shifts               = initial_shifts;
 
 private:
@@ -114,14 +115,14 @@ private:
         return m_num_buckets ? float(m_values.Size()) / float(m_num_buckets) : 0.0f;
     }
 
-    constexpr uint32 MaxSize() const { return 1u << (sizeof(uint) * 8u - 1u); }
+    __constexpr uint32 MAXSize() const { return 1u << (sizeof(uint) * 8u - 1u); }
 
     uint32 CalcNumBuckets(uint8 shifts) const
     {
-        return Min(MaxSize(), 1u << (64u - shifts));
+        return MIN(MAXSize(), 1u << (64u - shifts));
     }
 
-    constexpr uint8 CalcShiftsForSize(uint32 s)
+    __constexpr uint8 CalcShiftsForSize(uint32 s)
     {
         uint8 shifts = initial_shifts;
 
@@ -133,7 +134,7 @@ private:
 
     void MaxLoadFactor(float ml) {
         m_max_load_factor = ml;
-        if (m_num_buckets != MaxSize()) {
+        if (m_num_buckets != MAXSize()) {
             m_max_bucket_capacity = uint32(float(m_num_buckets) * m_max_load_factor);
         }
     }
@@ -151,8 +152,8 @@ private:
         m_num_buckets = numBuckets;
         m_buckets.Resize(m_num_buckets);
 
-        if (AX_UNLIKELY(m_num_buckets == MaxSize())) {
-            m_max_bucket_capacity = MaxSize();
+        if (AX_UNLIKELY(m_num_buckets == MAXSize())) {
+            m_max_bucket_capacity = MAXSize();
         }
         else {
             m_max_bucket_capacity = uint32(float(m_num_buckets) * m_max_load_factor);
@@ -177,7 +178,7 @@ private:
 
     void IncreaseSize()
     {
-        ASSERT(m_max_bucket_capacity != MaxSize()); 
+        ASSERT(m_max_bucket_capacity != MAXSize()); 
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts));
         ClearAndFillBucketsFromValues();
@@ -487,7 +488,7 @@ public:
 
     void ReHash(uint32 count)
     {
-        count = Min(count, MaxSize());
+        count = MIN(count, MAXSize());
         uint8 shifts = CalcShiftsForSize(Size());
         if (shifts != m_shifts)
         {
@@ -499,9 +500,9 @@ public:
     
     void Reserve(uint32 capacity) 
     {
-        capacity = Min(capacity, MaxSize());
+        capacity = MIN(capacity, MAXSize());
         m_values.Resize(capacity);
-        uint8 shifts = CalcShiftsForSize(Max(capacity, Size()));
+        uint8 shifts = CalcShiftsForSize(MAX(capacity, Size()));
         
         if (0 == m_num_buckets || shifts < m_shifts) {
             m_shifts = shifts;
@@ -592,3 +593,5 @@ public:
     }
 #endif
 };
+
+AX_END_NAMESPACE 

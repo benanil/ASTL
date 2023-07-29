@@ -31,11 +31,13 @@
 #include "Random.hpp"
 #include "Array.hpp"
 
+AX_NAMESPACE
+
 /*
 * example custom hasher
 template<> struct Hasher<int> 
 {
-    static FINLINE uint64 Hash(int obj) {
+    static __forceinline uint64 Hash(int obj) {
         return uint64(Random::WangHash(x)) * 0x9ddfea08eb382d69ull;
     }
 };
@@ -50,21 +52,20 @@ class HashSet
     
     struct Bucket
     {
-        static constexpr uint32_t DistInc = 1U << 8U;             // skip 1 byte fingerprint
-        static constexpr uint32_t FingerprintMask = DistInc - 1u; // mask for 1 byte of fingerprint
+        static const uint32_t DistInc = 1U << 8U;             // skip 1 byte fingerprint
+        static const uint32_t FingerprintMask = DistInc - 1u; // mask for 1 byte of fingerprint
         uint32_t distAndFingerprint;  // upper 3 byte: distance to original bucket. lower byte: fingerprint from hash
         uint32_t valueIdx;            // index into the m_values vector.
     };
 
-    static constexpr uint8 initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
-    static constexpr float default_max_load_factor = 0.8F;
+    static const uint8 initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
 
     Array<KeyT, AllocatorT> m_keys{};
     Array<Bucket, MallocAllocator<Bucket>> m_buckets {16u};
  
     uint32_t m_num_buckets         = 0;
     uint32_t m_max_bucket_capacity = 0;
-    float    m_max_load_factor     = default_max_load_factor;
+    float    m_max_load_factor     = 0.8f; // default max load factor
     uint8_t  m_shifts              = initial_shifts;
 
 private:
@@ -114,14 +115,14 @@ private:
         return m_num_buckets ? float(m_keys.Size()) / float(m_num_buckets) : 0.0F;
     }
 
-    constexpr uint32 MaxSize() const { return 1ull << (sizeof(uint) * 8u - 1u); }
+    __constexpr uint32 MAXSize() const { return 1ull << (sizeof(uint) * 8u - 1u); }
 
-    constexpr uint32 CalcNumBuckets(uint8 shifts)
+    __constexpr uint32 CalcNumBuckets(uint8 shifts)
     {
-        return Min(MaxSize(), 1u << (64u - shifts));
+        return MIN(MAXSize(), 1u << (64u - shifts));
     }
 
-    constexpr uint8 CalcShiftsForSize(uint32 s)
+    __constexpr uint8 CalcShiftsForSize(uint32 s)
     {
         uint8 shifts = initial_shifts;
 
@@ -131,9 +132,9 @@ private:
         return shifts;
     }
 
-    void MaxLoadFactor(float ml) {
+    void MAXLoadFactor(float ml) {
         m_max_load_factor = ml;
-        if (m_num_buckets != MaxSize()) {
+        if (m_num_buckets != MAXSize()) {
             m_max_bucket_capacity = uint32(float(m_num_buckets) * m_max_load_factor);
         }
     }
@@ -152,8 +153,8 @@ private:
         m_num_buckets = numBuckets;
         m_buckets.Resize(m_num_buckets);
         
-        if (m_num_buckets == MaxSize()) {
-            m_max_bucket_capacity = MaxSize();
+        if (m_num_buckets == MAXSize()) {
+            m_max_bucket_capacity = MAXSize();
         }
         else {
             m_max_bucket_capacity = uint32(float(m_num_buckets) * m_max_load_factor);
@@ -178,7 +179,7 @@ private:
 
     void IncreaseSize()
     {
-        ASSERT(m_max_bucket_capacity != MaxSize());
+        ASSERT(m_max_bucket_capacity != MAXSize());
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // DeallocateBuckets(); AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();
@@ -458,7 +459,7 @@ public:
 
     void ReHash(uint32 count)
     {
-        count = Min(count, MaxSize());
+        count = MIN(count, MAXSize());
         uint8 shifts = CalcShiftsForSize(Size());
         if (shifts != m_shifts)
         {
@@ -470,9 +471,9 @@ public:
     
     void Reserve(uint32 capacity) 
     {
-        capacity = Min((uint32)capacity, MaxSize());
+        capacity = MIN((uint32)capacity, MAXSize());
         m_keys.Resize(capacity);
-        uint8 shifts = CalcShiftsForSize(Max(capacity, Size()));
+        uint8 shifts = CalcShiftsForSize(MAX(capacity, Size()));
         
         if (0 == m_num_buckets || shifts < m_shifts) {
             m_shifts = shifts;
@@ -513,3 +514,5 @@ public:
     Iterator insert(const KeyT& key)     { return DoTryInsert(key).first; }
 #endif
 };
+
+AX_END_NAMESPACE

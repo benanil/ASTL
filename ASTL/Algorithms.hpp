@@ -1,5 +1,7 @@
 #pragma once
 
+AX_NAMESPACE
+
 inline bool IsNumber(char a) { return a <= '9' && a >= '0'; };
 inline bool IsLower(char a) { return a >= 'a' && a <= 'z'; };
 inline bool IsUpper(char a) { return a >= 'A' && a <= 'Z'; };
@@ -278,3 +280,5 @@ template<typename T> inline void ClearN(T* src, int n)
     for (int i = 0; i < n; ++i)
         src[i].~T();
 }
+
+AX_END_NAMESPACE

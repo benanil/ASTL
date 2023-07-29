@@ -9,8 +9,9 @@
 #include "Math/Vector.hpp"
 #include "String.hpp"
 
-#include <stdio.h>
 #include "Profiler.hpp"
+
+#include <stdio.h>
 
 extern void AdventOfCodeTests();
 
@@ -110,10 +111,17 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
 #include "Aditional.hpp"
 #include <string>
 
-int main()
+void StrViewTest(StringView view)
 {
-    AdventOfCodeTests();
+  printf("str view test: %s \n", view.ptr);
+}
+extern void BeginProfile(void);
 
+extern void EndAndPrintProfile();
+int main()
+{   
+    AdventOfCodeTests();
+    
     String testStr = "floating test: ";
     testStr += 1234.567f;
     testStr.Replace("floating", "integing");
@@ -124,7 +132,7 @@ int main()
     
     String testStr1 = "int test: ";
     testStr1 += 1234567;
-    printf("%s\n", testStr1.CStr());
+    StrViewTest(testStr1);
     
     GrowablePoolAllocator<uint64_t> allocator(10);
     
@@ -137,6 +145,7 @@ int main()
         printf("walk[i]: %c  ", (char)*walk++);
 
     allocator.Allocate(1);
+
     
     BeginProfile();
     {

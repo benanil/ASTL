@@ -20,6 +20,8 @@
 #define DELETE_ALL(...) FOR_EACH(delete, __VA_ARGS__)
 #define FREE_ALL(...) FOR_EACH(free, __VA_ARGS__)
 
+AX_NAMESPACE 
+
 // Mersene twister is default random number generator in C++ stl but I don't recommend to use it
 // use PCG or XoroshiroShift128 instead
 
@@ -29,7 +31,7 @@
 // also I don't recommend using more than one instance in a theread
 class MTwister64
 {
-	static constexpr int N = 624, M = 367;
+	static const int N = 624, M = 367;
 	uint64 m_MT[N];
 	int m_Index = N + 1;
 
@@ -98,9 +100,9 @@ private:
 
 class MTwister
 {
-	static constexpr int SIZE = 624, PERIOD = 397;
-	static constexpr int DIFF = SIZE - PERIOD;
-	static constexpr uint32 MAGIC = 0x9908b0df;
+	static const int SIZE = 624, PERIOD = 397;
+	static const int DIFF = SIZE - PERIOD;
+	static const uint32 MAGIC = 0x9908b0df;
 	uint32 m_MT[SIZE];
 	int m_Index = SIZE;
 
@@ -194,7 +196,7 @@ struct GrowablePoolAllocator
 		Block* nextBlock;
 	};
 
-	static constexpr int InitialSize = 1024 / Min((int)sizeof(T), 128);
+	static const int InitialSize = 1024 / MIN((int)sizeof(T), 128);
 
 	Block* firstBlock = nullptr;
 	Block* currentBlock = nullptr;
@@ -309,5 +311,6 @@ public:
 			currentBlock = walk;
 		}
 	}
-
 };
+
+AX_END_NAMESPACE 

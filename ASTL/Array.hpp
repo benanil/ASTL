@@ -3,6 +3,8 @@
 #include "Memory.hpp"
 #include "Algorithms.hpp"
 
+AX_NAMESPACE
+
 template<typename ValueT,
          typename AllocatorT = Allocator<ValueT>>
 class Array
@@ -14,7 +16,7 @@ public:
     // we don't want to use same initial size for all data types because we want 
     // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
     // if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
-    static constexpr int InitialSize = 384 / Min((int)sizeof(ValueT), 128);//  1         384
+    static const int InitialSize = 384 / MIN((int)sizeof(ValueT), 128);//  1         384
                                                                            //  2         192
 private:                                                                   //  4         96
 	ValueT* arr = nullptr;                                                 //  8         48
@@ -278,11 +280,11 @@ public:
 	{
 		if (_size > m_capacity)
 		{
-			GrowIfNecessary(_size);
+			GrowIfNecessary(_size );
 		}
 		else if (_size < m_capacity)
 		{
-			if constexpr (!AllocatorT::IsPOD)
+			if __constexpr (!AllocatorT::IsPOD)
 			{
 				for (int i = m_count - 1; i >= _size; --i)
 				{
@@ -354,8 +356,8 @@ private:
 		ASSERT(_size <= INT32_MAX);
 		if (AX_UNLIKELY(_size > m_capacity))
 		{
-			size_t oldCapacity = m_capacity;
-			m_capacity = Max(CalculateArrayGrowth(_size), InitialSize);
+			int oldCapacity = m_capacity;
+			m_capacity = MAX(CalculateArrayGrowth(_size), InitialSize);
 
 			if (arr) // array can be nullptr (first initialization)
 				arr = allocator.Reallocate(arr, oldCapacity, m_capacity);
@@ -382,7 +384,7 @@ private:
 	void RemoveSpace(int _index, int _count)
 	{
 		ASSERT((_index + _count) <= m_count);
-		int newSize = Max(m_count - _count, 0);
+		int newSize = MAX(m_count - _count, 0);
 
 		int i = _index;
 		int j = _index + _count;
@@ -393,7 +395,7 @@ private:
 			arr[i++] = (ValueT&&) arr[j++];
 		}
 
-		if constexpr (!AllocatorT::IsPOD)
+		if __constexpr (!AllocatorT::IsPOD)
 		{
 			for (int i = newSize; i < m_count; ++i)
 			{
@@ -403,3 +405,5 @@ private:
 		m_count = newSize;
 	}
 };
+
+AX_END_NAMESPACE

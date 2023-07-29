@@ -3,6 +3,8 @@
 
 #include "Common.hpp"
 
+AX_NAMESPACE 
+
 template<typename T> struct RemoveRef      { typedef T Type; };
 template<typename T> struct RemoveRef<T&>  { typedef T Type; };
 template<typename T> struct RemoveRef<T&&> { typedef T Type; };
@@ -10,20 +12,20 @@ template<typename T> struct RemovePtr      { typedef T Type; };
 template<typename T> struct RemovePtr<T*>  { typedef T Type; };
 
 template<typename T>
-FINLINE typename RemoveRef<T>::Type&& Move(T&& obj)
+__forceinline typename RemoveRef<T>::Type&& Move(T&& obj)
 {
   typedef typename RemoveRef<T>::Type CastType;
   return (CastType&&)obj;
 }
 
 template<typename T>
-FINLINE T&& Forward(typename RemoveRef<T>::Type& obj) { return (T&&)obj; }
+__forceinline T&& Forward(typename RemoveRef<T>::Type& obj) { return (T&&)obj; }
 
 template<typename T>
-FINLINE T&& Forward(typename RemoveRef<T>::Type&& obj) { return (T&&)obj; }
+__forceinline T&& Forward(typename RemoveRef<T>::Type&& obj) { return (T&&)obj; }
 
 template<class T, class U = T>
-FINLINE constexpr T Exchange(T& obj, U&& new_value)
+__forceinline __constexpr T Exchange(T& obj, U&& new_value)
 {
   T old_value = Move(obj);
   obj = Forward<U>(new_value);
@@ -60,7 +62,7 @@ inline void* AllocAligned(uint64_t bytes, uint64_t align)
     if (pAlignedMem == pRawMem)
         pAlignedMem += align;
     // Determine the shift, and store it.// (This works for up to 256-byte alignment.)
-    uint8 shift = pAlignedMem - pRawMem;
+    uint8 shift = (uint8)(pAlignedMem - pRawMem);
     ASSERT(shift > 0 && shift <= 256);
     pAlignedMem[-1] = (uint8)(shift & 0xFF);
     return pAlignedMem;
@@ -141,7 +143,7 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t sizeInBytes)
 template<int alignment = 0, int size = 0>
 inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
 {
-    if constexpr (size)
+    if __constexpr (size)
     #ifdef _MSC_VER
         __stosb((unsigned char*)dst, val, size);
     #else
@@ -211,7 +213,7 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
 template<int alignment = 0, int size = 0>
 inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
 {
-    if constexpr (size != 0)
+    if __constexpr (size != 0)
 #ifdef _MSC_VER
     __movsb((unsigned char*)dst, (unsigned char const*)src, size);
 #else
@@ -238,7 +240,7 @@ inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
 template<typename T> 
 struct Allocator 
 {
-    static constexpr bool IsPOD = false;
+    static const bool IsPOD = false;
 
     T* Allocate(int count) const {
         return new T[count]{};
@@ -256,7 +258,7 @@ struct Allocator
     {
         T* old  = ptr;
         T* _new = new T[count];
-        for (int i = 0; i < Min(count, oldCount); ++i)
+        for (int i = 0; i < MIN(count, oldCount); ++i)
         {
             _new[i] = (T&&)old[i];
         }
@@ -268,7 +270,7 @@ struct Allocator
 template<typename T>
 struct MallocAllocator
 {
-    static constexpr bool IsPOD = true;
+    static const bool IsPOD = true;
 
     T* Allocate(int count) const 
     {
@@ -289,7 +291,7 @@ struct MallocAllocator
     {
         T* old = ptr;
         T* nev = AllocateUninitialized(count);
-        MemCpy<alignof(T)>(nev, old, Min(oldCount, count) * sizeof(T));
+        MemCpy<alignof(T)>(nev, old, MIN(oldCount, count) * sizeof(T));
         Deallocate(old, oldCount);
         return nev;
     }
@@ -298,9 +300,7 @@ struct MallocAllocator
 template<typename T>
 struct FixedSizeGrowableAllocator
 {
-    static constexpr bool IsPOD = false;
-
-    static constexpr int InitialSize = NextPowerOf2(512 / Min((int)sizeof(T), 128));
+    static const bool IsPOD = false;
 
     struct Fragment
     {
@@ -313,13 +313,18 @@ struct FixedSizeGrowableAllocator
     Fragment* base = nullptr;
     Fragment* current = nullptr;
 
+    static __constexpr int InitialSize()
+    {
+        return NextPowerOf2(512 / MIN((int)sizeof(T), 128));
+    }
+
     FixedSizeGrowableAllocator()
     {
-        currentCapacity = InitialSize;
+        currentCapacity = InitialSize();
         base = new Fragment;
         current = base;
         base->next = nullptr;
-        base->ptr = new T[InitialSize];
+        base->ptr = new T[InitialSize()];
         base->size = 0;
     }
 
@@ -416,3 +421,5 @@ struct FixedSizeGrowableAllocator
 // todo add ScopedPtr
 // todo add ScopedFn
 // todo SharedPtr in different hpp file 
+
+AX_END_NAMESPACE 

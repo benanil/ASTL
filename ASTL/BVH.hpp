@@ -1,6 +1,8 @@
 #pragma once
 #include "Math/Matrix.hpp"
 
+AX_NAMESPACE
+
 AX_ALIGNED(16) struct BVHNode
 {
   union { struct { float3 aabbMin; uint leftFirst; }; __m128 minv; };
@@ -45,3 +47,5 @@ struct MeshInstance {
 };
 
 typedef uint MeshInstanceHandle;
+
+AX_END_NAMESPACE

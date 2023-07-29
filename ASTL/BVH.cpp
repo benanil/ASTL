@@ -1,4 +1,7 @@
+
 #include "BVH.hpp"
+
+AX_NAMESPACE
 
 // todo make non simd version
 #ifdef AX_SUPPORT_SSE
@@ -75,7 +78,7 @@ static void UpdateNodeBounds(BVHNode* bvhNode, const Tri* tris, uint nodeIdx)
     SSEStoreVector3(&node->aabbMax.x, nodeMax);
 }
 
-FINLINE float CalculateCost(const BVHNode* node)
+__forceinline float CalculateCost(const BVHNode* node)
 { 
 	__m128 e = _mm_sub_ps(node->maxv, node->minv); // box extent
 	__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XMSelect1110);
@@ -118,13 +121,13 @@ static float FindBestSplitPlane(const BVHNode* node, Tri* tris, int* outAxis, fl
 		{
 			Tri* triangle = tris + leftFirst + i;
 			float val = GetCenteroid(triangle, axis);
-			boundsMin = Min(boundsMin, val);
-			boundsMax = Max(boundsMax, val);
+			boundsMin = MIN(boundsMin, val);
+			boundsMax = MAX(boundsMax, val);
 		}
 
 		if (boundsMax == boundsMin) continue;
 
-		constexpr int BINS = 8;
+		const int BINS = 8;
 		struct Bin { aabb bounds; uint triCount = 0; };
 		Bin bin[BINS] = {};
 		float scale = float(BINS) / (boundsMax - boundsMin);
@@ -132,7 +135,7 @@ static float FindBestSplitPlane(const BVHNode* node, Tri* tris, int* outAxis, fl
 		{
 			Tri* triangle = tris + leftFirst + i;
 			float centeroid = GetCenteroid(triangle, axis);
-			int binIdx = Min(BINS - 1, (int)((centeroid - boundsMin) * scale));
+			int binIdx = MIN(BINS - 1, (int)((centeroid - boundsMin) * scale));
 			bin[binIdx].triCount++;
 			bin[binIdx].bounds.grow(triangle);
 		}
@@ -260,3 +263,5 @@ uint BuildBVH(Tri* tris, MeshInfo* meshes, int numMeshes, BVHNode* nodes, uint* 
 }
 
 #endif // AX_SUPPORT_SSE
+
+AX_END_NAMESPACE

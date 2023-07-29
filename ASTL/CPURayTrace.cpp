@@ -1,5 +1,7 @@
 #include "CPURayTrace.hpp"
 
+AX_NAMESPACE 
+
 // todo make non simd version
 #ifdef AX_SUPPORT_SSE
 
@@ -31,7 +33,7 @@ static inline RayHit CreateRayHit() {
 
 static inline HitRecord CreateHitRecord() {
 	HitRecord record;
-	record.normal = float3(0.0f, 1.0f, 0.0f);
+	record.normal = MakeVec3(0.0f, 1.0f, 0.0f);
 	record.distance = RayacastMissDistance;
 	return record;
 }
@@ -59,10 +61,10 @@ static bool VECTORCALL IntersectTriangle(const RaySSE& ray, const Tri* tri, Trio
 	return passed;
 }
 
-static float VECTORCALL IntersectAABB(__m128 origin, const __m128 invDir, const __m128 aabbMin, const __m128& aabbMax, float minSoFar)
+static float VECTORCALL IntersectAABB(__m128 origin, const __m128 invDir, const __m128 aabbMIN, const __m128& aabbMAX, float minSoFar)
 {
-	__m128 tmin = _mm_mul_ps(_mm_sub_ps(aabbMin, origin), invDir);
-	__m128 tmax = _mm_mul_ps(_mm_sub_ps(aabbMax, origin), invDir);
+	__m128 tmin = _mm_mul_ps(_mm_sub_ps(aabbMIN, origin), invDir);
+	__m128 tmax = _mm_mul_ps(_mm_sub_ps(aabbMAX, origin), invDir);
 	float tnear = Max3(_mm_min_ps(tmin, tmax));
 	float tfar  = Min3(_mm_max_ps(tmin, tmax));
 	// return tnear < tfar && tnear > 0.0f && tnear < minSoFar;
@@ -115,20 +117,7 @@ static bool IntersectBVH(const RaySSE& ray, const BVHNode* nodes, uint rootNode,
 #undef SWAPF
 #undef SWAPUINT
 
-FINLINE float2 ConvertToFloat2(const half* h)
-{
-	return float2(ConvertHalfToFloat(h[0]), ConvertHalfToFloat(h[1]));
-}
-
-FINLINE float3 ConvertToFloat3(const half* h) {
-	return float3(
-		ConvertHalfToFloat(h[0]),
-		ConvertHalfToFloat(h[1]),
-		ConvertHalfToFloat(h[2])
-    );
-}
-
-FINLINE uint MultiplyU32Colors(uint a, RGB8 b)
+__forceinline uint MultiplyU32Colors(uint a, RGB8 b)
 {
 	uint result = 0u;
 	result |= ((a & 0xffu) * b.r) >> 8u;
@@ -137,11 +126,11 @@ FINLINE uint MultiplyU32Colors(uint a, RGB8 b)
 	return result;
 }
 
-constexpr float UcharToFloat01 = 1.0f / 255.0f;
+__constexpr float UcharToFloat01 = 1.0f / 255.0f;
 
-FINLINE float3 UnpackRGB8u(uint u)
+__forceinline float3 UnpackRGB8u(uint u)
 {
-	return float3(
+	return MakeVec3(
 		float(u & 255u)        * UcharToFloat01,
 		float(u >> 8u  & 255u) * UcharToFloat01,
 		float(u >> 16u & 255u) * UcharToFloat01
@@ -152,7 +141,7 @@ FINLINE float3 UnpackRGB8u(uint u)
 
 inline int SampleTexture(Texture texture, float2 uv)
 {
-	uv -= float2(Floor(uv.x), Floor(uv.y));
+	uv -= MakeVec2(Floor(uv.x), Floor(uv.y));
 	int uScaled = (int)(texture.width * uv.x); // (0, 1) to (0, TextureWidth )
 	int vScaled = (int)(texture.height * uv.y); // (0, 1) to (0, TextureHeight)
 	return vScaled * texture.width + texture.offset + uScaled;
@@ -187,8 +176,8 @@ HitRecord CPU_RayCast(RaySSE ray)
 		RaySSE meshRay;
 		// change ray position&oriantation instead of mesh position for capturing in different positions
 		
-		meshRay.origin    = Vector4Transform(ray.origin, instance.inverseTransform);
-		meshRay.direction = Vector4Transform(ray.direction, instance.inverseTransform);
+		meshRay.origin    = Vector4Transform(ray.origin, instance.inverseTransform.r);
+		meshRay.direction = Vector4Transform(ray.direction, instance.inverseTransform.r);
 		// instance.meshIndex = bvhIndex
 		if (IntersectBVH(meshRay, m_data.BVHNodes, m_data.BVHIndices[instance.meshIndex], m_data.Triangles, &triout))
 		{
@@ -211,7 +200,7 @@ HitRecord CPU_RayCast(RaySSE ray)
 	MeshInstance hitInstance = m_data.MeshInstances[hitInstanceIndex];
 	Tri& triangle = m_data.Triangles[hitOut.triIndex];
 	Material material = m_data.Materials[hitInstance.materialStart + triangle.materialIndex];
-	Vector3f baryCentrics = Vector3f(1.0f - hitOut.u - hitOut.v, hitOut.u, hitOut.v);
+	Vector3f baryCentrics = MakeVec3(1.0f - hitOut.u - hitOut.v, hitOut.u, hitOut.v);
 	Matrix3 inverseMat3 = Matrix4::ConvertToMatrix3(hitInstance.inverseTransform);
 			
 	Vector3f n0 = Matrix3::Multiply(inverseMat3, ConvertToFloat3(&triangle.normal0x));
@@ -234,3 +223,5 @@ HitRecord CPU_RayCast(RaySSE ray)
 }
 
 #endif // AX_SUPPORT_SSE
+
+AX_END_NAMESPACE 

@@ -6,10 +6,12 @@
 
 #include "Math/Math.hpp"
 
+AX_NAMESPACE 
+
 // Not WangHash actually we can say skeeto hash.
 // developed and highly optimized by Chris Wellons
 // https://github.com/skeeto/hash-prospector https://nullprogram.com/blog/2018/07/31/
-constexpr FINLINE uint WangHash(uint x) { 
+__constexpr __forceinline uint WangHash(uint x) { 
 	x ^= x >> 16u; x *= 0x7feb352du;
 	x ^= x >> 15u; x *= 0x846ca68bu;
 	return x ^ (x >> 16u);
@@ -18,19 +20,19 @@ constexpr FINLINE uint WangHash(uint x) {
 // given Wang hash returns input value: 
 // WangHash(x) = 234525;
 // x = InverseWangHash(234525);
-constexpr FINLINE uint WangHashInverse(uint x)  {
+__constexpr __forceinline uint WangHashInverse(uint x)  {
 	x ^= x >> 16u; x *= 0x7feb352du;
 	x ^= x >> 15u; x *= 0x846ca68bu;
 	return x ^ (x >> 16u);
 }
 
-constexpr FINLINE uint64 MurmurHash(uint64 x) {
+__constexpr __forceinline uint64 MurmurHash(uint64 x) {
 	x ^= x >> 30ULL; x *= 0xbf58476d1ce4e5b9ULL;
 	x ^= x >> 27ULL; x *= 0x94d049bb133111ebULL;
 	return x ^ (x >> 31ULL);
 }
 
-constexpr FINLINE uint64 MurmurHashInverse(uint64 x) {
+__constexpr __forceinline uint64 MurmurHashInverse(uint64 x) {
 	x ^= x >> 31ULL ^ x >> 62ULL; x *= 0x319642b2d24d8ec3ULL;
 	x ^= x >> 27ULL ^ x >> 54ULL; x *= 0x96de1b173f119089ULL;
 	return x ^ (x >> 30ULL ^ x >> 60ULL);
@@ -45,37 +47,37 @@ namespace Random
 {
 	// these random seeds slower than PCG and MTwister but good choice for random seed
 	// also seeds are cryptographic 
-	FINLINE uint Seed32() {
+	__forceinline uint Seed32() {
 		uint32 result;
 		_rdseed32_step(&result); // or faster __rdtsc
 		return result;
 	}
 
-	FINLINE uint64 Seed64() {
+	__forceinline uint64 Seed64() {
 		uint64 result;
 		_rdseed64_step(&result);// or faster __rdtsc
 		return result;
 	}
 
-	FINLINE float NextFloat01(uint32 next) {
+	__forceinline float NextFloat01(uint32 next) {
 		return float(next >> 8) / 16777216.0f;
 	}
 	
-	FINLINE	float RepatMinMax(uint32 next, float min, float max) {
+	__forceinline float RepatMinMax(uint32 next, float min, float max) {
 		return min + (NextFloat01(next) * Abs(min - max));
 	}
 	
-	FINLINE double NextDouble01(uint64 next) {
+	__forceinline double NextDouble01(uint64 next) {
 		return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
 	}
 	
-	FINLINE double RepatMinMax(uint64 next, double min, double max) {
+	__forceinline double RepatMinMax(uint64 next, double min, double max) {
 		return min + (NextDouble01(next) * Abs(min - max));
 	}
 	
-	FINLINE uint32 RepatMinMax(uint32 next, uint32 min, uint32 max) { return min + (next % (max - min)); }
-	FINLINE uint64 RepatMinMax(uint64 next, uint64 min, uint64 max) { return min + (next % (max - min)); }
-	FINLINE int    RepatMinMax(int next, int _min, int _max) { return _min + (next % (_max - _min)); }
+	__forceinline uint32 RepatMinMax(uint32 next, uint32 min, uint32 max) { return min + (next % (max - min)); }
+	__forceinline uint64 RepatMinMax(uint64 next, uint64 min, uint64 max) { return min + (next % (max - min)); }
+	__forceinline int    RepatMinMax(int next, int _min, int _max) { return _min + (next % (_max - _min)); }
 
 	// https://www.pcg-random.org/index.html
 	// we can also add global state in a cpp file
@@ -88,10 +90,10 @@ namespace Random
 	
 	// usage:
 	// RandomNextFloat01(PCGNext(pcg))
-	// RepatMinMax(PCGNext(pcg), 120, 200);
-	// RepatMinMax(Xoroshiro128Plus(xoro), 120ull, 200ull);
+	// RepatMINMAX(PCGNext(pcg), 120, 200);
+	// RepatMINMAX(Xoroshiro128Plus(xoro), 120ull, 200ull);
 
-	FINLINE uint32 PCGNext(PCG& pcg)
+	__forceinline uint32 PCGNext(PCG& pcg)
 	{
 		uint64 oldstate = pcg.state;
 		pcg.state = oldstate * 6364136223846793005ULL + (pcg.inc | 1);
@@ -102,7 +104,7 @@ namespace Random
 		return uint32((xorshifted >> rot) | (xorshifted << ((-rot) & 31)));
 	}
 
-	FINLINE uint PCG2Next(uint& rng_state)
+	__forceinline uint PCG2Next(uint& rng_state)
 	{
 		uint state = rng_state;
 		rng_state = state * 747796405u + 2891336453u;
@@ -110,26 +112,26 @@ namespace Random
 		return (word >> 22u) ^ word;
 	}
 
-	FINLINE void PCGInitialize(PCG& pcg, uint64 initstate, uint64 seed)
+	__forceinline void PCGInitialize(PCG& pcg, uint64 initstate, uint64 seed)
 	{
 		pcg.inc = (seed << 1u) | 1u;
 		pcg.state = initstate;
 		PCGNext(pcg);
 	}
 
-	FINLINE void PCGInitialize(PCG& pcg, uint64 seed) 
+	__forceinline void PCGInitialize(PCG& pcg, uint64 seed) 
 	{
 		pcg.state = 0x853c49e6748fea9bULL;
 		pcg.inc = seed << 1 | 1u;
 	}
 
-	FINLINE void Xoroshiro128PlusInit(uint64_t s[2])
+	__forceinline void Xoroshiro128PlusInit(uint64_t s[2])
 	{
 		s[0] += Seed64(); s[1] += Seed64();
 		s[0] |= 1; // non zero
 	}
 	
-	FINLINE void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t seed)
+	__forceinline void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t seed)
 	{
 		s[0] |= 1; // non zero
 		s[0] = MurmurHash(seed); 
@@ -137,7 +139,7 @@ namespace Random
 	}
 	
 	// concise hashing function. https://nullprogram.com/blog/2017/09/21/
-	FINLINE uint64_t Xoroshiro128Plus(uint64_t s[2])
+	__forceinline uint64_t Xoroshiro128Plus(uint64_t s[2])
 	{
 		uint64_t s0 = s[0];
 		uint64_t s1 = s[1];
@@ -246,7 +248,7 @@ inline uint64 MurmurHash64(const void * key, int len, uint64 seed)
 // hardcodes seed and the secret, reformattes the code, and clang-tidy fixes.
 namespace WYHash
 {
-	FINLINE void mum(uint64_t* RESTRICT a, uint64_t* RESTRICT b)
+	__forceinline void mum(uint64_t* RESTRICT a, uint64_t* RESTRICT b)
 	{
 #if defined(__SIZEOF_INT128__)
 		__uint128_t r = *a;
@@ -275,11 +277,11 @@ namespace WYHash
 #endif
 	}
 
-	FINLINE uint64 mix(uint64 a, uint64 b) { mum(&a, &b); return a ^ b; }
-	FINLINE uint64 r8(const uint8* p) { return *(uint64*)p; }
-	FINLINE uint64 r4(const uint8* p) { return (uint64)*(uint32*)p; }
+	__forceinline uint64 mix(uint64 a, uint64 b) { mum(&a, &b); return a ^ b; }
+	__forceinline uint64 r8(const uint8* p) { return *(uint64*)p; }
+	__forceinline uint64 r4(const uint8* p) { return (uint64)*(uint32*)p; }
 	// reads 1, 2, or 3 bytes
-	FINLINE uint64 r3(const uint8* p, size_t k) 
+	__forceinline uint64 r3(const uint8* p, size_t k) 
 	{
 		return (uint64_t(p[0]) << 16U) | (uint64_t(p[k >> 1U]) << 8U) | p[k - 1]; 
 	}
@@ -287,7 +289,7 @@ namespace WYHash
 	// alternative algorithm for this is xxHash which is really efficient
 	// https://github.com/Cyan4973/xxHash
 
-	[[nodiscard]] FINLINE uint64 Hash(void const* key, size_t len)
+	[[nodiscard]] __forceinline uint64 Hash(void const* key, size_t len)
 	{
         const size_t secret[4] = { 0xa0761d6478bd642full,
                                    0xe7037ed1a0b428dbull,
@@ -335,21 +337,21 @@ namespace WYHash
 		return mix(secret[1] ^ len, mix(a ^ secret[1], b ^ seed));
 	}
 
-	[[nodiscard]] FINLINE uint64 Hash(uint64 x) 
+	[[nodiscard]] __forceinline uint64 Hash(uint64 x) 
 	{
 		return mix(x, UINT64_C(0x9E3779B97F4A7C15));
 	}
 }
 
-// use WYHash if you don't need constexpr
-constexpr inline ulong StringToHash64(const char* str, ulong hash = 0)
+// use WYHash if you don't need __constexpr
+__constexpr inline ulong StringToHash64(const char* str, ulong hash = 0)
 {
 	while (*str)
 		hash = *str++ + (hash << 6ull) + (hash << 16ull) - hash;
 	return hash;
 }
 
-constexpr inline ulong PathToHash64(const char* str)
+__constexpr inline ulong PathToHash64(const char* str)
 {
 	ulong hash = 0u, idx = 0, shift = 0;
 	while (str[idx] && idx < 8)
@@ -357,14 +359,14 @@ constexpr inline ulong PathToHash64(const char* str)
 	return StringToHash64(str + idx, MurmurHash(hash));
 }
 
-constexpr inline uint StringToHash(const char* str, uint hash = 0)
+__constexpr inline uint StringToHash(const char* str, uint hash = 0)
 {
 	while (*str)
 		hash = *str++ + (hash << 6u) + (hash << 16u) - hash;
 	return hash;
 }
 
-constexpr inline uint PathToHash(const char* str)
+__constexpr inline uint PathToHash(const char* str)
 {
 	uint hash = 0u, idx = 0u, shift = 0u;
 	while (str[idx] && idx < 4u)
@@ -374,10 +376,12 @@ constexpr inline uint PathToHash(const char* str)
 
 template<typename T> struct  Hasher
 {
-	static FINLINE uint64 Hash(const T& x)
+	static __forceinline uint64 Hash(const T& x)
 	{
-		if constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
+		if __constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
 		else if      (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));
 		else                          return WYHash::Hash(&x, sizeof(T));
 	}
 };
+
+AX_END_NAMESPACE 

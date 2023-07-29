@@ -3,6 +3,8 @@
 #include "Memory.hpp"
 #include "Algorithms.hpp"
 
+AX_NAMESPACE
+
 // I use power of two increasing to not use modulo operator
 // because and operator is faster
 
@@ -61,7 +63,7 @@ public:
 private:
 	// we don't want to use same initial size for all data types because we want 
 	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-	static constexpr int InitialSize = NextPowerOf2(512 / Min((int)sizeof(ValueT), 128));
+	static const int InitialSize = NextPowerOf2(512 / MIN((int)sizeof(ValueT), 128));
 							                                               
 	ValueT* ptr  = nullptr;                                                
 	uint capacity = InitialSize;                                            
@@ -304,7 +306,7 @@ private:
 			return; // no need to grow
 		}
 
-		const uint newCapacity = Max(CalculateQueueGrowth(), InitialSize);
+		const uint newCapacity = MAX(CalculateQueueGrowth(), InitialSize);
 		if (ptr)  ptr = allocator.Reallocate(ptr, capacity, newCapacity);
 		else      ptr = allocator.Allocate(newCapacity);
 
@@ -349,7 +351,7 @@ class PriorityQueue
 public:
     // we don't want to use same initial size for all data types because we want 
     // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-    static constexpr int InitialSize = 512 / Min((int)sizeof(T), 128);
+    static const int InitialSize = 512 / MIN((int)sizeof(T), 128);
 	
 	T*         heap     = nullptr;
 	int        size     = 0;
@@ -393,8 +395,8 @@ private:
 
 	static bool Compare(const T& a, const T& b)
 	{
-		if constexpr (compare == PQCompare_Less)    return a < b;
-		if constexpr (compare == PQCompare_Greater) return a > b;
+		if __constexpr (compare == PQCompare_Less)    return a < b;
+		if __constexpr (compare == PQCompare_Greater) return a > b;
 		else { ASSERT(0); return 0; }
 	}
 
@@ -402,7 +404,7 @@ private:
 	{
 		if (size + adition >= capacity)
 		{
-			int newCapacity = Max(CalculateArrayGrowth(size + adition), InitialSize);
+			int newCapacity = MAX(CalculateArrayGrowth(size + adition), InitialSize);
 			if (heap)
 				heap = allocator.Reallocate(heap, capacity, newCapacity);
 			else
@@ -501,3 +503,5 @@ public:
 #endif
 
 };
+
+AX_END_NAMESPACE

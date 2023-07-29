@@ -4,6 +4,8 @@
 
 #ifdef AX_SUPPORT_SSE
 
+AX_NAMESPACE 
+
 AX_ALIGNED(16) struct Quaternion
 {
 	union
@@ -13,17 +15,10 @@ AX_ALIGNED(16) struct Quaternion
 		__m128 vec;
 	};
 
-	Quaternion() : x(0), y(0), z(0), w(1) {}
-	Quaternion(float scale) : x(scale), y(scale), z(scale), w(scale) {}
-	Quaternion(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
-	Quaternion(__m128 _vec) : vec(_vec) {}
-
-	operator __m128() const { return vec; }
-
 	const float  operator [] (int index) const { return arr[index]; }
 	float& operator [] (int index) { return arr[index]; }
 
-	FINLINE static Quaternion Identity() { return g_XMIdentityR3.vec; }
+	__forceinline static Quaternion Identity() { Quaternion q; q.vec = g_XMIdentityR3.vec; return q; }
 
 	inline static __m128 VECTORCALL Mul(const __m128 Q1, const __m128 Q2) noexcept
 	{
@@ -61,7 +56,7 @@ AX_ALIGNED(16) struct Quaternion
 		return _mm_add_ps(vec, temp1);
 	}
 
-	FINLINE static __m128 VECTORCALL Dot(const Quaternion V1, const Quaternion V2) noexcept
+	__forceinline static __m128 VECTORCALL Dot(const Quaternion V1, const Quaternion V2) noexcept
 	{
 		__m128 vTemp2 = V2.vec;
 		__m128 vTemp = _mm_mul_ps(V1.vec, vTemp2);
@@ -76,7 +71,7 @@ AX_ALIGNED(16) struct Quaternion
 	{
 		const __m128 T = _mm_set_ps1(t);
 		// Result = Q0 * sin((1.0 - t) * Omega) / sin(Omega) + Q1 * sin(t * Omega) / sin(Omega)
-		static const Vector4f OneMinusEpsilon = { { { 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f } } };
+		static const Vector4f OneMINusEpsilon = { { { 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f } } };
 		static const Vector4UI SignMask2 = { 0x80000000, 0x00000000, 0x00000000, 0x00000000 };
 
 		__m128 CosOmega = _mm_dp_ps(Q0.vec, Q1.vec, 0xff);
@@ -87,7 +82,7 @@ AX_ALIGNED(16) struct Quaternion
 
 		CosOmega = _mm_mul_ps(CosOmega, Sign);
 
-		Control = _mm_cmplt_ps(CosOmega, OneMinusEpsilon.vec);
+		Control = _mm_cmplt_ps(CosOmega, OneMINusEpsilon.vec);
 
 		__m128 SinOmega = _mm_mul_ps(CosOmega, CosOmega);
 		SinOmega = _mm_sub_ps(g_XMOne, SinOmega);
@@ -112,10 +107,12 @@ AX_ALIGNED(16) struct Quaternion
 		S1 = _mm_mul_ps(S1, Sign);
 		__m128 Result = _mm_mul_ps(Q0.vec, S0);
 		S1 = _mm_mul_ps(S1, Q1.vec); // _mm_fmadd_ps(S1, Q1.vec, Result) ?
-		return _mm_add_ps(Result, S1);
+		Quaternion res;
+		res.vec = _mm_add_ps(Result, S1);
+		return res;
 	}
 
-	FINLINE Quaternion static FromEuler(float x, float y, float z) noexcept
+	__forceinline Quaternion static FromEuler(float x, float y, float z) noexcept
 	{
 		x *= 0.5f; y *= 0.5f; z *= 0.5f;
 		float c[4], s[4];
@@ -140,12 +137,12 @@ AX_ALIGNED(16) struct Quaternion
 		return eulerAngles;
 	}
 	
-	FINLINE Quaternion static VECTORCALL FromEuler(Vector3f euler) noexcept
+	__forceinline Quaternion static VECTORCALL FromEuler(Vector3f euler) noexcept
 	{
 		return FromEuler(euler.x, euler.y, euler.z);
 	}
 
-	FINLINE static __m128 VECTORCALL Conjugate(const __m128 vec)
+	__forceinline static __m128 VECTORCALL Conjugate(const __m128 vec)
 	{
 		static const Vector432F NegativeOne3 = { -1.0f,-1.0f,-1.0f, 1.0f};
 		return _mm_mul_ps(vec, NegativeOne3);
@@ -175,8 +172,26 @@ AX_ALIGNED(16) struct Quaternion
 		return res; 
 	}
 
-	FINLINE Quaternion operator *  (const Quaternion& b) { return Mul(this->vec, b.vec); }
-	FINLINE Quaternion operator *= (const Quaternion& b) { this->vec = Mul(this->vec, b.vec); return *this; }
+	__forceinline Quaternion operator *  (const Quaternion& b) { Quaternion q; q.vec = Mul(this->vec, b.vec); return q; }
+	__forceinline Quaternion operator *= (const Quaternion& b) { this->vec = Mul(this->vec, b.vec); return *this; }
 };
 
+__forceinline Quaternion MakeQuat(float scale = 0.0f)                     
+{
+	Quaternion v;
+	v.vec = _mm_set1_ps(scale);
+	return v;
+}
+
+__forceinline Quaternion MakeQuat(float _x, float _y, float _z, float _w) 
+{
+	Quaternion v;
+	v.vec = _mm_setr_ps(_x, _y, _z, _w);   
+	return v; 
+}
+
+#else
+// todo
 #endif // AX_SUPPORT_SSE
+
+AX_END_NAMESPACE 

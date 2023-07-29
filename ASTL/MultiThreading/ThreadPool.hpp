@@ -42,8 +42,8 @@ public:
 class ThreadPool
 {
 public:
-	static constexpr uint32 MaxThreads = 16u;
-	static constexpr uint32 MaxJobsPerThread = 16u;
+	static const uint32 MAXThreads = 16u;
+	static const uint32 MAXJobsPerThread = 16u;
 
 	ThreadPool();
 	explicit ThreadPool(uint32 threadCount = 4u);
@@ -61,6 +61,6 @@ private:
 private:
 	int m_NumThreads = 4;
 	int m_CurretWorkerIndex = 0;
-	LockFreeRingBuffer<MaxJobsPerThread> m_Jobs[MaxThreads];
+	LockFreeRingBuffer<MAXJobsPerThread> m_Jobs[MAXThreads];
 };
 #endif

@@ -45,8 +45,8 @@ struct ParallelThread
 class ParallelFor
 {
 public:
-	static constexpr unsigned MaxThreads = 16u;
-	static constexpr unsigned MaxJobsPerThread = 16u;
+	static const unsigned MaxThreads = 16u;
+	static const unsigned MaxJobsPerThread = 16u;
 
 	explicit ParallelFor(int numThreads);
 

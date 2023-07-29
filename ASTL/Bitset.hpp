@@ -2,9 +2,11 @@
 #include "Common.hpp"
 #include "Math/SIMDCommon.hpp"
 
+AX_NAMESPACE
+
 template<int numBits> struct Bitset
 {
-	static constexpr int size = (numBits / 64) + 1;
+	static const int size = (numBits / 64) + 1;
 
 	ulong bits[size] = { 0 };
 	Bitset(const char* str) {
@@ -53,7 +55,7 @@ template<int numBits> struct Bitset
 };
 
 template<typename T>
-inline constexpr void FillN(T* ptr, int len, T val) {
+inline __constexpr void FillN(T* ptr, int len, T val) {
 	for (int i = 0; i < len; ++i)
 		ptr[i] = val;
 }
@@ -326,3 +328,5 @@ struct Bitset4096
 #undef _AND
 #undef _ROR
 #undef _XOR
+
+AX_END_NAMESPACE

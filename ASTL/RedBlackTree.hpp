@@ -6,7 +6,7 @@
 
 #include "Memory.hpp"
 
-// todo copy constructor move constructor
+AX_NAMESPACE
 
 template<typename ValueT>
 class RedBlackTree
@@ -527,3 +527,5 @@ using Set = RedBlackTree<ValueT>;
 
 template<typename KeyT, typename ValueT>
 using Map = RedBlackTree<KeyValuePair<KeyT, ValueT>>;
+
+AX_END_NAMESPACE

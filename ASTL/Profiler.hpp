@@ -2,9 +2,9 @@
 
 // from Casey Muratori's Computer Enhance course
 
-//#define AX_PROFILER_DISABLE
+// #define AX_PROFILER_DISABLE
 
-#include "IntFltTypesLimits.hpp"
+#include "Common.hpp"
 
 #ifdef AX_PROFILER_DISABLE
 #    define TimeBlock(Name) 
@@ -32,7 +32,7 @@ struct profiler
 };
 
 extern profiler GlobalProfiler;
-extern uint64_t GlobalProfilerParent;
+extern uint32_t GlobalProfilerParent;
 
 struct profile_block
 {

@@ -1,6 +1,8 @@
 #pragma once
 #include "BVH.hpp"
 
+AX_NAMESPACE
+
 struct HitRecord
 {
 	Vector3f normal;
@@ -48,8 +50,10 @@ struct BVHData
   uint NumMeshInstances;
 };
 
-constexpr float RayacastMissDistance = 1e30f;
+extern const float RayacastMissDistance = 1e30f;
 
 void CPU_RayTraceInitialize(const BVHData& data);
 
 HitRecord CPU_RayCast(RaySSE ray);
+
+AX_END_NAMESPACE

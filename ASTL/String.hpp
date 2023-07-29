@@ -5,8 +5,9 @@
 #include "Algorithms.hpp"
 #include "Memory.hpp"
 
-// https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
+AX_NAMESPACE 
 
+// https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
 #ifdef AX_SUPPORT_SSE
 inline int StringLength(const char* s)
 {
@@ -85,15 +86,14 @@ inline int StrCmp(const char* a, const char* b)
 #include "Profiler.hpp"
 
 // small string optimization
-AX_ALIGNED(1) 
 class String
 {
 public:
     
     uint64_t lowHigh[3]{}; // when using heap high part is =  capacity | (size << 31);
 
-    static constexpr uint32_t LastBit32 = 1u << 31u;
-    static constexpr uint64_t LastBit64 = 1ull << 63ull;
+    static const uint32_t LastBit32 = 1u << 31u;
+    static const uint64_t LastBit64 = 1ull << 63ull;
 
     uint32_t GetCapacity() const
     {
@@ -229,8 +229,8 @@ public:
           char* CStr()        { return GetPtr(); }
     const char* CStr()  const { return GetPtr(); }
 
-    const char& operator[] (int index) const { ASSERT(index < GetSize() && index > 0); return GetPtr()[index]; }
-          char& operator[] (int index)       { ASSERT(index < GetSize() && index > 0); return GetPtr()[index]; }
+    const char& operator[] (uint32_t index) const { ASSERT(index < GetSize() && index > 0); return GetPtr()[index]; }
+          char& operator[] (uint32_t index)       { ASSERT(index < GetSize() && index > 0); return GetPtr()[index]; }
 
     String& operator = (const String& right) 
     {
@@ -321,7 +321,7 @@ public:
     bool Contains(const char* other)   const { return IndexOf(other) != -1; }
     bool Contains(const String& other) const { return IndexOf(other.CStr()) != -1; }
 
-    void Reserve(int size)
+    void Reserve(uint32_t size)
     {
         if (GetSize() == 0)
         {
@@ -360,16 +360,16 @@ public:
         Insert(index, other.GetPtr()); 
     }
     
-    String SubString(int index)
+    String SubString(uint32_t index)
     {
-        int count = GetSize() - index;
+        uint32_t count = GetSize() - index;
         ASSERT(index + count <= GetSize());
         String ret(count + 2);
         ret.Append(GetPtr() + index, GetSize() - count);
         return ret;
     }
 
-    String SubString(int index, int count)
+    String SubString(uint32_t index, int count)
     {
         ASSERT(index + count <= GetSize());
         String ret(count + 2);
@@ -434,14 +434,14 @@ public:
 
     void Append(const String& other) { Append(other.GetPtr()); }
 
-    void RemoveSpace(int _index, int _count)
+    void RemoveSpace(uint32_t _index, int _count)
     {
         uint32_t size = this->GetSize();
         ASSERT((_index + _count) <= size);
-        int newSize = Max(this->GetSize() - _count, 0u);
+        uint32_t newSize = MAX(this->GetSize() - _count, 0u);
 
-        int i = _index;
-        int j = _index + _count;
+        uint32_t i = _index;
+        uint32_t j = _index + _count;
 
         char* ptr = GetPtr();
         // *******i****j***   < opens space with incrementing both of the pointers (two pointer algorithm)
@@ -455,7 +455,7 @@ public:
     {
         GrowIfNecessarry(_count);
         uint32_t size = this->GetSize();
-        long i = Min((long)size + _count, (long)GetCapacity());
+        long i = MIN((long)size + _count, (long)GetCapacity());
         int  j = size;
         ASSERT(i <= INT32_MAX);
         char* ptr = GetPtr();
@@ -470,7 +470,7 @@ public:
     void GrowIfNecessarry(int _size)
     {
         uint32_t size = GetSize();
-        int newSize = size + _size + 1;
+        uint32_t newSize = size + _size + 1;
         
         if (newSize <= 23)
             return;
@@ -478,8 +478,8 @@ public:
         uint32_t capacity = GetCapacity();
         if (newSize >= capacity)
         {
-            constexpr int InitialSize = 48;
-            newSize = Max(CalculateArrayGrowth(size + _size), InitialSize);
+            const int InitialSize = 48;
+            newSize = MAX(CalculateArrayGrowth(size + _size), InitialSize);
             
             if (size != 0) 
                 Reallocate(size, newSize);
@@ -499,11 +499,30 @@ public:
 
 template<> struct Hasher<String>
 {
-    static FINLINE uint64 Hash(const String& x)
+    static __forceinline uint64 Hash(const String& x)
     {
         return WYHash::Hash(x.CStr(), x.Length());
         // return MurmurHash64(x.CStr(), x.Length(), 0xa0761d6478bd642full);
     }
 };
 
-// todo StringView
+struct StringView
+{
+  const char* ptr;
+  int size;
+
+  StringView(const char* _ptr)
+  : ptr(_ptr), size(StringLength(ptr))
+  { }
+
+  StringView(const String& string)
+  : ptr(string.GetPtr()), size(string.GetSize())
+  { }
+
+  char operator[](int index)
+  {
+    return ptr[index];
+  }
+};
+
+AX_END_NAMESPACE 

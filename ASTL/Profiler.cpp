@@ -1,6 +1,7 @@
 
 #include "Profiler.hpp"
 #include "Common.hpp"
+#include <stdio.h>
 
 #if _WIN32
 #include <intrin.h>
@@ -81,7 +82,7 @@ static uint64_t EstimateCPUTimerFreq(void)
 
 // extern variables
 profiler GlobalProfiler{};
-uint64_t GlobalProfilerParent{};
+uint32_t GlobalProfilerParent{};
 
 profile_block::profile_block(char const* Label_, uint32_t AnchorIndex_)
 {
@@ -119,8 +120,6 @@ profile_block::~profile_block(void)
 
 #ifndef AX_PROFILER_DISABLE
 
-#include <stdio.h>
-
 void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor)
 {
     double Percent = 100.0 * ((double)Anchor->TSCElapsedExclusive / (double)TotalTSCElapsed);
@@ -150,7 +149,9 @@ void EndAndPrintProfile()
         printf("\nTotal time: %0.4fms (CPU freq %llu)\n", 1000.0 * (double)TotalCPUElapsed / (double)CPUFreq, CPUFreq);
     }
 
-    for (uint32_t AnchorIndex = 0; AnchorIndex < ArraySize(GlobalProfiler.Anchors); ++AnchorIndex)
+    const uint32_t numAnchors = sizeof(GlobalProfiler.Anchors) / sizeof(profile_anchor);
+
+    for (uint32_t AnchorIndex = 0; AnchorIndex < numAnchors; ++AnchorIndex)
     {
         profile_anchor* Anchor = GlobalProfiler.Anchors + AnchorIndex;
         if (Anchor->TSCElapsedInclusive)
@@ -163,9 +164,13 @@ void EndAndPrintProfile()
 }
 #else
 
+
 void PrintTimeElapsed(uint64_t TotalTSCElapsed, profile_anchor* Anchor) {}
+
 
 void BeginProfile(void) {}
 
 void EndAndPrintProfile() {}
+
 #endif
+

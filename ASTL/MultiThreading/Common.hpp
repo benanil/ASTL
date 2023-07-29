@@ -12,6 +12,8 @@ extern "C" {
 }
 #endif
 
+AX_NAMESPACE 
+
 struct IExecutable
 {
 	IExecutable() = default;
@@ -30,12 +32,12 @@ inline void SetToUniqueCore(std::thread& worker, int coreIndex)
 	assert(affinity_result > 0);
 
 	//// Increase thread priority:
-	constexpr int THREAD_PRIORITY_HIGHEST = 2;
+	const int THREAD_PRIORITY_HIGHEST = 2;
 	bool priority_result = SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST);
 	assert(priority_result != 0);
 
 	// Name the thread:
-	constexpr const wchar_t* ThreadHeader = L"axThread";
+	const wchar_t* ThreadHeader = L"axThread";
 	wchar_t threadName[13];
 	memset(threadName, 0, sizeof(wchar_t) * 13);
 	memcpy(threadName, ThreadHeader, 9 * sizeof(wchar_t));
@@ -65,3 +67,5 @@ inline void SetToUniqueCore(std::thread& worker, int coreIndex)
 		#undef handle_error_en
 #endif
 }
+
+AX_END_NAMESPACE 

@@ -12,26 +12,22 @@
 	#define AX_API
 #endif
 
-#ifndef FINLINE
-#	ifdef _MSC_VER
-#		define FINLINE __forceinline
-#define VC_EXTRALEAN 1
-#   elif __CLANG__
-#       define FINLINE [[clang::always_inline]] 
-#	elif __GNUC__
-#       define FINLINE  __attribute__((always_inline))
-#   endif
+#ifdef _MSC_VER
+# // do nothing		
+#elif __CLANG__
+#       define __forceinline [[clang::always_inline]] 
+#elif __GNUC__
+#       define __forceinline  __attribute__((always_inline))
 #endif
 
-#ifndef VECTORCALL
-#   ifdef _MSC_VER
-#include <intrin.h>
-#		define VECTORCALL __vectorcall
-#   elif __CLANG__
-#       define VECTORCALL [[clang::vectorcall]] 
-#	elif __GNUC__
-#       define VECTORCALL  
-#   endif
+#ifdef _MSC_VER
+#   define VC_EXTRALEAN 1
+#   include <intrin.h>
+#	define VECTORCALL __vectorcall
+#elif __CLANG__
+#   define VECTORCALL [[clang::vectorcall]] 
+#elif __GNUC__
+#   define VECTORCALL  
 #endif
 
 #if defined(__GNUC__)
@@ -65,7 +61,7 @@
 #	elif defined(__GNUC__) && !defined(__MINGW32__)
 #		define AXGLOBALCONST extern const __attribute__((weak))
 #   else 
-#       define AXGLOBALCONST 
+#       define AXGLOBALCONST extern const 
 #	endif
 #endif
 
@@ -150,6 +146,8 @@
 #   define AX_ARM
 #endif
 
+// write AX_NO_SSE2 or AX_NO_AVX2 to disable vector instructions
+
 /* Intrinsics Support */
 #if (defined(AX_X64) || defined(AX_X86)) && !defined(__COSMOPOLITAN__)
     #if defined(_MSC_VER) && !defined(__clang__)
@@ -185,8 +183,36 @@
     #endif
 #endif
 
+#if defined(__clang__) || defined(__GNUC__)
+    #define AX_CPP_VERSION __cplusplus
+    #define AX_CPP14 201402L
+    #define AX_CPP17 201703L
+    #define AX_CPP20 202002L
+#endif
+
+#if defined(_MSC_VER)
+    #define AX_CPP_VERSION _MSC_VER
+    #define AX_CPP14 1900
+    #define AX_CPP17 1910
+    #define AX_CPP20 1920
+#endif
+
+#define __constexpr constexpr
+
+// #define AX_USE_NAMESPACE
+
+#ifdef AX_USE_NAMESPACE
+#   define AX_NAMESPACE namespace ax {
+#   define AX_END_NAMESPACE }
+#else
+#   define AX_NAMESPACE
+#   define AX_END_NAMESPACE
+#endif
+
+AX_NAMESPACE
+
 template<typename T, uint64_t N>
-constexpr uint64_t ArraySize(const T (&)[N]) { return N; }
+__constexpr uint64_t ArraySize(const T (&)[N]) { return N; }
 
 inline void SmallMemCpy(void* dst, const void* src, uint64_t size)
 {
@@ -207,19 +233,19 @@ inline void SmallMemSet(void* dst, unsigned char val, uint64_t size)
 }
 
 template<typename T>
-FINLINE constexpr T PopCount(T x)
+__forceinline __constexpr T PopCount(T x)
 {
     // according to intel intrinsic, popcnt instruction is 3 cycle (equal to mulps, addps) 
     // throughput is even double of mulps and addps which is 1.0 (%100)
     // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
 #ifdef AX_SUPPORT_SSE
-	if      constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
-    else if constexpr (sizeof(T) == 8) return _mm_popcnt_u64(x);
+	if      __constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
+    else if __constexpr (sizeof(T) == 8) return _mm_popcnt_u64(x);
 #elif defined(__GNUC__) && !defined(__MINGW32__)
-	if      constexpr (sizeof(T) == 4) return __builtin_popcount(x);
-	else if constexpr (sizeof(T) == 8) return __builtin_popcountl(x);
+	if      __constexpr (sizeof(T) == 4) return __builtin_popcount(x);
+	else if __constexpr (sizeof(T) == 8) return __builtin_popcountl(x);
 #else
-	if constexpr (sizeof(T) == 4)
+	if __constexpr (sizeof(T) == 4)
 	{
 		x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
 		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
@@ -236,28 +262,29 @@ FINLINE constexpr T PopCount(T x)
 }
 
 template<typename T>
-FINLINE constexpr T TrailingZeroCount(T x) 
+__forceinline __constexpr T TrailingZeroCount(T x) 
 {
 #ifdef _MSC_VER
-	if      constexpr (sizeof(T) == 4) return _tzcnt_u32(x);
-	else if constexpr (sizeof(T) == 8) return _tzcnt_u64(x);
+	if      __constexpr (sizeof(T) == 4) return _tzcnt_u32(x);
+	else if __constexpr (sizeof(T) == 8) return _tzcnt_u64(x);
 #elif defined(__GNUC__) && !defined(__MINGW32__)
-	if      constexpr (sizeof(T) == 4) return __builtin_ctz(x);
-	else if constexpr (sizeof(T) == 8) return __builtin_ctzll(x);
+	if      __constexpr (sizeof(T) == 4) return __builtin_ctz(x);
+	else if __constexpr (sizeof(T) == 8) return __builtin_ctzll(x);
 #else
 	return PopCount((x & -x) - 1);
 #endif
 }
 
+
 template<typename T>
-FINLINE constexpr T LeadingZeroCount(T x)
+__forceinline __constexpr T LeadingZeroCount(T x)
 {
 #ifdef _MSC_VER
-	if      constexpr (sizeof(T) == 4) return _lzcnt_u32(x);
-	else if constexpr (sizeof(T) == 8) return _lzcnt_u64(x);
+	if      __constexpr (sizeof(T) == 4) return _lzcnt_u32(x);
+	else if __constexpr (sizeof(T) == 8) return _lzcnt_u64(x);
 #elif defined(__GNUC__) && !defined(__MINGW32__)
-	if      constexpr (sizeof(T) == 4) return __builtin_clz(x);
-	else if constexpr (sizeof(T) == 8) return __builtin_clzll(x);
+	if      __constexpr (sizeof(T) == 4) return __builtin_clz(x);
+	else if __constexpr (sizeof(T) == 8) return __builtin_clzll(x);
 #else
 	x |= (x >> 1);
 	x |= (x >> 2);
@@ -269,37 +296,47 @@ FINLINE constexpr T LeadingZeroCount(T x)
 }
 
 template<typename To, typename From>
-FINLINE constexpr To BitCast(const From& _Val) {
-	return __builtin_bit_cast(To, _Val);
+__forceinline __constexpr To BitCast(const From& _Val) {
+#if AX_CPP_VERSION >= AX_CPP17
+    return __builtin_bit_cast(To, _Val);
+#else
+    return *(const To*)&_Val;
+#endif
 }
 
-template<typename T> FINLINE constexpr T Min(T a, T b) { return a < b ? a : b; }
-template<typename T> FINLINE constexpr T Max(T a, T b) { return a > b ? a : b; }
-template<typename T> FINLINE constexpr T Clamp(T x, T a, T b) { return Max(a, Min(b, x)); }
+#if AX_CPP_VERSION >= AX_CPP17
+template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? a : b; }
+template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
+template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return MAX(a, MIN(b, x)); }
+#else
+# define MIN(a, b) ((a) < (b) ? (a) : (b))
+# define MAX(a, b) ((a) > (b) ? (a) : (b))
+# define Clamp(x, a, b) (MAX(a, MIN(b, x)))
+#endif
 
-constexpr int64_t Abs(int64_t x) 
+__forceinline __constexpr int64_t Abs(int64_t x) 
 {
     return (x < 0l) ? -x : x;
 }
 
-FINLINE constexpr int Abs(int x)
+__forceinline __constexpr int Abs(int x)
 {
     return (x < 0) ? -x : x;
 }
 
-FINLINE constexpr float Abs(float x)
+__forceinline __constexpr float Abs(float x)
 {
     int ix = BitCast<int>(x) & 0x7FFFFFFF; // every bit except sign mask
     return BitCast<float>(ix);
 }
 
-FINLINE constexpr double Abs(double x)
+__forceinline __constexpr double Abs(double x)
 {
     uint64 ix = BitCast<uint64>(x) & (~(1ull << 63ull));// every bit except sign mask
     return BitCast<double>(ix);
 }
 
-FINLINE constexpr int NextPowerOf2(int x)
+__forceinline __constexpr int NextPowerOf2(int x)
 {
     x--;
     x |= x >> 1; x |= x >> 2; x |= x >> 4;
@@ -307,7 +344,7 @@ FINLINE constexpr int NextPowerOf2(int x)
     return ++x;
 }
 
-constexpr int64_t NextPowerOf2(int64_t x)
+__forceinline __constexpr int64_t NextPowerOf2(int64_t x)
 {
     x--;
     x |= x >> 1; x |= x >> 2;  x |= x >> 4;
@@ -322,7 +359,7 @@ inline uint PointerDistance(const T* begin, const T* end)
     return uint((char*)end - (char*)begin) / sizeof(T);
 }
 
-inline constexpr int CalculateArrayGrowth(int _size)
+inline __constexpr int CalculateArrayGrowth(int _size)
 {
     const int addition = _size >> 1;
     if (AX_UNLIKELY(_size > (INT32_MAX - addition))) {
@@ -372,3 +409,5 @@ struct KeyValuePair
         return key != other.key || value != other.value;
     }
 };
+
+AX_END_NAMESPACE

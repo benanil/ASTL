@@ -12,9 +12,14 @@
 #include <stdio.h>
 #include "Profiler.hpp"
 
+// #include <chrono>
+// #include <thread>
+
+AX_NAMESPACE
+
 template<> struct Hasher<Vector2i>
 {
-    static FINLINE uint64 Hash(Vector2i vec)
+    static __forceinline uint64 Hash(Vector2i vec)
     {
         uint64 x = (uint64(vec.y) << 32) | vec.x;
         x *= 0xbf58476d1ce4e5b9ULL;
@@ -25,7 +30,7 @@ template<> struct Hasher<Vector2i>
 
 template<> struct Hasher<Vector2s>
 {
-	static FINLINE uint64 Hash(Vector2s vec)
+	static __forceinline uint64 Hash(Vector2s vec)
 	{
 		uint64 x = (uint64(vec.y) << 16) | vec.x;
 		x ^= x << 30ULL;
@@ -76,7 +81,7 @@ static void Day15() // result 5511201
     char line[120];
     HashMap<Vector2i, int> sensors{};
     Set<int> beaconXs{};
-    Vector2i boundsMin = INT32_MAX, boundsMax = INT32_MIN;
+    Vector2i boundsMIN = MakeVec2(INT32_MAX), boundsMAX = MakeVec2(INT32_MIN);
 
     while (fgets(line, sizeof(line), file))
     {
@@ -90,18 +95,18 @@ static void Day15() // result 5511201
         beaconPos.x = ParseNumber(curr);
         beaconPos.y = ParseNumber(curr);
 
-        Vector2i distance = Vector2i(Abs(sensorPos.x - beaconPos.x), Abs(sensorPos.y - beaconPos.y)); // ManhattanDistance
+        Vector2i distance = MakeVec2(Abs(sensorPos.x - beaconPos.x), Abs(sensorPos.y - beaconPos.y)); // ManhattanDistance
         sensors[sensorPos] = distance.x + distance.y;
         beaconXs.Insert(beaconPos.y == 2'000'000 ? beaconPos.x : INT32_MIN);
-        boundsMin = Min(boundsMin, beaconPos - distance);
-        boundsMax = Max(boundsMax, beaconPos + distance);
+        boundsMIN = Min(boundsMIN, beaconPos - distance);
+        boundsMAX = Max(boundsMAX, beaconPos + distance);
     }
 
 	int result = 0;
     // check each column if it contains # or not
-    for (int j = boundsMin.x; j <= boundsMax.x; ++j)
+    for (int j = boundsMIN.x; j <= boundsMAX.x; ++j)
     {
-        Vector2i columnPos = Vector2i(j, 2'000'000);
+        Vector2i columnPos = MakeVec2(j, 2'000'000);
         if (sensors.Contains(columnPos)
             || beaconXs.Contains(columnPos.x)) continue; // if this beacon is sensor we will not count this
 
@@ -125,7 +130,7 @@ struct APoint
 	union { float costSoFar; float distance; };
 	union { Vector2s cameFrom; Vector2s point; };
 
-	APoint() : costSoFar(1e30f), cameFrom(0, 0) {}
+	APoint() : costSoFar(1e30f) { cameFrom.x = 0; cameFrom.y = 0; }
 	APoint(float costSoFar, Vector2s pnt) : costSoFar(costSoFar), cameFrom(pnt) {}
 
 	bool operator < (const APoint& o) const { return distance < o.distance; }
@@ -199,10 +204,10 @@ static int Day12() // result should be 534
 			}
 		};
 
-		processNeighbor(currentPoint + Vector2s(1, 0));
-		processNeighbor(currentPoint + Vector2s(0, 1));
-		processNeighbor(currentPoint + Vector2s(0, -1));
-		processNeighbor(currentPoint + Vector2s(-1, 0));
+		processNeighbor(currentPoint + MakeVec2<short>(1, 0));
+		processNeighbor(currentPoint + MakeVec2<short>(0, 1));
+		processNeighbor(currentPoint + MakeVec2<short>(0, -1));
+		processNeighbor(currentPoint + MakeVec2<short>(-1, 0));
 	}
 
 	Vector2s currentPoint = targetPos;
@@ -224,15 +229,15 @@ static int Day17() // result should be 3157
 	TimeBlock("Day17")
 
 	const Vector2s shapes[5][5] = {
-		{ Vector2s(0, 0), Vector2s(1, 0), Vector2s(2, 0), Vector2s(3, 0) }, // ####
-		{ Vector2s(1, 0), Vector2s(0, 1), Vector2s(1, 1), Vector2s(2, 1), Vector2s(1, 2) }, // + shape
-		{ Vector2s(0, 0), Vector2s(1, 0), Vector2s(2, 0), Vector2s(2, 1), Vector2s(2, 2) }, // L shape
-		{ Vector2s(0, 0), Vector2s(0, 1), Vector2s(0, 2), Vector2s(0, 3) }, // | shape
-		{ Vector2s(0, 0), Vector2s(1, 0), Vector2s(0, 1), Vector2s(1, 1) } // box shape
+		{ {0, 0}, {1, 0}, {2, 0}, {3, 0} }, // ####
+		{ {1, 0}, {0, 1}, {1, 1}, {2, 1}, {1, 2} }, // + shape
+		{ {0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 2} }, // L shape
+		{ {0, 0}, {0, 1}, {0, 2}, {0, 3} }, // | shape
+		{ {0, 0}, {1, 0}, {0, 1}, {1, 1} } // box shape
 	};
 	const int shapeSizes[5] = { 4,5,5,4,4 }; // num pixels
 
-	Vector2s mapBounds = Vector2s(7, -1);
+	Vector2s mapBounds = MakeVec2<short>(7, -1);
 	HashSet<Vector2s> blocks;
 
 	auto const CheckColission = [&](const Vector2s* shape, int shapeSize, Vector2s position) 
@@ -254,7 +259,7 @@ static int Day17() // result should be 3157
 		const int blockIndex = currBlock++ % 5;
 		const int shapeSize = shapeSizes[blockIndex];
 		const Vector2s* shape = shapes[blockIndex];
-		Vector2s position = Vector2s(2, mapBounds.y + 4);
+		Vector2s position = MakeVec2<short>(2, mapBounds.y + 4);
 
 		auto const visualize = [&]()
 		{
@@ -262,11 +267,11 @@ static int Day17() // result should be 3157
 				blocks.insert(position + shape[i]);
 		
 			// system("cls");
-			for (int i = Max<short>(mapBounds.y, 7)+4; i >= 0; --i)
+			for (int i = MAX(mapBounds.y, (short)7)+4; i >= 0; --i)
 			{
 				for (int j = 0; j < mapBounds.x; ++j)
 				{
-					if (blocks.contains(Vector2s(j, i))) printf("#");
+					if (blocks.contains(MakeVec2<short>(j, i))) printf("#");
 					else printf(".");
 				}
 				printf("\n");
@@ -295,7 +300,7 @@ static int Day17() // result should be 3157
 		{
 			Vector2s pixel = shape[i] + position;
 			blocks.Insert(pixel); // insert pixels
-			mapBounds.y = Max(mapBounds.y, pixel.y); // check new pixel is higher than top point
+			mapBounds.y = MAX(mapBounds.y, pixel.y); // check new pixel is higher than top point
 		}
 		// we don't want to store all of the data that's why we are removing unnecesarry blocks that too below us
 		if (mapBounds.y > cleanHeight + 100)
@@ -307,7 +312,7 @@ static int Day17() // result should be 3157
 
 	// writing to a file is aditional, not must
 	// FILE* file = fopen("17Result.txt", "w");	
-	// for (short i = Max<short>(mapBounds.y, 7) + 4; i >= 0; --i)
+	// for (short i = MAX<short>(mapBounds.y, 7) + 4; i >= 0; --i)
 	// {
 	// 	char line[8];
 	// 	for (short j = 0; j < 7; ++j)
@@ -325,8 +330,7 @@ static int Day17() // result should be 3157
 	return mapBounds.y;
 }
 
-// #include <chrono>
-// #include <thread>
+
 
 int Day22()
 {
@@ -336,13 +340,13 @@ int Day22()
 	TimeFunction
 
 	HashMap<Vector2i, char> map;
-	Vector2i mapBounds = 0;
+	Vector2i mapBounds{ 0, 0 };
 	// parse map
 	while (fgets(line, sizeof(line), file))
 	{
 		if (IsNumber(*line)) break;
 		const char* curr = line;
-		int oldMaxX = mapBounds.x;
+		int oldMAXX = mapBounds.x;
 		mapBounds.x = 0;
 
 		while (*curr > '\n')
@@ -350,20 +354,20 @@ int Day22()
 			if (!IsWhitespace(*curr)) map[mapBounds] = *curr;
 			mapBounds.x++, curr++;
 		}
-		mapBounds.x = Max(mapBounds.x, oldMaxX);
+		mapBounds.x = MAX(mapBounds.x, oldMAXX);
 		mapBounds.y++;
 	}
 	const char* path = line; // last line of text is our path
 
 	const Vector2i directions[4] = {
-		Vector2i(0,-1),
-		Vector2i(1, 0), // we start from here, and depending on the input we go down or up, if we out of bounds we loop this array x % 4
-		Vector2i(0, 1),
-		Vector2i(-1, 0)
+		{ 0,-1},
+		{ 1, 0}, // we start from here, and depending on the input we go down or up, if we out of bounds we loop this array x % 4
+		{ 0, 1},
+		{-1, 0}
 	};
 
 	int currentDirection = 1;
-	Vector2i currentPosition(0, 0);
+	Vector2i currentPosition{ 0, 0 };
 
 	auto const FindLoopPosition = [&](Vector2i position, const Vector2i& inverseDir)
 	{
@@ -377,11 +381,11 @@ int Day22()
 	auto const Visualize = [&]()
 	{
 		// system("cls"); // clear screen
-		for (int y = Max(currentPosition.y - 30, 0); y < Min(currentPosition.y + 30, mapBounds.y); ++y)
+		for (int y = MAX(currentPosition.y - 30, 0); y < MIN(currentPosition.y + 30, mapBounds.y); ++y)
 		{
 			for (int x = 0; x < mapBounds.x; ++x)
 			{
-				Vector2i pos = Vector2i(x, y);
+				Vector2i pos = MakeVec2(x, y);
 				auto const find = map.find(pos);
 				if (pos == currentPosition) printf("X");
 				else if (find == map.end()) printf(" ");
@@ -435,11 +439,16 @@ int Day22()
 	return 0;
 }
 
+AX_END_NAMESPACE
+
+extern void BeginProfile(void);
+extern void EndAndPrintProfile();
+
 void AdventOfCodeTests()
 {
 	Day15();
 	
-	BeginProfile();
+    BeginProfile();
 
 	Day12();
 	Day17();
@@ -447,4 +456,4 @@ void AdventOfCodeTests()
 
 	EndAndPrintProfile();
 }
-    
+

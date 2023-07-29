@@ -1,6 +1,8 @@
 #pragma once
 #include "Quaternion.hpp"
 
+AX_NAMESPACE 
+
 struct Matrix3
 {
 	union
@@ -26,7 +28,7 @@ struct Matrix3
 		for (int i = 0; i < 9; ++i) m[0][i] = s;
 	}
 
-	FINLINE static Matrix3 Identity()
+	__forceinline static Matrix3 Identity()
 	{
 		Matrix3 mat;
 		mat.m[0][0] = 1.0f;
@@ -40,7 +42,7 @@ struct Matrix3
 		Matrix3 result;
 		result.vec[2] = direction;
 		Vector3f const& Right = Vector3f::Cross(up, result.vec[2]);
-		result.vec[0] = Right * RSqrt(Max(0.00001f, Vector3f::Dot(Right, Right)));
+		result.vec[0] = Right * RSqrt(MAX(0.00001f, Vector3f::Dot(Right, Right)));
 		result.vec[1] = Vector3f::Cross(result.vec[2], result.vec[0]);
 		return result;
 	}
@@ -96,48 +98,60 @@ struct Matrix3
 
 	Quaternion ToQuaternion() const
 	{
-		float fourXSquaredMinus1 = m[0][0] - m[1][1] - m[2][2];
-		float fourYSquaredMinus1 = m[1][1] - m[0][0] - m[2][2];
-		float fourZSquaredMinus1 = m[2][2] - m[0][0] - m[1][1];
-		float fourWSquaredMinus1 = m[0][0] + m[1][1] + m[2][2];
+		float fourXSquaredMINus1 = m[0][0] - m[1][1] - m[2][2];
+		float fourYSquaredMINus1 = m[1][1] - m[0][0] - m[2][2];
+		float fourZSquaredMINus1 = m[2][2] - m[0][0] - m[1][1];
+		float fourWSquaredMINus1 = m[0][0] + m[1][1] + m[2][2];
 
 		int biggestIndex = 0;
-		float fourBiggestSquaredMinus1 = fourWSquaredMinus1;
-		if(fourXSquaredMinus1 > fourBiggestSquaredMinus1)
+		float fourBiggestSquaredMINus1 = fourWSquaredMINus1;
+		if(fourXSquaredMINus1 > fourBiggestSquaredMINus1)
 		{
-			fourBiggestSquaredMinus1 = fourXSquaredMinus1;
+			fourBiggestSquaredMINus1 = fourXSquaredMINus1;
 			biggestIndex = 1;
 		}
-		if(fourYSquaredMinus1 > fourBiggestSquaredMinus1)
+		if(fourYSquaredMINus1 > fourBiggestSquaredMINus1)
 		{
-			fourBiggestSquaredMinus1 = fourYSquaredMinus1;
+			fourBiggestSquaredMINus1 = fourYSquaredMINus1;
 			biggestIndex = 2;
 		}
-		if(fourZSquaredMinus1 > fourBiggestSquaredMinus1)
+		if(fourZSquaredMINus1 > fourBiggestSquaredMINus1)
 		{
-			fourBiggestSquaredMinus1 = fourZSquaredMinus1;
+			fourBiggestSquaredMINus1 = fourZSquaredMINus1;
 			biggestIndex = 3;
 		}
 
-		float biggestVal = Sqrt(fourBiggestSquaredMinus1 + 1.0f) * 0.5f;
+		float biggestVal = Sqrt(fourBiggestSquaredMINus1 + 1.0f) * 0.5f;
 		float mult = 0.25f / biggestVal;
 		
 		switch(biggestIndex)
 		{
 			case 0:
-				return Quaternion(biggestVal, (m[1][2] - m[2][1]) * mult, (m[2][0] - m[0][2]) * mult, (m[0][1] - m[1][0]) * mult);
+				return MakeQuat(biggestVal, (m[1][2] - m[2][1]) * mult, (m[2][0] - m[0][2]) * mult, (m[0][1] - m[1][0]) * mult);
 			case 1:
-				return Quaternion((m[1][2] - m[2][1]) * mult, biggestVal, (m[0][1] + m[1][0]) * mult, (m[2][0] + m[0][2]) * mult);
+				return MakeQuat((m[1][2] - m[2][1]) * mult, biggestVal, (m[0][1] + m[1][0]) * mult, (m[2][0] + m[0][2]) * mult);
 			case 2:
-				return Quaternion((m[2][0] - m[0][2]) * mult, (m[0][1] + m[1][0]) * mult, biggestVal, (m[1][2] + m[2][1]) * mult);
+				return MakeQuat((m[2][0] - m[0][2]) * mult, (m[0][1] + m[1][0]) * mult, biggestVal, (m[1][2] + m[2][1]) * mult);
 			case 3:
-				return Quaternion((m[0][1] - m[1][0]) * mult, (m[2][0] + m[0][2]) * mult, (m[1][2] + m[2][1]) * mult, biggestVal);
+				return MakeQuat((m[0][1] - m[1][0]) * mult, (m[2][0] + m[0][2]) * mult, (m[1][2] + m[2][1]) * mult, biggestVal);
 		}
 	}
 };
 
 // todo make non simd version
 #ifdef AX_SUPPORT_SSE
+
+__forceinline static __m128 VECTORCALL Vector4Transform(__m128 v, const __m128 r[4])
+{
+	__m128 v0 = _mm_mul_ps(r[0], _mm_permute_ps(v, _mm_shuffle(0, 0, 0, 0)));
+	__m128 v1 = _mm_mul_ps(r[1], _mm_permute_ps(v, _mm_shuffle(1, 1, 1, 1)));
+	__m128 v2 = _mm_mul_ps(r[2], _mm_permute_ps(v, _mm_shuffle(2, 2, 2, 2)));
+	__m128 v3 = _mm_mul_ps(r[3], _mm_permute_ps(v, _mm_shuffle(3, 3, 3, 3)));
+	__m128 a0 = _mm_add_ps(v0, v1);
+	__m128 a1 = _mm_add_ps(v2, v3);
+	__m128 a2 = _mm_add_ps(a0, a1);
+	return a2;
+}
 
 AX_ALIGNED(16) struct Matrix4
 {
@@ -150,8 +164,8 @@ AX_ALIGNED(16) struct Matrix4
 	const __m128& operator [] (int index) const { return r[index]; }
 	__m128& operator [] (int index) { return r[index]; }
 	
-	Vector4f VECTORCALL  operator *  (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
-	Vector4f VECTORCALL  operator *  (const Vector4f& v)   noexcept { return Vector4Transform(v, *this); };
+	Vector4f VECTORCALL  operator *  (const Vector3f v)  noexcept { Vector4f x; x.vec = Vector3Transform(v, *this); return x; };
+	Vector4f VECTORCALL  operator *  (const Vector4f& v) noexcept { Vector4f x; x.vec = Vector4Transform(v.vec, r); return x; };
 
 	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(*this, M); };
 	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(*this, M); return *this; };
@@ -170,7 +184,7 @@ AX_ALIGNED(16) struct Matrix4
 		r[0] = r[1] = r[2] = r[3] = _mm_set_ps1(s);
 	}
 
-	FINLINE static Matrix4 Identity()
+	__forceinline static Matrix4 Identity()
 	{
 		Matrix4 M;
 		M.r[0] = g_XMIdentityR0;
@@ -180,7 +194,7 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 FromPosition(const float x, const float y, const float z)
+	__forceinline static Matrix4 FromPosition(const float x, const float y, const float z)
 	{
 		Matrix4 M;
 		M.r[0] = g_XMIdentityR0;
@@ -190,12 +204,12 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 FromPosition(const Vector3f& vec3)
+	__forceinline static Matrix4 FromPosition(const Vector3f& vec3)
 	{
 		return FromPosition(vec3.x, vec3.y, vec3.z);
 	}
 
-	FINLINE static Matrix4 CreateScale(const float ScaleX, const float ScaleY, const float ScaleZ)
+	__forceinline static Matrix4 CreateScale(const float ScaleX, const float ScaleY, const float ScaleZ)
 	{
 		Matrix4 M;
 		M.r[0] = _mm_set_ps(0.0f, 0.0f, 0.0f, ScaleX);
@@ -205,13 +219,13 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 CreateScale(const Vector3f& vec3)
+	__forceinline static Matrix4 CreateScale(const Vector3f& vec3)
 	{
 		return CreateScale(vec3.x, vec3.y, vec3.z);
 	}
 
 	// please assign normalized vectors, returns view matrix
-	FINLINE static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
+	__forceinline static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
 	{
 		__m128 NegEyePosition;
 		__m128 D0, D1, D2;
@@ -237,7 +251,7 @@ AX_ALIGNED(16) struct Matrix4
 		return Matrix4::Transpose(M);
 	}
 
-	FINLINE static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
+	__forceinline static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
 	{
 		const float rad = fov;
 		const float h = Cos(0.5f * rad) / Sin(0.5f * rad);
@@ -272,20 +286,20 @@ AX_ALIGNED(16) struct Matrix4
     // we use __m128 to represent 2x2 matrix as A = | A0  A1 |
     //                                              | A2  A3 |
     // 2x2 row major Matrix multiply A*B
-	static FINLINE __m128 VECTORCALL Mat2Mul(__m128 vec1, __m128 vec2)
+	static __forceinline __m128 VECTORCALL Mat2Mul(__m128 vec1, __m128 vec2)
 	{
 		return _mm_add_ps(_mm_mul_ps(vec1, VecSwizzle(vec2, 0, 3, 0, 3)), 
 		                  _mm_mul_ps(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
 	}
 	// 2x2 row major Matrix adjugate multiply (A#)*B
-	static FINLINE __m128 VECTORCALL Mat2AdjMul(__m128 vec1, __m128 vec2)
+	static __forceinline __m128 VECTORCALL Mat2AdjMul(__m128 vec1, __m128 vec2)
 	{
 		return _mm_sub_ps(_mm_mul_ps(VecSwizzle(vec1, 3, 3, 0, 0), vec2),
 		                  _mm_mul_ps(VecSwizzle(vec1, 1, 1, 2, 2), VecSwizzle(vec2, 2, 3, 0, 1)));
 
 	}
 	// 2x2 row major Matrix multiply adjugate A*(B#)
-	static FINLINE __m128 VECTORCALL Mat2MulAdj(__m128 vec1, __m128 vec2)
+	static __forceinline __m128 VECTORCALL Mat2MulAdj(__m128 vec1, __m128 vec2)
 	{
 		return _mm_sub_ps(_mm_mul_ps(vec1, VecSwizzle(vec2, 3, 0, 3, 0)),
 		                  _mm_mul_ps(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
@@ -433,7 +447,7 @@ AX_ALIGNED(16) struct Matrix4
 		return out;
 	}
 
-	FINLINE static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
+	__forceinline static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
 	{
 		Matrix4 result(ForceInit);
 		result *= FromPosition(position);
@@ -442,19 +456,19 @@ AX_ALIGNED(16) struct Matrix4
 		return result;
 	}
 
-	FINLINE static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
+	__forceinline static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
 	{
 		Vector3f res;
 		_mm_storeu_ps(&res.x, matrix.r[3]);
 		return res;
 	}
 
-	FINLINE static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) noexcept
+	__forceinline static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) noexcept
 	{
-		return Vector3f(SSEVectorLengthf(matrix.r[0]), SSEVectorLengthf(matrix.r[2]), SSEVectorLengthf(matrix.r[1]));
+		return MakeVec3(SSEVectorLengthf(matrix.r[0]), SSEVectorLengthf(matrix.r[2]), SSEVectorLengthf(matrix.r[1]));
 	}
 
-	FINLINE static Matrix4 RotationX(float angleRadians) {
+	__forceinline static Matrix4 RotationX(float angleRadians) {
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
@@ -465,7 +479,7 @@ AX_ALIGNED(16) struct Matrix4
 		return out_matrix;
 	}
 
-	FINLINE static Matrix4 RotationY(float angleRadians) {
+	__forceinline static Matrix4 RotationY(float angleRadians) {
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
@@ -476,7 +490,7 @@ AX_ALIGNED(16) struct Matrix4
 		return out_matrix;
 	}
 	
-	FINLINE static Matrix4 RotationZ(float angleRadians) {
+	__forceinline static Matrix4 RotationZ(float angleRadians) {
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
@@ -488,11 +502,11 @@ AX_ALIGNED(16) struct Matrix4
 		return out_matrix;
 	}
 
-	FINLINE static Matrix4 RotationFromEuler(Vector3f eulerRadians) {
+	__forceinline static Matrix4 RotationFromEuler(Vector3f eulerRadians) {
 		return RotationX(eulerRadians.x) * RotationY(eulerRadians.y) * RotationZ(eulerRadians.z);
 	}
 
-	FINLINE Matrix4 static VECTORCALL LookAt(Vector3f eyePosition, Vector3f focusPosition, Vector3f upDirection) noexcept
+	__forceinline Matrix4 static VECTORCALL LookAt(Vector3f eyePosition, Vector3f focusPosition, Vector3f upDirection) noexcept
 	{
 		__m128 EyePosition = _mm_loadu_ps(&eyePosition.x);
 		__m128 FocusPosition = _mm_loadu_ps(&focusPosition.x);
@@ -614,7 +628,7 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 VECTORCALL Transpose(const Matrix4 M)
+	__forceinline static Matrix4 VECTORCALL Transpose(const Matrix4 M)
 	{
 		const __m128 vTemp1 = _mm_shuffle_ps(M.r[0], M.r[1], _mm_shuffle(1, 0, 1, 0));
 		const __m128 vTemp3 = _mm_shuffle_ps(M.r[0], M.r[1], _mm_shuffle(3, 2, 3, 2));
@@ -628,7 +642,7 @@ AX_ALIGNED(16) struct Matrix4
 		return mResult;
 	}
 
-	FINLINE static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M)
+	__forceinline static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M)
 	{
 		__m128 vec = _mm_loadu_ps(&V.x);
 		__m128 vResult = _mm_shuffle_ps(vec, vec, _mm_shuffle(0, 0, 0, 0));
@@ -642,38 +656,15 @@ AX_ALIGNED(16) struct Matrix4
 		vResult = _mm_add_ps(vResult, M.r[3]);
 		return vResult;
 	}
-
-	FINLINE static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
-	{
-		__m128 v0 = _mm_mul_ps(m.r[0], _mm_permute_ps(v.vec, _mm_shuffle(0, 0, 0, 0)));
-		__m128 v1 = _mm_mul_ps(m.r[1], _mm_permute_ps(v.vec, _mm_shuffle(1, 1, 1, 1)));
-		__m128 v2 = _mm_mul_ps(m.r[2], _mm_permute_ps(v.vec, _mm_shuffle(2, 2, 2, 2)));
-		__m128 v3 = _mm_mul_ps(m.r[3], _mm_permute_ps(v.vec, _mm_shuffle(3, 3, 3, 3)));
-		__m128 a0 = _mm_add_ps(v0, v1);
-		__m128 a1 = _mm_add_ps(v2, v3);
-		__m128 a2 = _mm_add_ps(a0, a1);
-		return a2;
-	}
 };
  
-FINLINE static __m128 VECTORCALL Vector4Transform(__m128 v, const Matrix4& m)
-{
-	__m128 v0 = _mm_mul_ps(m.r[0], _mm_permute_ps(v, _mm_shuffle(0, 0, 0, 0)));
-	__m128 v1 = _mm_mul_ps(m.r[1], _mm_permute_ps(v, _mm_shuffle(1, 1, 1, 1)));
-	__m128 v2 = _mm_mul_ps(m.r[2], _mm_permute_ps(v, _mm_shuffle(2, 2, 2, 2)));
-	__m128 v3 = _mm_mul_ps(m.r[3], _mm_permute_ps(v, _mm_shuffle(3, 3, 3, 3)));
-	__m128 a0 = _mm_add_ps(v0, v1);
-	__m128 a1 = _mm_add_ps(v2, v3);
-	__m128 a2 = _mm_add_ps(a0, a1);
-	return a2;
-}
 
-FINLINE void InitializeMatrix4(Matrix4& mat, float s) 
+__forceinline void InitializeMatrix4(Matrix4& mat, float s) 
 {
 	mat.r[0] = mat.r[1] = mat.r[2] = mat.r[3] = _mm_set_ps1(s);
 }
 
-FINLINE void VECTORCALL InitializeMatrix4(Matrix4& r, __m128 x, __m128 y, const __m128& z, const __m128& w)
+__forceinline void VECTORCALL InitializeMatrix4(Matrix4& r, __m128 x, __m128 y, const __m128& z, const __m128& w)
 {
 	r[0] = x; r[1] = y; r[2] = z; r[3] = w;
 }
@@ -711,7 +702,7 @@ AX_ALIGNED(16) struct Matrix4
 		r[0] = r[1] = r[2] = r[3] = _mm_set_ps1(s);
 	}
 
-	FINLINE static Matrix4 Identity()
+	__forceinline static Matrix4 Identity()
 	{
 		Matrix4 M;
 		M.r[0] = g_XMIdentityR0;
@@ -721,7 +712,7 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 FromPosition(const float x, const float y, const float z)
+	__forceinline static Matrix4 FromPosition(const float x, const float y, const float z)
 	{
 		Matrix4 M;
 		M.r[0] = g_XMIdentityR0;
@@ -731,12 +722,12 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 FromPosition(const Vector3f& vec3)
+	__forceinline static Matrix4 FromPosition(const Vector3f& vec3)
 	{
 		return FromPosition(vec3.x, vec3.y, vec3.z);
 	}
 
-	FINLINE static Matrix4 CreateScale(const float ScaleX, const float ScaleY, const float ScaleZ)
+	__forceinline static Matrix4 CreateScale(const float ScaleX, const float ScaleY, const float ScaleZ)
 	{
 		Matrix4 M;
 		M.r[0] = _mm_set_ps(0.0f, 0.0f, 0.0f, ScaleX);
@@ -746,18 +737,18 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 CreateScale(const Vector3f& vec3)
+	__forceinline static Matrix4 CreateScale(const Vector3f& vec3)
 	{
 		return CreateScale(vec3.x, vec3.y, vec3.z);
 	}
 
 	// please assign normalized vectors, returns view matrix
-	FINLINE static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
+	__forceinline static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
 	{
 		return ;
 	}
 
-	FINLINE static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
+	__forceinline static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
 	{
 		return M;
 	}
@@ -777,7 +768,7 @@ AX_ALIGNED(16) struct Matrix4
 		return out;
 	}
 
-	FINLINE static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
+	__forceinline static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
 	{
 		Matrix4 result(ForceInit);
 		result *= FromPosition(position);
@@ -786,17 +777,17 @@ AX_ALIGNED(16) struct Matrix4
 		return result;
 	}
 
-	FINLINE static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
+	__forceinline static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
 	{
 		return res;
 	}
 
-	FINLINE static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) noexcept
+	__forceinline static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) noexcept
 	{
 		return Vector3f(SSEVectorLengthf(matrix.r[0]), SSEVectorLengthf(matrix.r[2]), SSEVectorLengthf(matrix.r[1]));
 	}
 
-	FINLINE static Matrix4 RotationX(float angleRadians) {
+	__forceinline static Matrix4 RotationX(float angleRadians) {
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
@@ -808,7 +799,7 @@ AX_ALIGNED(16) struct Matrix4
 		return out_matrix;
 	}
 
-	FINLINE static Matrix4 RotationY(float angleRadians) {
+	__forceinline static Matrix4 RotationY(float angleRadians) {
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
@@ -819,7 +810,7 @@ AX_ALIGNED(16) struct Matrix4
 		return out_matrix;
 	}
 	
-	FINLINE static Matrix4 RotationZ(float angleRadians) {
+	__forceinline static Matrix4 RotationZ(float angleRadians) {
 		Matrix4 out_matrix(ForceInit);
 		float s, c;
 		SinCos(angleRadians, &s, &c);
@@ -830,11 +821,11 @@ AX_ALIGNED(16) struct Matrix4
 		return out_matrix;
 	}
 
-	FINLINE static Matrix4 RotationFromEuler(Vector3f eulerRadians) {
+	__forceinline static Matrix4 RotationFromEuler(Vector3f eulerRadians) {
 		return RotationX(eulerRadians.x) * RotationY(eulerRadians.y) * RotationZ(eulerRadians.z);
 	}
 
-	FINLINE Matrix4 static VECTORCALL LookAt(Vector3f eyePosition, Vector3f focusPosition, Vector3f upDirection) noexcept
+	__forceinline Matrix4 static VECTORCALL LookAt(Vector3f eyePosition, Vector3f focusPosition, Vector3f upDirection) noexcept
 	{
 		return M;
 	}
@@ -888,35 +879,37 @@ AX_ALIGNED(16) struct Matrix4
 		return M;
 	}
 
-	FINLINE static Matrix4 VECTORCALL Transpose(const Matrix4 M)
+	__forceinline static Matrix4 VECTORCALL Transpose(const Matrix4 M)
 	{
 		return mResult;
 	}
 
-	FINLINE static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M) noexcept
+	__forceinline static __m128 VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M) noexcept
 	{
 		return vResult;
 	}
 
-	FINLINE static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
+	__forceinline static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
 	{
 		return a2;
 	}
 };
  
-FINLINE static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
+__forceinline static Vector4f VECTORCALL Vector4Transform(Vector4f v, const Matrix4& m)
 {
 	return a2;
 }
 
-FINLINE void InitializeMatrix4(Matrix4& mat, float s) 
+__forceinline void InitializeMatrix4(Matrix4& mat, float s) 
 {
 
 }
 
-FINLINE void InitializeMatrix4(Matrix4& mat, Vector4f a, Vector4f b, Vector4f c, Vector4f d) 
+__forceinline void InitializeMatrix4(Matrix4& mat, Vector4f a, Vector4f b, Vector4f c, Vector4f d) 
 {
 
 }
 
 #endif // AX_SUPPORT_SSE
+
+AX_END_NAMESPACE 
