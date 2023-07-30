@@ -140,18 +140,20 @@
 /* Architecture Detection */
 // detection code from mini audio
 // you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
-#if defined(__x86_64__) || defined(_M_X64)
 #   define AX_X64
-#elif defined(__i386) || defined(_M_IX86)
-#   define AX_X86
-#elif defined(__arm__) || defined(_M_ARM) || defined(__arm64) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
-#   define AX_ARM
-#endif
+
+// #if defined(__x86_64__) || defined(_M_X64)
+// #   define AX_X64
+// #elif defined(__i386) || defined(_M_IX86)
+// #   define AX_X86
+// #elif defined(__arm__) || defined(_M_ARM) || defined(__arm64) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
+// #   define AX_ARM
+// #endif
 
 // write AX_NO_SSE2 or AX_NO_AVX2 to disable vector instructions
 
 /* Intrinsics Support */
-#if (defined(AX_X64) || defined(AX_X86)) && !defined(__COSMOPOLITAN__)
+#if defined(AX_X64) || defined(AX_X86)
     #if defined(_MSC_VER) && !defined(__clang__)
         #if _MSC_VER >= 1400 && !defined(AX_NO_SSE2)   /* 2005 */
             #define AX_SUPPORT_SSE
@@ -180,7 +182,6 @@
 
     #if defined(AX_SUPPORT_AVX2) || defined(AX_SUPPORT_AVX)
         #include <immintrin.h>
-        #include <x86intrin.h>
 
     #elif defined(AX_SUPPORT_SSE)
         #include <emmintrin.h>
@@ -243,7 +244,7 @@ __forceinline __constexpr T PopCount(T x)
 #ifdef AX_SUPPORT_SSE
 	if      __constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
     else if __constexpr (sizeof(T) == 8) return _mm_popcnt_u64(x);
-#elif defined(__GNUC__) && !defined(__MINGW32__)
+#elif defined(__GNUC__) || !defined(__MINGW32__)
 	if      __constexpr (sizeof(T) == 4) return __builtin_popcount(x);
 	else if __constexpr (sizeof(T) == 8) return __builtin_popcountl(x);
 #else
@@ -269,7 +270,7 @@ __forceinline __constexpr T TrailingZeroCount(T x)
 #ifdef _MSC_VER
 	if      __constexpr (sizeof(T) == 4) return _tzcnt_u32(x);
 	else if __constexpr (sizeof(T) == 8) return _tzcnt_u64(x);
-#elif defined(__GNUC__) && !defined(__MINGW32__)
+#elif defined(__GNUC__) || !defined(__MINGW32__)
 	if      __constexpr (sizeof(T) == 4) return __builtin_ctz(x);
 	else if __constexpr (sizeof(T) == 8) return __builtin_ctzll(x);
 #else
@@ -284,7 +285,7 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 #ifdef _MSC_VER
 	if      __constexpr (sizeof(T) == 4) return _lzcnt_u32(x);
 	else if __constexpr (sizeof(T) == 8) return _lzcnt_u64(x);
-#elif defined(__GNUC__) && !defined(__MINGW32__)
+#elif defined(__GNUC__) || !defined(__MINGW32__)
 	if      __constexpr (sizeof(T) == 4) return __builtin_clz(x);
 	else if __constexpr (sizeof(T) == 8) return __builtin_clzll(x);
 #else

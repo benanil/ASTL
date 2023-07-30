@@ -234,17 +234,19 @@ __forceinline float VECTORCALL hsum_ps_sse3(__m128 v) {
 
 __forceinline __m256i VECTORCALL SSESelect(const __m256i V1, const __m256i V2, const __m256i& Control)
 {
-    __m256i result;
-
-    asm volatile(
-        "vandnps %2, %0, %0\n\t"
-        "vandps %1, %2, %1\n\t"
-        "vpor %1, %0, %0"
-        : "=x" (result)
-    : "x" (V2), "x" (Control), "0" (V1)
-    );
-
-    return result;
+    return _mm256_blendv_epi8(V1, V2, Control);
+    
+    // __m256i result;
+    // 
+    // asm volatile(
+    //     "vandnps %2, %0, %0\n\t"
+    //     "vandps %1, %2, %1\n\t"
+    //     "vpor %1, %0, %0"
+    //     : "=x" (result)
+    // : "x" (V2), "x" (Control), "0" (V1)
+    // );
+    // 
+    // return result;
 }
 
 
