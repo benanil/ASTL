@@ -378,7 +378,7 @@ template<typename T> struct  Hasher
 {
 	static __forceinline uint64_t Hash(const T& x)
 	{
-		if __constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
+		if_constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
 		else if      (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));
 		else                          return WYHash::Hash(&x, sizeof(T));
 	}

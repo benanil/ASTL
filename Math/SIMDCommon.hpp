@@ -1,6 +1,10 @@
 #pragma once
 #include "Math.hpp"
 
+#if defined(__GNUC__) || defined(__clang__)
+    
+#endif
+
 AX_NAMESPACE 
 
 enum CPUIDBits : int
@@ -34,7 +38,7 @@ inline int AX_InitSIMD_CPUID()
 
 #ifdef AX_SUPPORT_SSE
 
-AX_ALIGNED(16) struct Vector4UI
+struct alignas(16) Vector4UI
 {
 	union
 	{
@@ -50,7 +54,7 @@ AX_ALIGNED(16) struct Vector4UI
 	Vector4UI(uint _x, uint _y, uint _z, uint _w) : x(_x), y(_y), z(_z), w(_w) {}
 };
 
-AX_ALIGNED(16) struct Vector432F
+struct alignas(16) Vector432F
 {
 	union
 	{
@@ -74,10 +78,10 @@ constexpr uint32_t AX_SELECT_1 = 0xFFFFFFFF;
 #define g_XMSelect1110 Vector4UI(AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0)
 #define g_XMSelect1011 Vector4UI(AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1)
 
-#define g_XMIdentityR0 Vector432F(1.0f, 0.0f, 0.0f, 0.0f);
-#define g_XMIdentityR1 Vector432F(0.0f, 1.0f, 0.0f, 0.0f);
-#define g_XMIdentityR2 Vector432F(0.0f, 0.0f, 1.0f, 0.0f);
-#define g_XMIdentityR3 Vector432F(0.0f, 0.0f, 0.0f, 1.0f);
+#define g_XMIdentityR0 Vector432F(1.0f, 0.0f, 0.0f, 0.0f)
+#define g_XMIdentityR1 Vector432F(0.0f, 1.0f, 0.0f, 0.0f)
+#define g_XMIdentityR2 Vector432F(0.0f, 0.0f, 1.0f, 0.0f)
+#define g_XMIdentityR3 Vector432F(0.0f, 0.0f, 0.0f, 1.0f)
 
 #define g_XMMaskXY Vector4UI(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)
 #define g_XMMask3  Vector4UI(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000)
@@ -101,14 +105,11 @@ __forceinline __m128 VECTORCALL SSESelect(const __m128 V1, const __m128 V2, cons
     // return _mm_or_ps(_mm_andnot_ps(Control, V1), _mm_and_ps(V2, Control));
 }
 
-#if __cplusplus >= 201703L
 inline __constexpr int _mm_shuffle(int fp3, int fp2, int fp1, int fp0)
 {
 	return (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)));
 }
-#else
-#define _mm_shuffle(fp3, fp2, fp1, fp0) (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)))
-#endif
+
 __forceinline __m128 VECTORCALL SSESplatX(const __m128 V1) { return _mm_permute_ps(V1, _mm_shuffle(0, 0, 0, 0)); }
 __forceinline __m128 VECTORCALL SSESplatY(const __m128 V1) { return _mm_permute_ps(V1, _mm_shuffle(1, 1, 1, 1)); }
 __forceinline __m128 VECTORCALL SSESplatZ(const __m128 V1) { return _mm_permute_ps(V1, _mm_shuffle(2, 2, 2, 2)); }
@@ -228,6 +229,110 @@ __forceinline float VECTORCALL hsum_ps_sse3(__m128 v) {
 	return _mm_cvtss_f32(sums);
 }
 
+inline __m128 _mm_fabs_ps(__m128 x)
+{
+    __m128 y = _mm_cmple_ps(x, _mm_setzero_ps());
+    return SSESelect(x, _mm_sub_ps(_mm_setzero_ps(), x), y);
+}
+
+inline __m128 _mm_copysign_ps(__m128 x, __m128 y)
+{
+    return _mm_or_ps(_mm_and_ps(x, _mm_set1_ps(0x7fffffff)),
+                     _mm_and_ps(y, _mm_set1_ps(0x80000000)));
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+
+inline __m128 _mm_sin_ps(__m128 x)
+{ 
+    __m128 xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    __m128 t  = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
+    
+    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    t = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
+    
+    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
+
+    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    t = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
+    return t;
+}
+
+inline __m128 _mm_cos_ps(__m128 x)
+{
+    __m128 xx = _mm_mul_ps(x, x);
+    __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
+    
+    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
+    
+    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
+
+    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
+    return t;
+}
+
+inline __m128 _mm_sincos_ps(__m128* cv, __m128 x)
+{
+    __m128 xx = _mm_mul_ps(x, x);
+    __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
+    xx = _mm_mul_ps(x, x);
+    __m128 st = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
+
+    xx = _mm_mul_ps(x, x);
+    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
+    
+    xx = _mm_mul_ps(x, x);
+    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
+
+    xx = _mm_mul_ps(x, x);
+    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
+
+    xx = _mm_mul_ps(x, x);
+    st = _mm_sub_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
+
+    xx = _mm_mul_ps(x, x);
+    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
+
+    xx = _mm_mul_ps(x, x);
+    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
+
+    *cv = t;
+    return st;
+}
+
+
+inline __m128 _mm_atan_ps(__m128 x)
+{
+    __m128 xx = _mm_mul_ps(x, x);
+    static const __m128 a1 = _mm_set1_ps( 0.99997726f), a3 = _mm_set1_ps(-0.33262347f), a5  = _mm_set1_ps(0.19354346f),
+                        a7 = _mm_set1_ps(-0.11643287f), a9 = _mm_set1_ps( 0.05265332f), a11 = _mm_set1_ps(-0.01172120f);
+    // (a9 + x_sq * a11
+    __m128 y = _mm_fmadd_ps(xx, a11, a9);
+    y = _mm_fmadd_ps(xx, y, a7);
+    y = _mm_fmadd_ps(xx, y, a7);
+    y = _mm_fmadd_ps(xx, y, a5);
+    y = _mm_fmadd_ps(xx, y, a3);
+    y = _mm_fmadd_ps(xx, y, a1);
+    return _mm_mul_ps(x, y);
+}
+
+inline __m128 _mm_atan2_ps(__m128 y, __m128 x)
+{
+    __m128 ay = _mm_fabs_ps(y), ax = _mm_fabs_ps(x);
+    __m128 invert = _mm_cmpgt_ps(ay, ax);
+    __m128 z = SSESelect(_mm_div_ps(ax, ay), _mm_div_ps(ay, ax), invert);
+    __m128 th = _mm_atan_ps(z);
+    th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PIDiv2), th), invert);
+    th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PI), th), _mm_cmplt_ps(x, _mm_setzero_ps()));
+    return _mm_copysign_ps(th, y);
+}
+
+#endif //__clang__ || __gnu
+
 #endif // AX_SUPPORT_SSE
 
 #ifdef AX_SUPPORT_AVX2
@@ -235,20 +340,7 @@ __forceinline float VECTORCALL hsum_ps_sse3(__m128 v) {
 __forceinline __m256i VECTORCALL SSESelect(const __m256i V1, const __m256i V2, const __m256i& Control)
 {
     return _mm256_blendv_epi8(V1, V2, Control);
-    
-    // __m256i result;
-    // 
-    // asm volatile(
-    //     "vandnps %2, %0, %0\n\t"
-    //     "vandps %1, %2, %1\n\t"
-    //     "vpor %1, %0, %0"
-    //     : "=x" (result)
-    // : "x" (V2), "x" (Control), "0" (V1)
-    // );
-    // 
-    // return result;
 }
-
 
 // https://stackoverflow.com/questions/17863411/sse-multiplication-of-2-64-bit-integers
 __forceinline __m256i VECTORCALL Multiply64Bit(__m256i ab, __m256i cd)

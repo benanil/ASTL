@@ -395,8 +395,8 @@ private:
 
 	static bool Compare(const T& a, const T& b)
 	{
-		if __constexpr (compare == PQCompare_Less)    return a < b;
-		if __constexpr (compare == PQCompare_Greater) return a > b;
+		if_constexpr (compare == PQCompare_Less)    return a < b;
+		if_constexpr (compare == PQCompare_Greater) return a > b;
 		else { ASSERT(0); return 0; }
 	}
 

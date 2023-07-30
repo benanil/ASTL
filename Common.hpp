@@ -46,15 +46,6 @@
     #define RESTRICT
 #endif
 
-#if defined( __GNUC__ ) || defined(__INTEGRITY)
-#   define AX_ALIGNED(_x)          __attribute__ ((aligned(_x)))
-#elif defined( _WIN32) && (_MSC_VER)                                                                                   
-#	define AX_ALIGNED(_x)          __declspec(align(_x))      
-#else
-#   warning  Need to implement some method to align data here
-#	define  CL_ALIGNED(_x)
-#endif
-
 #ifndef AXGLOBALCONST
 #	if _MSC_VER
 #		define AXGLOBALCONST extern const __declspec(selectany)
@@ -202,6 +193,12 @@
 
 #define __constexpr constexpr
 
+#if AX_CPP_VERSION >= AX_CPP17
+#   define if_constexpr if constexpr
+#else
+#   define if_constexpr if
+#endif
+
 // #define AX_USE_NAMESPACE
 
 #ifdef AX_USE_NAMESPACE
@@ -242,13 +239,13 @@ __forceinline __constexpr T PopCount(T x)
     // throughput is even double of mulps and addps which is 1.0 (%100)
     // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
 #ifdef AX_SUPPORT_SSE
-	if      __constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
-    else if __constexpr (sizeof(T) == 8) return _mm_popcnt_u64(x);
+	if_constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
+    else if (sizeof(T) == 8) return _mm_popcnt_u64(x);
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	if      __constexpr (sizeof(T) == 4) return __builtin_popcount(x);
-	else if __constexpr (sizeof(T) == 8) return __builtin_popcountl(x);
+	if_constexpr (sizeof(T) == 4) return __builtin_popcount(x);
+	else if (sizeof(T) == 8) return __builtin_popcountl(x);
 #else
-	if __constexpr (sizeof(T) == 4)
+	if_constexpr (sizeof(T) == 4)
 	{
 		x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
 		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
@@ -262,17 +259,18 @@ __forceinline __constexpr T PopCount(T x)
 		return ((x + (x >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
 	}
 #endif
+    ASSERT(0);
 }
 
 template<typename T>
 __forceinline __constexpr T TrailingZeroCount(T x) 
 {
 #ifdef _MSC_VER
-	if      __constexpr (sizeof(T) == 4) return _tzcnt_u32(x);
-	else if __constexpr (sizeof(T) == 8) return _tzcnt_u64(x);
+	if_constexpr (sizeof(T) == 4) return _tzcnt_u32(x);
+	else if (sizeof(T) == 8) return _tzcnt_u64(x);
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	if      __constexpr (sizeof(T) == 4) return __builtin_ctz(x);
-	else if __constexpr (sizeof(T) == 8) return __builtin_ctzll(x);
+	if_constexpr (sizeof(T) == 4) return __builtin_ctz(x);
+	else if (sizeof(T) == 8) return __builtin_ctzll(x);
 #else
 	return PopCount((x & -x) - 1);
 #endif
@@ -283,11 +281,11 @@ template<typename T>
 __forceinline __constexpr T LeadingZeroCount(T x)
 {
 #ifdef _MSC_VER
-	if      __constexpr (sizeof(T) == 4) return _lzcnt_u32(x);
-	else if __constexpr (sizeof(T) == 8) return _lzcnt_u64(x);
+	if_constexpr (sizeof(T) == 4) return _lzcnt_u32(x);
+	else if (sizeof(T) == 8) return _lzcnt_u64(x);
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	if      __constexpr (sizeof(T) == 4) return __builtin_clz(x);
-	else if __constexpr (sizeof(T) == 8) return __builtin_clzll(x);
+	if_constexpr (sizeof(T) == 4) return __builtin_clz(x);
+	else if (sizeof(T) == 8) return __builtin_clzll(x);
 #else
 	x |= (x >> 1);
 	x |= (x >> 2);

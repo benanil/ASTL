@@ -260,7 +260,7 @@ __forceinline uint64 VecToHash(Vector3i vec) {
 //   ###   VECTOR4   ###
 
 #ifdef AX_SUPPORT_SSE
-AX_ALIGNED(16) struct Vector4f
+struct alignas(16) Vector4f
 {
 	union
 	{
@@ -321,7 +321,7 @@ struct RaySSE
 #endif // AX_SUPPORT_SSE
 
 #ifdef AX_SUPPORT_AVX2
-AX_ALIGNED(32) struct Vector4d
+struct alignas(32) Vector4d
 {
 	union
 	{

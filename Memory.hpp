@@ -143,7 +143,7 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t  sizeInBytes)
 template<int alignment = 0, int size = 0>
 inline void MemSet(void* dst, unsigned char val, uint64_t  sizeInBytes)
 {
-    if __constexpr (size)
+    if_constexpr (size)
     #ifdef _MSC_VER
         __stosb((unsigned char*)dst, val, size);
     #else
@@ -213,7 +213,7 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t  sizeInBytes)
 template<int alignment = 0, int size = 0>
 inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
 {
-    if __constexpr (size != 0)
+    if_constexpr (size != 0)
 #ifdef _MSC_VER
     __movsb((unsigned char*)dst, (unsigned char const*)src, size);
 #else

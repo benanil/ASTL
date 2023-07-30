@@ -284,7 +284,7 @@ public:
 		}
 		else if (_size < m_capacity)
 		{
-			if __constexpr (!AllocatorT::IsPOD)
+			if_constexpr (!AllocatorT::IsPOD)
 			{
 				for (int i = m_count - 1; i >= _size; --i)
 				{
@@ -395,7 +395,7 @@ private:
 			arr[i++] = (ValueT&&) arr[j++];
 		}
 
-		if __constexpr (!AllocatorT::IsPOD)
+		if_constexpr (!AllocatorT::IsPOD)
 		{
 			for (int i = newSize; i < m_count; ++i)
 			{

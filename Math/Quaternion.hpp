@@ -6,7 +6,7 @@
 
 AX_NAMESPACE 
 
-AX_ALIGNED(16) struct Quaternion
+struct alignas(16) Quaternion
 {
 	union
 	{
@@ -18,7 +18,12 @@ AX_ALIGNED(16) struct Quaternion
 	const float  operator [] (int index) const { return arr[index]; }
 	float& operator [] (int index) { return arr[index]; }
 
-	__forceinline static Quaternion Identity() { Quaternion q; q.vec = g_XMIdentityR3.vec; return q; }
+	__forceinline static Quaternion Identity() 
+	{
+		Quaternion q;
+		q.vec = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f); 
+		return q;
+	}
 
 	inline static __m128 VECTORCALL Mul(const __m128 Q1, const __m128 Q2) noexcept
 	{

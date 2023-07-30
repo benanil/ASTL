@@ -3,7 +3,7 @@
 
 AX_NAMESPACE
 
-AX_ALIGNED(16) struct BVHNode
+struct alignas(16) BVHNode
 {
   union { struct { float3 aabbMin; uint leftFirst; }; __m128 minv; };
   union { struct { float3 aabbMax; uint triCount; };  __m128 maxv; };
@@ -24,7 +24,8 @@ struct MeshInfo {
 };
 
 #pragma pack(push)
-AX_ALIGNED(16) struct Tri {
+struct alignas(16) Tri 
+{
   union { struct { float3 vertex0; float centeroidx; };  __m128 v0; };
   union { struct { float3 vertex1; float centeroidy; };  __m128 v1; };
   union { struct { float3 vertex2; float centeroidz; };  __m128 v2; };

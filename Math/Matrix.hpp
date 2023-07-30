@@ -153,7 +153,7 @@ __forceinline static __m128 VECTORCALL Vector4Transform(__m128 v, const __m128 r
 	return a2;
 }
 
-AX_ALIGNED(16) struct Matrix4
+struct alignas(16) Matrix4
 {
 	union
 	{
