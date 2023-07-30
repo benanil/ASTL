@@ -1,6 +1,5 @@
 
-#include "../Profiler.hpp"
-#include "../Common.hpp"
+#include "Profiler.hpp"
 #include <stdio.h>
 
 #if _WIN32
