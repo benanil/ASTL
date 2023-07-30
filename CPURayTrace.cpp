@@ -154,6 +154,14 @@ inline int SampleSkyboxPixel(float3 rayDirection, Texture texture)
 	return (phi * texture.width) + theta + 2;
 }
 
+__m128 SetZValue(__m128 vector, float new_z_value)
+{
+	float elements[4];
+	_mm_storeu_ps(elements, vector);
+	elements[2] = new_z_value;
+	return _mm_set_ps(elements[3], elements[2], elements[1], elements[0]);
+}
+
 #include "Profiler.hpp"
 // todo ignore mask
 HitRecord CPU_RayCast(RaySSE ray)
@@ -164,8 +172,8 @@ HitRecord CPU_RayCast(RaySSE ray)
 	
 	Triout hitOut;
 	uint hitInstanceIndex = 0u;
-	ray.origin.m128_f32[3] = 1.0f;
-	ray.direction.m128_f32[3] = 0.0f;
+	ray.origin = SetZValue(ray.origin, 1.0f);
+	ray.direction = SetZValue(ray.direction, 0.0f);
 
 	for (uint i = 0; i < m_data.NumMeshInstances; ++i)
 	{

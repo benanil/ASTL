@@ -584,10 +584,11 @@ struct alignas(16) Matrix4
 		} 
 		return Orientation;
 	}
+
 	static Matrix4 VECTORCALL FromQuaternion(const Quaternion quaternion)
 	{
 		Matrix4 M;
-		static const Vector432F  Constant1110 = {1.0f, 1.0f, 1.0f, 0.0f};
+		static const __m128  Constant1110 = _mm_setr_ps(1.0f, 1.0f, 1.0f, 0.0f);
 		__m128 q = quaternion.vec;
 
 		__m128 Q0 = _mm_add_ps(q, q);
@@ -597,7 +598,7 @@ struct alignas(16) Matrix4
 		V0 = _mm_and_ps(V0,g_XMMask3);
 		__m128 V1 = _mm_shuffle_ps(Q1,Q1,_mm_shuffle(3,1,2,2));
 		V1 = _mm_and_ps(V1,g_XMMask3);
-		__m128  R0 = _mm_sub_ps(Constant1110,V0);
+		__m128  R0 = _mm_sub_ps(Constant1110, V0);
 		R0 = _mm_sub_ps(R0, V1);
 
 		V0 = _mm_shuffle_ps(q, q,_mm_shuffle(3,1,0,0));

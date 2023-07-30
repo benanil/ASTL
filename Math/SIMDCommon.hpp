@@ -38,66 +38,28 @@ inline int AX_InitSIMD_CPUID()
 
 #ifdef AX_SUPPORT_SSE
 
-struct alignas(16) Vector4UI
-{
-	union
-	{
-		struct { uint x, y, z, w; };
-		__m128 vec;
-	};
-
-	inline operator __m128 () const noexcept { return vec; }
-	inline operator __m128i() const noexcept { return _mm_castps_si128(vec); }
-	inline operator __m128d() const noexcept { return _mm_castps_pd(vec); }
-
-	Vector4UI() : x(0), y(0), z(0) {}
-	Vector4UI(uint _x, uint _y, uint _z, uint _w) : x(_x), y(_y), z(_z), w(_w) {}
-};
-
-struct alignas(16) Vector432F
-{
-	union
-	{
-		struct { float x, y, z, w; };
-		__m128 vec;
-	};
-
-	inline operator __m128 () const noexcept { return vec; }
-	inline operator __m128i() const noexcept { return _mm_castps_si128(vec); }
-	inline operator __m128d() const noexcept { return _mm_castps_pd(vec); }
-
-	Vector432F() : x(0), y(0), z(0), w(0) {}
-	__constexpr Vector432F(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
-};
-
 constexpr uint32_t AX_SELECT_0 = 0x00000000;
 constexpr uint32_t AX_SELECT_1 = 0xFFFFFFFF;
 
-#define g_XMSelect1000 Vector4UI(AX_SELECT_1, AX_SELECT_0, AX_SELECT_0, AX_SELECT_0)
-#define g_XMSelect1100 Vector4UI(AX_SELECT_1, AX_SELECT_1, AX_SELECT_0, AX_SELECT_0)
-#define g_XMSelect1110 Vector4UI(AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0)
-#define g_XMSelect1011 Vector4UI(AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1)
+#define g_XMSelect1000 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_0, AX_SELECT_0, AX_SELECT_0))
+#define g_XMSelect1100 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_1, AX_SELECT_0, AX_SELECT_0))
+#define g_XMSelect1110 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0))
+#define g_XMSelect1011 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1))
 
-#define g_XMIdentityR0 Vector432F(1.0f, 0.0f, 0.0f, 0.0f)
-#define g_XMIdentityR1 Vector432F(0.0f, 1.0f, 0.0f, 0.0f)
-#define g_XMIdentityR2 Vector432F(0.0f, 0.0f, 1.0f, 0.0f)
-#define g_XMIdentityR3 Vector432F(0.0f, 0.0f, 0.0f, 1.0f)
+#define g_XMIdentityR0 _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f)
+#define g_XMIdentityR1 _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f)
+#define g_XMIdentityR2 _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f)
+#define g_XMIdentityR3 _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
 
-#define g_XMMaskXY Vector4UI(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)
-#define g_XMMask3  Vector4UI(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000)
-#define g_XMMaskX  Vector4UI(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)
-#define g_XMMaskY  Vector4UI(0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000)
-#define g_XMMaskZ  Vector4UI(0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000)
-#define g_XMMaskW  Vector4UI(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF)
+#define g_XMMaskXY _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
+#define g_XMMask3  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
+#define g_XMMaskX  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000))
+#define g_XMMaskY  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000))
+#define g_XMMaskZ  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000))
+#define g_XMMaskW  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF))
 
-#define g_XMOne         Vector432F( 1.0f, 1.0f, 1.0f, 1.0f)
-#define g_XMOne3        Vector432F( 1.0f, 1.0f, 1.0f, 0.0f)
-#define g_XMZero        Vector432F( 0.0f, 0.0f, 0.0f, 0.0f)
-#define g_XMTwo         Vector432F( 2.0f, 2.0f, 2.0f, 2.0f)
-#define g_XMFour        Vector432F( 4.0f, 4.0f, 4.0f, 4.0f)
-#define g_XMSix         Vector432F( 6.0f, 6.0f, 6.0f, 6.0f)
-#define g_XMNegativeOne Vector432F( -1.0f, -1.0f, -1.0f, -1.0f)
-#define g_XMOneHalf     Vector432F( 0.5f, 0.5f, 0.5f, 0.5f)
+#define g_XMOne         _mm_setr_ps( 1.0f, 1.0f, 1.0f, 1.0f)
+#define g_XMNegativeOne _mm_setr_ps( -1.0f, -1.0f, -1.0f, -1.0f)
 
 __forceinline __m128 VECTORCALL SSESelect(const __m128 V1, const __m128 V2, const __m128& Control)
 {

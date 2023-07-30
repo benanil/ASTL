@@ -76,8 +76,8 @@ struct alignas(16) Quaternion
 	{
 		const __m128 T = _mm_set_ps1(t);
 		// Result = Q0 * sin((1.0 - t) * Omega) / sin(Omega) + Q1 * sin(t * Omega) / sin(Omega)
-		static const Vector4f OneMINusEpsilon = { { { 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f } } };
-		static const Vector4UI SignMask2 = { 0x80000000, 0x00000000, 0x00000000, 0x00000000 };
+		static const __m128 OneMINusEpsilon = _mm_setr_ps(1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f);
+		static const __m128 SignMask2 = _mm_castsi128_ps(_mm_setr_epi32(0x80000000, 0x00000000, 0x00000000, 0x00000000));
 
 		__m128 CosOmega = _mm_dp_ps(Q0.vec, Q1.vec, 0xff);
 
@@ -87,7 +87,7 @@ struct alignas(16) Quaternion
 
 		CosOmega = _mm_mul_ps(CosOmega, Sign);
 
-		Control = _mm_cmplt_ps(CosOmega, OneMINusEpsilon.vec);
+		Control = _mm_cmplt_ps(CosOmega, OneMINusEpsilon);
 
 		__m128 SinOmega = _mm_mul_ps(CosOmega, CosOmega);
 		SinOmega = _mm_sub_ps(g_XMOne, SinOmega);
@@ -149,31 +149,31 @@ struct alignas(16) Quaternion
 
 	__forceinline static __m128 VECTORCALL Conjugate(const __m128 vec)
 	{
-		static const Vector432F NegativeOne3 = { -1.0f,-1.0f,-1.0f, 1.0f};
+		static const __m128 NegativeOne3 = _mm_setr_ps(-1.0f,-1.0f,-1.0f, 1.0f);
 		return _mm_mul_ps(vec, NegativeOne3);
 	}
 
 	Vector3f GetForward() const {
 		Vector3f res;
-		SSEStoreVector3(&res.x,MulVec3(Vector432F( 0, 0, -1, 0), Conjugate(vec)));
+		SSEStoreVector3(&res.x,MulVec3(_mm_setr_ps( 0.0f, 0.0f, -1.0f, 0.0f), Conjugate(vec)));
 		return res; 
 	}
 
 	Vector3f GetRight() const {
 		Vector3f res;
-		SSEStoreVector3(&res.x, MulVec3(Vector432F( 1, 0, 0, 0), Conjugate(vec)));
+		SSEStoreVector3(&res.x, MulVec3(_mm_setr_ps( 1.0f, 0.0f, 0.0f, 0.0f), Conjugate(vec)));
 		return res; 
 	}
 
 	Vector3f GetLeft() const {
 		Vector3f res;
-		SSEStoreVector3(&res.x, MulVec3(Vector432F(-1, 0, 0, 0), Conjugate(vec))); 
+		SSEStoreVector3(&res.x, MulVec3(_mm_setr_ps(-1.0f, 0.0f, 0.0f, 0.0f), Conjugate(vec))); 
 		return res; 
 	}
 
 	Vector3f GetUp() const {
 		Vector3f res;
-		SSEStoreVector3(&res.x, MulVec3(Vector432F( 0, 1, 0, 0), Conjugate(vec)));
+		SSEStoreVector3(&res.x, MulVec3(_mm_setr_ps( 0.0f, 1.0f, 0.0f, 0.0f), Conjugate(vec)));
 		return res; 
 	}
 
