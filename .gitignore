@@ -16,6 +16,7 @@
 # Mono auto generated files
 mono_crash.*
 	
+build/
 **/cmake-build-debug
 **/CMakeCache.txt
 **/cmake_install.cmake

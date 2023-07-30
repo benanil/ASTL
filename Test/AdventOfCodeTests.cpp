@@ -1,16 +1,16 @@
 #define ASTL_STL_COMPATIBLE
 
-#include "Queue.hpp"
-#include "Stack.hpp"
-#include "String.hpp"
-#include "Array.hpp"
-#include "HashMap.hpp"
-#include "HashSet.hpp"
-#include "RedBlackTree.hpp"
-#include "Math/Vector.hpp"
+#include "../Queue.hpp"
+#include "../Stack.hpp"
+#include "../String.hpp"
+#include "../Array.hpp"
+#include "../HashMap.hpp"
+#include "../HashSet.hpp"
+#include "../RedBlackTree.hpp"
+#include "../Math/Vector.hpp"
 
 #include <stdio.h>
-#include "Profiler.hpp"
+#include "../Profiler.hpp"
 
 // #include <chrono>
 // #include <thread>
@@ -77,7 +77,7 @@ inline int ManhattanDistance(Vector2<T> a, const Vector2<T>& b)
 
 static void Day15() // result 5511201
 {
-    FILE* file = fopen("TestData/AOC15.txt", "r");
+    FILE* file = fopen("Test/AOC15.txt", "r");
     char line[120];
     HashMap<Vector2i, int> sensors{};
     Set<int> beaconXs{};
@@ -143,7 +143,7 @@ using DistanceAndPoint = APoint;
 
 static int Day12() // result should be 534
 {
-    FILE* file = fopen("TestData/AOC12.txt", "r");
+    FILE* file = fopen("Test/AOC12.txt", "r");
 	TimeBlock("day12");
 	Vector2s startPos, targetPos;
 	short numRows = 0, numColumns = 0;
@@ -225,7 +225,7 @@ static int Day12() // result should be 534
 
 static int Day17() // result should be 3157
 {
-    char* pattern = ReadAllFile("TestData/AOC17.txt");
+    char* pattern = ReadAllFile("Test/AOC17.txt");
 	TimeBlock("Day17")
 
 	const Vector2s shapes[5][5] = {
@@ -334,7 +334,7 @@ static int Day17() // result should be 3157
 
 int Day22()
 {
-	FILE* file = fopen("TestData/AOC22.txt", "r");
+	FILE* file = fopen("Test/AOC22.txt", "r");
 	char line[5666];
 	
 	TimeFunction

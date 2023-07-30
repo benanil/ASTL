@@ -1,15 +1,15 @@
 
-#include "Queue.hpp"
-#include "Stack.hpp"
-#include "String.hpp"
-#include "Array.hpp"
-#include "HashMap.hpp"
-#include "HashSet.hpp"
-#include "RedBlackTree.hpp"
-#include "Math/Vector.hpp"
-#include "String.hpp"
+#include "../Queue.hpp"
+#include "../Stack.hpp"
+#include "../String.hpp"
+#include "../Array.hpp"
+#include "../HashMap.hpp"
+#include "../HashSet.hpp"
+#include "../RedBlackTree.hpp"
+#include "../Math/Vector.hpp"
+#include "../String.hpp"
 
-#include "Profiler.hpp"
+#include "../Profiler.hpp"
 
 #include <stdio.h>
 
@@ -108,8 +108,7 @@ template <typename MapT> void TestMap(const char* name, MapT& map) {
     printf("%s END\n", name);
 }
 
-#include "Aditional.hpp"
-#include <string>
+#include "../Aditional.hpp"
 
 void StrViewTest(StringView view)
 {

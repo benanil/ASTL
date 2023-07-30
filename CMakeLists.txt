@@ -8,10 +8,14 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 
 # Add your source files here
 set(SOURCES
-    ASTL.cpp
-    AdventOfCodeTests.cpp
-    Profiler.cpp
+    Test/ASTL.cpp
+    Test/AdventOfCodeTests.cpp
+    Test/Profiler.cpp
 )
 
 # Add an executable target
 add_executable(astl_test ${SOURCES})
+
+set_target_properties(astl_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
