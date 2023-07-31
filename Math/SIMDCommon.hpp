@@ -191,13 +191,13 @@ __forceinline float VECTORCALL hsum_ps_sse3(__m128 v) {
 	return _mm_cvtss_f32(sums);
 }
 
-inline __m128 _mm_fabs_ps(__m128 x)
+__forceinline __m128 VECTORCALL _mm_fabs_ps(__m128 x)
 {
     __m128 y = _mm_cmple_ps(x, _mm_setzero_ps());
     return SSESelect(x, _mm_sub_ps(_mm_setzero_ps(), x), y);
 }
 
-inline __m128 _mm_copysign_ps(__m128 x, __m128 y)
+__forceinline __m128 VECTORCALL _mm_copysign_ps(__m128 x, __m128 y)
 {
     return _mm_or_ps(_mm_and_ps(x, _mm_set1_ps(0x7fffffff)),
                      _mm_and_ps(y, _mm_set1_ps(0x80000000)));
@@ -205,7 +205,7 @@ inline __m128 _mm_copysign_ps(__m128 x, __m128 y)
 
 #if defined(__GNUC__) || defined(__clang__)
 
-inline __m128 _mm_sin_ps(__m128 x)
+inline __m128 VECTORCALL _mm_sin_ps(__m128 x)
 { 
     __m128 xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
     __m128 t  = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
@@ -221,7 +221,7 @@ inline __m128 _mm_sin_ps(__m128 x)
     return t;
 }
 
-inline __m128 _mm_cos_ps(__m128 x)
+inline __m128 VECTORCALL _mm_cos_ps(__m128 x)
 {
     __m128 xx = _mm_mul_ps(x, x);
     __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
@@ -237,37 +237,7 @@ inline __m128 _mm_cos_ps(__m128 x)
     return t;
 }
 
-inline __m128 _mm_sincos_ps(__m128* cv, __m128 x)
-{
-    __m128 xx = _mm_mul_ps(x, x);
-    __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
-    xx = _mm_mul_ps(x, x);
-    __m128 st = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
-
-    xx = _mm_mul_ps(x, x);
-    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
-    
-    xx = _mm_mul_ps(x, x);
-    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
-
-    xx = _mm_mul_ps(x, x);
-    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
-
-    xx = _mm_mul_ps(x, x);
-    st = _mm_sub_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
-
-    xx = _mm_mul_ps(x, x);
-    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
-
-    xx = _mm_mul_ps(x, x);
-    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
-
-    *cv = t;
-    return st;
-}
-
-
-inline __m128 _mm_atan_ps(__m128 x)
+__forceinline __m128 VECTORCALL _mm_atan_ps(__m128 x)
 {
     __m128 xx = _mm_mul_ps(x, x);
     static const __m128 a1 = _mm_set1_ps( 0.99997726f), a3 = _mm_set1_ps(-0.33262347f), a5  = _mm_set1_ps(0.19354346f),
@@ -282,7 +252,7 @@ inline __m128 _mm_atan_ps(__m128 x)
     return _mm_mul_ps(x, y);
 }
 
-inline __m128 _mm_atan2_ps(__m128 y, __m128 x)
+inline __m128 VECTORCALL _mm_atan2_ps(__m128 y, __m128 x)
 {
     __m128 ay = _mm_fabs_ps(y), ax = _mm_fabs_ps(x);
     __m128 invert = _mm_cmpgt_ps(ay, ax);
@@ -291,6 +261,31 @@ inline __m128 _mm_atan2_ps(__m128 y, __m128 x)
     th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PIDiv2), th), invert);
     th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PI), th), _mm_cmplt_ps(x, _mm_setzero_ps()));
     return _mm_copysign_ps(th, y);
+}
+
+inline __m128 VECTORCALL _mm_sincos_ps(__m128* cv, __m128 x)
+{
+    __m128 xx = _mm_mul_ps(x, x);
+    __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
+    xx = _mm_mul_ps(x, x);
+    __m128 st = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
+    
+    xx = _mm_mul_ps(x, x);
+    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
+    xx = _mm_mul_ps(x, x);
+    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
+    
+    xx = _mm_mul_ps(x, x);
+    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
+    xx = _mm_mul_ps(x, x);
+    st = _mm_sub_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
+    
+    xx = _mm_mul_ps(x, x);
+    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
+    xx = _mm_mul_ps(x, x);
+    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
+    *cv = t;
+    return st;
 }
 
 #endif //__clang__ || __gnu

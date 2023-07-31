@@ -1,7 +1,7 @@
 @echo off
 
 REM Compile the C++ code using g++
-g++ -std=c++17 -O3 -mavx2 -lm -fno-exceptions ^
+g++ -std=c++17 -O3 -mavx2 -msse4.2 -fno-exceptions ^
 Test/ASTL.cpp ^
 Test/AdventOfCodeTests.cpp ^
 Profiler.cpp ^

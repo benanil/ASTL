@@ -224,10 +224,13 @@ __forceinline __constexpr float SinPI(float x)  { return Sin(x) / PI; }
 
 typedef ushort half;
 
-__forceinline float ConvertHalfToFloat(half x)
+__forceinline float 
+ConvertHalfToFloat(half x)
 {
-#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
-	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); // MSVC does not have scalar instructions.
+#if defined(AX_SUPPORT_SSE) && defined(__MSC_VER) 
+	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); // idk why this does not work for gcc
+// #elif defined(AX_SUPPORT_SSE) && (defined(__GNUC__) || defined(__clang__))
+// 	return _cvtsh_ss(x);
 #else
 	uint Mantissa, Exponent, Result;
 	Mantissa = (uint)(x & 0x03FF);
@@ -278,10 +281,13 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 #endif
 }
 
-__forceinline half ConvertFloatToHalf(float Value)
+__forceinline half  UPNG__TARGET("ssse3,sse4.1")
+ConvertFloatToHalf(float Value)
 {
-#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
-	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0); // MSVC does not have scalar instructions.
+#if defined(AX_SUPPORT_SSE) && defined(__MSC_VER)
+	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);// idk why this does not work for gcc
+#elif defined(AX_SUPPORT_SSE) && (defined(__GNUC__) || defined(__clang__))
+	return _cvtss_sh(Value, 0);
 #else
 	// taken from XNA math
 	uint Result;
