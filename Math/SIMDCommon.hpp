@@ -245,7 +245,6 @@ __forceinline __m128 VECTORCALL _mm_atan_ps(__m128 x)
     // (a9 + x_sq * a11
     __m128 y = _mm_fmadd_ps(xx, a11, a9);
     y = _mm_fmadd_ps(xx, y, a7);
-    y = _mm_fmadd_ps(xx, y, a7);
     y = _mm_fmadd_ps(xx, y, a5);
     y = _mm_fmadd_ps(xx, y, a3);
     y = _mm_fmadd_ps(xx, y, a1);
