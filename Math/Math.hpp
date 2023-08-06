@@ -24,29 +24,64 @@ constexpr float Sqrt2 = 1.414213562f;
 //  #####  [BASE FUNCTINS]  #####  
 //  ######################################  
 
-// for constant sqrt look at here: https://gist.github.com/alexshtf/eb5128b3e3e143187794
-// or here for __constexpr: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
-__forceinline float Sqrt(float x)
+__forceinline float Sqrt(float a)
 {
 #ifdef AX_SUPPORT_SSE
-	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(x)));  
+	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));  
+#elif defined(__clang__)
+	return __builtin_sqrt(a);
 #else
-	return __builtin_sqrt(x);
+	// note: you can use this as constexpr, if you need Distance, Lenghth, Normalize at compile time this is usefull
+	// from: Jack W. Cerenshaw's math toolkit for real time development book: page 63 Listing 4.3
+	// I've removed some of the branches. slightly slower than sqrtf
+	// double version is also here: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
+	const double A = 0.417319242, B = 0.5901788532;
+	union { double fp; struct { unsigned lo, hi; }; } x;
+	if (a <= 0.001) return 0.0f;
+	x.fp = (double)a;
+	// grab the exponent
+	unsigned expo = (x.hi >> 20u) - 0x3fe;
+	x.hi &= 0x000fffffu;
+	x.hi += 0x3fe00000u;
+	// get square root of normalized number
+	double root = A + B * x.fp;
+	root = 0.5 * (x.fp / root + root); // you can even remove this haha if you do that you might want to reduce this: 0.414213562
+	// root = 0.5 * (x.fp / root + root);
+	// root = 0.5 * (x.fp / root + root); // iterate 3 times probably overkill
+	// now rebuild the result
+	x.fp = root;
+	bool isOdd = expo & 1;
+	expo += isOdd;
+	x.fp *= 1.0 + (isOdd * 0.414213562);
+	expo = (expo + (expo < 0u)) * 0.5;
+	// put it back
+	expo += 0x3feu;
+	x.hi &= 0x000fffffu;
+	x.hi += expo << 20u;
+	return x.fp;
 #endif
 }
 
 // original doom rsqrt implementation with comments :) maybe use _mm_rsqrt_ps instead ? and __builtin_sqrt if sse not supported
 // used constant(0x5f375a86f) is from Chriss Lomont's Fast Inverse Square Root paper
+// https://en.wikipedia.org/wiki/Fast_inverse_square_root
+// https://rrrola.wz.cz/inv_sqrt.html   <- fast and 2.5x accurate
 __forceinline __constexpr float RSqrt(float x) 
 {
-	float x2 = x * 0.5f; // doom rsqrt
-	float y  = x;
-	int i    = BitCast<int>(y);        // evil floating point bit level hacking
-	i = (int)(0x5f375a86f - ( i >> 1 ));      // what the fuck? 
-	y = BitCast<float>(i);              
-	y = y * ( 1.5f - ( x2 * y * y ) ); // 1st iteration
-	y = y * ( 1.5f - ( x2 * y * y ) ); // 2th iteration
-	return y;
+#ifdef AX_SUPPORT_SSE
+	// when I compile with godbolt -O1 expands to one instruction vrsqrtss
+	// which is approximately equal latency as mulps.
+	// RSqrt(float):                             # @RSqrt3(float)
+  //       vrsqrtss        xmm0, xmm0, xmm0
+  //       ret
+	return _mm_cvtss_f32(_mm_rsqrt_ps(_mm_set_ps1(x)));
+#else
+	float f = x;
+	uint32_t i = BitCast<uint32_t>(f);
+	i = (uint32_t)(0x5F1FFFF9ul - (i >> 1));
+	f = BitCast<float>(i);
+	return 0.703952253f * f * (2.38924456f - x * f * f);
+#endif
 }
 
 __forceinline __constexpr float Fract(float a) { a = Abs(a); return a - int(a); }
@@ -230,7 +265,7 @@ ConvertHalfToFloat(half x)
 #if defined(AX_SUPPORT_SSE) && defined(__MSC_VER) 
 	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); // idk why this does not work for gcc
 // #elif defined(AX_SUPPORT_SSE) && (defined(__GNUC__) || defined(__clang__))
-// 	return _cvtsh_ss(x);
+// 	return _cvtsh_ss(x); // this also does not work with gcc idk why
 #else
 	uint Mantissa, Exponent, Result;
 	Mantissa = (uint)(x & 0x03FF);

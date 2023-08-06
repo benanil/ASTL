@@ -57,7 +57,7 @@ struct Camera
 		target /= target.w;
 		target = Matrix4::Vector4Transform(target, inverseView);
 		Vector3f rayDir = Vector3f::Normalize(target.xyz());
-		return Ray(position, rayDir);
+		return MakeRay(position, rayDir);
 	}
 
 	RaySSE ScreenPointToRaySSE(Vector2f pos) const

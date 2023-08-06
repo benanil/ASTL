@@ -2,7 +2,6 @@
 
 #include "Math.hpp"
 #include "SIMDCommon.hpp"
-#include "../Random.hpp" 
 
 AX_NAMESPACE 
 
@@ -119,7 +118,7 @@ struct Vector3
 
 	static float Length(const Vector3& vec) { return vec.Length(); }
 
-	static float Dot(const Vector3& a, const Vector3& b)
+	__forceinline static float Dot(const Vector3& a, const Vector3& b)
 	{
 		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
@@ -146,9 +145,13 @@ struct Vector3
 	{
 		return in - normal * Vector3::Dot(normal, in) * 2.0f;
 	}
-	// for more accuracy you can use sqrt instead of rsqrt: a / sqrt(dot(a,a)) 
+
 	static Vector3 Normalize(const Vector3& a) {
 		return a / Sqrt(Vector3::Dot(a, a));
+	}
+	
+	static Vector3 NormalizeEst(const Vector3& a) {
+		return a * RSqrt(Vector3::Dot(a, a));
 	}
 
 	Vector3 operator- () { return { -x, -y, -z }; }
@@ -244,18 +247,18 @@ template<typename T> __forceinline T Min3(const Vector3<T>& a) { return MIN(MIN(
 __forceinline Vector2f ToVector2f(const Vector2i& vec) { return {(float)vec.x, (float)vec.y }; }
 __forceinline Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec.y   }; }
 
-__forceinline uint64 VecToHash(Vector2c vec) { return uint64(vec.x*3 ^vec.y) | (uint64(vec.y) << 8ull ); }
-__forceinline uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
-__forceinline uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
-__forceinline uint64 VecToHash(Vector3c vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 8ull) | (uint64(vec.z) << 16ull)); }
-
-__forceinline uint64 VecToHash(Vector3s vec){
-	return WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull) | (uint64(vec.z) << 24ull));
-}
-
-__forceinline uint64 VecToHash(Vector3i vec) {
-	return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)) + WangHash(vec.z);
-}
+// __forceinline uint64 VecToHash(Vector2c vec) { return uint64(vec.x*3 ^vec.y) | (uint64(vec.y) << 8ull ); }
+// __forceinline uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
+// __forceinline uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
+// __forceinline uint64 VecToHash(Vector3c vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 8ull) | (uint64(vec.z) << 16ull)); }
+// 
+// __forceinline uint64 VecToHash(Vector3s vec){
+// 	return WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull) | (uint64(vec.z) << 24ull));
+// }
+// 
+// __forceinline uint64 VecToHash(Vector3i vec) {
+// 	return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)) + WangHash(vec.z);
+// }
 
 //   ###   VECTOR4   ###
 
@@ -287,6 +290,7 @@ struct alignas(16) Vector4f
 	}
 
 	float Length() const { return Sqrt(_mm_cvtss_f32(_mm_dp_ps(vec, vec, 0xff))); }
+	float LengthSq() const { return _mm_cvtss_f32(_mm_dp_ps(vec, vec, 0xff)); }
 
 	Vector4f& Normalized() { vec = _mm_mul_ps(_mm_rsqrt_ps(_mm_dp_ps(vec, vec, 0xff)), vec); return *this; }
 
@@ -455,8 +459,11 @@ struct Ray
 {
 	Vector3f origin;
 	Vector3f direction;
-	Ray() {}
-	Ray(Vector3f o, Vector3f d) : origin(o), direction(d) {}
 };
+
+inline Ray MakeRay(Vector3f o, Vector3f d)
+{
+	return { a, d };
+}
 
 AX_END_NAMESPACE 

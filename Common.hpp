@@ -131,15 +131,14 @@
 /* Architecture Detection */
 // detection code from mini audio
 // you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
-#   define AX_X64
 
-// #if defined(__x86_64__) || defined(_M_X64)
-// #   define AX_X64
-// #elif defined(__i386) || defined(_M_IX86)
-// #   define AX_X86
-// #elif defined(__arm__) || defined(_M_ARM) || defined(__arm64) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
-// #   define AX_ARM
-// #endif
+#if defined(__x86_64__) || defined(_M_X64)
+#   define AX_X64
+#elif defined(__i386) || defined(_M_IX86)
+#   define AX_X86
+#elif defined(__arm__) || defined(_M_ARM) || defined(__arm64) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
+#   define AX_ARM
+#endif
 
 // write AX_NO_SSE2 or AX_NO_AVX2 to disable vector instructions
 
@@ -276,7 +275,6 @@ __forceinline __constexpr T TrailingZeroCount(T x)
 #endif
 }
 
-
 template<typename T>
 __forceinline __constexpr T LeadingZeroCount(T x)
 {
@@ -297,11 +295,12 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 }
 
 template<typename To, typename From>
-__forceinline __constexpr To BitCast(const From& _Val) {
-#if defined(__clang__) && AX_CPP_VERSION >= AX_CPP17
-    return __builtin_bit_cast(To, _Val);
+__forceinline __constexpr To BitCast(const From& _Val) 
+{
+#ifdef AX_CPP_VERSION < AX_CPP17
+  return *(const To*)&_Val;
 #else
-    return *(const To*)&_Val;
+  return __builtin_bit_cast(To, _Val);
 #endif
 }
 
@@ -368,12 +367,6 @@ inline __constexpr int CalculateArrayGrowth(int _size)
     }
     return _size + addition; // growth is sufficient
 }
-
-// enum for skipping initialization
-enum EForceInit
-{
-	ForceInit
-};
 
 template<typename A, typename B>
 struct Pair

@@ -38,6 +38,21 @@ inline int AX_InitSIMD_CPUID()
 
 #ifdef AX_SUPPORT_SSE
 
+#define MakeShuffleMask(x,y,z,w)           (x | (y<<2) | (z<<4) | (w<<6))
+// vec(0, 1, 2, 3) -> (vec[x], vec[y], vec[z], vec[w])
+#define VecSwizzleMask(vec, mask)        _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(vec), mask))
+#define VecSwizzle(vec, x, y, z, w)      VecSwizzleMask(vec, MakeShuffleMask(x,y,z,w))
+#define VecSwizzle1(vec, x)              VecSwizzleMask(vec, MakeShuffleMask(x,x,x,x))
+// special swizzle                   
+#define VecSwizzle_0022(vec)             _mm_moveldup_ps(vec)
+#define VecSwizzle_1133(vec)             _mm_movehdup_ps(vec)
+	
+// return (vec1[x], vec1[y], vec2[z], vec2[w])
+#define VecShuffle(vec1, vec2, x,y,z,w)  _mm_shuffle_ps(vec1, vec2, MakeShuffleMask(x,y,z,w))
+// special shuffle                  
+#define VecShuffle_0101(vec1, vec2)      _mm_movelh_ps(vec1, vec2)
+#define VecShuffle_2323(vec1, vec2)      _mm_movehl_ps(vec2, vec1)
+
 constexpr uint32_t AX_SELECT_0 = 0x00000000;
 constexpr uint32_t AX_SELECT_1 = 0xFFFFFFFF;
 
@@ -289,8 +304,16 @@ inline __m128 VECTORCALL _mm_sincos_ps(__m128* cv, __m128 x)
 
 #endif //__clang__ || __gnu
 
-#endif // AX_SUPPORT_SSE
+#else // AX_SUPPORT_SSE
 
+#define VecSwizzle1(vec, x) MakeVec4(vec[x], vec[x], vec[x], vec[x])
+#define VecSwizzle(vec, x, y, z, w) MakeVec4(vec[x], vec[y], vec[z], vec[w])
+#define VecShuffle_0101(x, y) MakeVec4(x.x, x.y, y.x, y.y)  // 00, 01, 10, 11
+#define VecShuffle_2323(x, y) MakeVec4(x.z, x.w, y.z, y.w)  // 02, 03, 12, 13
+// return (vec1[x], vec1[y], vec2[z], vec2[w])
+#define VecShuffle(vec1, vec2, x, y, z, w) MakeVec4(vec1[x], vec1[y], vec2[z], vec2[w])
+
+#endif
 #ifdef AX_SUPPORT_AVX2
 
 __forceinline __m256i VECTORCALL SSESelect(const __m256i V1, const __m256i V2, const __m256i& Control)

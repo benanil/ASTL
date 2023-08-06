@@ -15,7 +15,6 @@
 
 extern void AdventOfCodeTests();
 
-
 int ints[13]{ 23, 456, 789, 42,
                8675309, 555, 999,
                314159, 271828, 777,
