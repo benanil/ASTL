@@ -235,6 +235,40 @@ __forceinline half3 ConvertToHalf3(const float* h) {
 	return res;
 }
 
+template<typename VecT>
+inline void QuaternionFromMatrix(float* Orientation, const VecT* m)
+{
+	int i, j, k = 0;
+	float root, trace = m[0][0] + m[1][1] + m[2][2];
+
+	if (trace > 0.0f)
+	{
+		root = Sqrt(trace + 1.0f);
+		Orientation[3] = 0.5f * root;
+		root = 0.5f / root;
+		Orientation[0] = root * (m[1][2] - m[2][1]);
+		Orientation[1] = root * (m[2][0] - m[0][2]);
+		Orientation[2] = root * (m[0][1] - m[1][0]);
+	}
+	else
+	{
+		static const int Next[3] = { 1, 2, 0 };
+		i = 0;
+		i += m[1][1] > m[0][0]; // if (M.m[1][1] > M.m[0][0]) i = 1
+		if (m[2][2] > m[i][i]) i = 2;
+		j = Next[i];
+		k = Next[j];
+
+		root = Sqrt(m[i][i] - m[j][j] - m[k][k] + 1.0f);
+
+		Orientation[i] = 0.5f * root;
+		root = 0.5f / root;
+		Orientation[j] = root * (m[i][j] + m[j][i]);
+		Orientation[k] = root * (m[i][k] + m[k][i]);
+		Orientation[3] = root * (m[j][k] - m[k][j]);
+	} 
+}
+
 // recommended to use simd instructions instead. this functions are slow in hot loops
 template<typename T> __forceinline Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z) }; }
 template<typename T> __forceinline Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z) }; }
@@ -391,8 +425,8 @@ struct Vector4
 	static const int NumElements = 4;
 	using ElemType = T;
 
+	const T& operator[] (int index) const { return arr[index]; }
 	T& operator[] (int index) { return arr[index]; }
-	T  operator[] (int index) const { return arr[index]; }
 
 	float Length() const { return Sqrt(LengthSquared()); }
 	__constexpr float LengthSquared() const { return x * x + y * y + z * z + w * w; }
@@ -421,6 +455,8 @@ struct Vector4
 	static Vector4 Normalize(const Vector4& a) {
 		return a / Sqrt(Vector4::Dot(a, a));
 	}
+
+	Vector3<T> xyz() const { return {x, y, z}; }
 
 	Vector4 operator- () { return { -x, -y, -z }; }
 	Vector4 operator + (const Vector4& other) const { return { x + other.x, y + other.y, z + other.z, w + other.w }; }
@@ -463,7 +499,7 @@ struct Ray
 
 inline Ray MakeRay(Vector3f o, Vector3f d)
 {
-	return { a, d };
+	return { o, d };
 }
 
 AX_END_NAMESPACE 

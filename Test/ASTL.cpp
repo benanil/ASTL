@@ -113,13 +113,18 @@ void StrViewTest(StringView view)
 {
   printf("str view test: %s \n", view.ptr);
 }
-extern void BeginProfile(void);
 
+extern void BeginProfile(void);
 extern void EndAndPrintProfile();
+
+#include "../Math/Matrix.hpp"
+
 int main()
 {   
     AdventOfCodeTests();
-    
+    Matrix4 matrix = Matrix4::Identity();
+    matrix = matrix * matrix;
+
     String testStr = "floating test: ";
     testStr += 1234.567f;
     testStr.Replace("floating", "integing");

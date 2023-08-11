@@ -1,5 +1,6 @@
 #pragma once
 #include "Math/Matrix.hpp"
+#ifdef AX_SUPPORT_SSE
 
 AX_NAMESPACE
 
@@ -50,3 +51,5 @@ struct MeshInstance {
 typedef uint MeshInstanceHandle;
 
 AX_END_NAMESPACE
+
+#endif

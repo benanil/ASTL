@@ -196,7 +196,7 @@ public:
 	
 	typedef bool(*RemoveFunc)(const ValueT& val);
 
-	// <summary> returns number of elements removed </summary>
+	// returns number of elements removed
 	int RemoveAll(RemoveFunc match)
 	{
 		int freeIndex = 0;   // the first free slot in items array

@@ -10,13 +10,14 @@
 AX_NAMESPACE 
 
 // constants
-constexpr float PI = 3.14159265358f;
+constexpr float PI       = 3.14159265358f;
 constexpr float RadToDeg = 180.0f / PI;
 constexpr float DegToRad = PI / 180.0f;
 constexpr float OneDivPI = 1.0f / PI;
-constexpr float PIDiv2 = PI / 2.0f;
-constexpr float TwoPI = PI * 2.0f;
-constexpr float Sqrt2 = 1.414213562f;
+constexpr float PIDiv2   = PI / 2.0f;
+constexpr float TwoPI    = PI * 2.0f;
+constexpr float Sqrt2    = 1.414213562f;
+constexpr float Epsilon  = 0.0001f;
 // for integer constants use stdint.h's INT32_MIN, INT64_MIN, INT32_MAX...
 // for float constants use float.h's FLT_MAX, FLT_MIN, DBL_MAX, DBL_MIN
 
@@ -66,7 +67,7 @@ __forceinline float Sqrt(float a)
 // used constant(0x5f375a86f) is from Chriss Lomont's Fast Inverse Square Root paper
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // https://rrrola.wz.cz/inv_sqrt.html   <- fast and 2.5x accurate
-__forceinline __constexpr float RSqrt(float x) 
+__forceinline float RSqrt(float x) 
 {
 #ifdef AX_SUPPORT_SSE
 	// when I compile with godbolt -O1 expands to one instruction vrsqrtss
@@ -316,8 +317,7 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 #endif
 }
 
-__forceinline half  UPNG__TARGET("ssse3,sse4.1")
-ConvertFloatToHalf(float Value)
+__forceinline half ConvertFloatToHalf(float Value)
 {
 #if defined(AX_SUPPORT_SSE) && defined(__MSC_VER)
 	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);// idk why this does not work for gcc

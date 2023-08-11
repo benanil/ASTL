@@ -62,14 +62,14 @@ inline int StringCompare(const char* s1, const char* s2)
     return false;
 }
 #else
-inline int StrLen(const char* s)
+inline int StringLength(const char* s)
 {
     const char* begin = s;
     while (*s) s++;
     return s - begin;
 }
 
-inline int StrCmp(const char* a, const char* b)
+inline int StringCompare(const char* a, const char* b)
 {
     for (; *a && *b; a++, b++)
     {

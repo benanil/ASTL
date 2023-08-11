@@ -10,8 +10,8 @@
 		<IsFolder>false</IsFolder>
 		<BuildCommand>build.bat</BuildCommand>
 		<RebuildCommand></RebuildCommand>
-		<BuildFileCommand></BuildFileCommand>
-		<CleanCommand></CleanCommand>
+		<BuildFileCommand>astl_test.exe</BuildFileCommand>
+		<CleanCommand>astl_test.exe</CleanCommand>
 		<BuildWorkingDirectory></BuildWorkingDirectory>
 		<CancelBuild></CancelBuild>
 		<RunCommand>astl_test.exe</RunCommand>
@@ -40,8 +40,9 @@
 			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um</AdditionalIncludePath>
 		</AdditionalIncludePaths>
 		<Defines>
-			<Define>AX_SUPPORT_SSE</Define>
-			<Define>AX_SUPPORT_AVX2</Define>
+			<Define></Define>
+			<Define></Define>
+			<Define>AX_X64</Define>
 		</Defines>
 		<ConfigProperties>
 			<ConfigAndPlatform>
@@ -49,13 +50,26 @@
 				<Defines></Defines>
 				<ForceIncludes></ForceIncludes>
 			</ConfigAndPlatform>
+			<ConfigAndPlatform>
+				<Name>Release:x64</Name>
+				<Defines></Defines>
+				<ForceIncludes></ForceIncludes>
+			</ConfigAndPlatform>
 			<Config>
 				<Name>Debug</Name>
 				<Defines></Defines>
 			</Config>
+			<Config>
+				<Name>Release</Name>
+				<Defines></Defines>
+			</Config>
 			<Platform>
 				<Name>x64</Name>
-				<Defines></Defines>
+				<Defines>
+					<Define>__clang__</Define>
+					<Define></Define>
+					<Define></Define>
+				</Defines>
 			</Platform>
 		</ConfigProperties>
 		<Children></Children>

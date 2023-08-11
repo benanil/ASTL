@@ -222,94 +222,95 @@ __forceinline __m128 VECTORCALL _mm_copysign_ps(__m128 x, __m128 y)
 
 inline __m128 VECTORCALL _mm_sin_ps(__m128 x)
 { 
-    __m128 xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    __m128 t  = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
-    
-    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    t = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
-    
-    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
-
-    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    t = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
-    return t;
+  __m128 xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  __m128 t  = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
+  
+  xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  t = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
+  
+  xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
+  
+  xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  t = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
+  return t;
 }
 
 inline __m128 VECTORCALL _mm_cos_ps(__m128 x)
 {
-    __m128 xx = _mm_mul_ps(x, x);
-    __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
-    
-    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
-    
-    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
-
-    xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
-    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
-    return t;
+  __m128 xx = _mm_mul_ps(x, x);
+  __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
+  
+  xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
+  
+  xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
+  
+  xx = _mm_mul_ps(x, _mm_mul_ps(x, x));
+  t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
+  return t;
 }
 
 __forceinline __m128 VECTORCALL _mm_atan_ps(__m128 x)
 {
-    __m128 xx = _mm_mul_ps(x, x);
-    static const __m128 a1 = _mm_set1_ps( 0.99997726f), a3 = _mm_set1_ps(-0.33262347f), a5  = _mm_set1_ps(0.19354346f),
-                        a7 = _mm_set1_ps(-0.11643287f), a9 = _mm_set1_ps( 0.05265332f), a11 = _mm_set1_ps(-0.01172120f);
-    // (a9 + x_sq * a11
-    __m128 y = _mm_fmadd_ps(xx, a11, a9);
-    y = _mm_fmadd_ps(xx, y, a7);
-    y = _mm_fmadd_ps(xx, y, a5);
-    y = _mm_fmadd_ps(xx, y, a3);
-    y = _mm_fmadd_ps(xx, y, a1);
-    return _mm_mul_ps(x, y);
+  static const float sa1 =  0.99997726f, sa3 = -0.33262347f, sa5  = 0.19354346f,
+                     sa7 = -0.11643287f, sa9 =  0.05265332f, sa11 = -0.01172120f;
+    
+  const __m128 xx = _mm_mul_ps(x, x);
+  // (a9 + x_sq * a11
+  __m128 y = _mm_fmadd_ps(xx, _mm_set_ps1(sa11), _mm_set_ps1(sa9));
+  y = _mm_fmadd_ps(xx, y, _mm_set_ps1(sa7));
+  y = _mm_fmadd_ps(xx, y, _mm_set_ps1(sa5));
+  y = _mm_fmadd_ps(xx, y, _mm_set_ps1(sa3));
+  y = _mm_fmadd_ps(xx, y, _mm_set_ps1(sa1));
+  return _mm_mul_ps(x, y);
 }
 
 inline __m128 VECTORCALL _mm_atan2_ps(__m128 y, __m128 x)
 {
-    __m128 ay = _mm_fabs_ps(y), ax = _mm_fabs_ps(x);
-    __m128 invert = _mm_cmpgt_ps(ay, ax);
-    __m128 z = SSESelect(_mm_div_ps(ax, ay), _mm_div_ps(ay, ax), invert);
-    __m128 th = _mm_atan_ps(z);
-    th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PIDiv2), th), invert);
-    th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PI), th), _mm_cmplt_ps(x, _mm_setzero_ps()));
-    return _mm_copysign_ps(th, y);
+  __m128 ay = _mm_fabs_ps(y), ax = _mm_fabs_ps(x);
+  __m128 invert = _mm_cmpgt_ps(ay, ax);
+  __m128 z = SSESelect(_mm_div_ps(ax, ay), _mm_div_ps(ay, ax), invert);
+  __m128 th = _mm_atan_ps(z);
+  th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PIDiv2), th), invert);
+  th = SSESelect(th, _mm_sub_ps(_mm_set1_ps(PI), th), _mm_cmplt_ps(x, _mm_setzero_ps()));
+  return _mm_copysign_ps(th, y);
 }
 
 inline __m128 VECTORCALL _mm_sincos_ps(__m128* cv, __m128 x)
 {
-    __m128 xx = _mm_mul_ps(x, x);
-    __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
-    xx = _mm_mul_ps(x, x);
-    __m128 st = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
-    
-    xx = _mm_mul_ps(x, x);
-    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
-    xx = _mm_mul_ps(x, x);
-    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
-    
-    xx = _mm_mul_ps(x, x);
-    t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
-    xx = _mm_mul_ps(x, x);
-    st = _mm_sub_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
-    
-    xx = _mm_mul_ps(x, x);
-    t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
-    xx = _mm_mul_ps(x, x);
-    st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
-    *cv = t;
-    return st;
+  __m128 xx = _mm_mul_ps(x, x);
+  __m128 t  = _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(xx, _mm_set1_ps(0.5f))); 
+  xx = _mm_mul_ps(x, x);
+  __m128 st = _mm_sub_ps(x, _mm_mul_ps(xx, _mm_set1_ps(0.16666666666f))); 
+  
+  xx = _mm_mul_ps(x, x);
+  t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.04166666666f)));
+  xx = _mm_mul_ps(x, x);
+  st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00833333333f)));
+  
+  xx = _mm_mul_ps(x, x);
+  t  = _mm_sub_ps(t, _mm_mul_ps(xx, _mm_set1_ps(0.00138888888f)));
+  xx = _mm_mul_ps(x, x);
+  st = _mm_sub_ps(st, _mm_mul_ps(xx, _mm_set1_ps(0.00019841269f)));
+  
+  xx = _mm_mul_ps(x, x);
+  t  = _mm_add_ps(t, _mm_mul_ps(xx, _mm_set1_ps(2.48016e-05f)));
+  xx = _mm_mul_ps(x, x);
+  st = _mm_add_ps(st, _mm_mul_ps(xx, _mm_set1_ps(2.75573e-06f)));
+  *cv = t;
+  return st;
 }
 
 #endif //__clang__ || __gnu
 
 #else // AX_SUPPORT_SSE
 
-#define VecSwizzle1(vec, x) MakeVec4(vec[x], vec[x], vec[x], vec[x])
+#define VecSwizzle1(vec, x)         MakeVec4(vec[x], vec[x], vec[x], vec[x])
 #define VecSwizzle(vec, x, y, z, w) MakeVec4(vec[x], vec[y], vec[z], vec[w])
-#define VecShuffle_0101(x, y) MakeVec4(x.x, x.y, y.x, y.y)  // 00, 01, 10, 11
-#define VecShuffle_2323(x, y) MakeVec4(x.z, x.w, y.z, y.w)  // 02, 03, 12, 13
+#define VecShuffle_0101(a, b)       MakeVec4(a.x, a.y, b.x, b.y)  // 00, 01, 10, 11
+#define VecShuffle_2323(a, b)       MakeVec4(a.z, a.w, b.z, b.w)  // 02, 03, 12, 13
 // return (vec1[x], vec1[y], vec2[z], vec2[w])
 #define VecShuffle(vec1, vec2, x, y, z, w) MakeVec4(vec1[x], vec1[y], vec2[z], vec2[w])
 
@@ -353,10 +354,10 @@ __forceinline double VECTORCALL hsum_256_pd(__m256d v)
 // from: Faster Population Counts Using AVX2 Instructions resource paper
 __forceinline int64 VECTORCALL popcount256_epi64(__m256i v)
 {
-	static const __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2,
+	const __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2,
 		2, 3, 2, 3, 3, 4, 0, 1, 1, 2, 1, 2, 2, 3,
 		1, 2, 2, 3, 2, 3, 3, 4);
-	static const __m256i low_mask = _mm256_set1_epi8(0x0f);
+	const __m256i low_mask = _mm256_set1_epi8(0x0f);
 	__m256i lo =  _mm256_and_si256(v, low_mask);
 	__m256i hi = _mm256_and_si256(_mm256_srli_epi32(v, 4), low_mask);
 	__m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo);

@@ -13,11 +13,11 @@
 #endif
 
 #ifdef _MSC_VER
-# // do nothing		
+# // do nothing	it already has __forceinline
 #elif __CLANG__
 #       define __forceinline [[clang::always_inline]] 
 #elif __GNUC__
-#       define __forceinline  __attribute__((always_inline))
+#       define __forceinline inline __attribute__((always_inline))
 #endif
 
 #ifdef _MSC_VER
@@ -143,7 +143,7 @@
 // write AX_NO_SSE2 or AX_NO_AVX2 to disable vector instructions
 
 /* Intrinsics Support */
-#if defined(AX_X64) || defined(AX_X86)
+#if 0// defined(AX_X64) || defined(AX_X86)
     #if defined(_MSC_VER) && !defined(__clang__)
         #if _MSC_VER >= 1400 && !defined(AX_NO_SSE2)   /* 2005 */
             #define AX_SUPPORT_SSE
@@ -297,7 +297,7 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) 
 {
-#ifdef AX_CPP_VERSION < AX_CPP17
+#if AX_CPP_VERSION < AX_CPP17
   return *(const To*)&_Val;
 #else
   return __builtin_bit_cast(To, _Val);
