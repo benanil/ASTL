@@ -19,13 +19,25 @@ I've tried to use templates as less as possible, but library has templates but w
 
 what pushed me into this is compile times of standard library and its slow performance <br>
 with debug mode<br>
-# Here is how you can run test code:
+## Here is how you can run test code:
 ```
 cmake . -Bbuild
 ```
 ```
 g++ -std=c++17 -w -O3 -mavx2 ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl_test
 ```
+to use namespace 
+```
+#define AX_USE_NAMESPACE
+```
+
+To disable SIMD:<br>
+if you don't want SIMD use this defines and compiler will generate scalar code instead of SIMD
+```
+#define AX_NO_SSE2
+#define AX_NO_AVX2
+```
+
 ## Appendix
 All data structures has custom allocator support, but RedBlackTree has Growable fixed Size allocator that Stewart Lynch mentioned one of his videos,<br>
 it is fast to allocate and RedBlackTree is fast because of this.
@@ -42,7 +54,7 @@ Here is the data structures:
 * Map // using Red Black Tree
 * Set
 
-# Stack Memory Data Structures
+## Stack Memory Data Structures
 Each data structure has static versions to use Stack memory instaed of heap, this will improve performance remarkably <br>
 These data structures are safe because, if user exceed the static limit it will use heap memory
 
