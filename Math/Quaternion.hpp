@@ -60,7 +60,7 @@ struct alignas(16) Quaternion
 	inline static Vector3f VECTORCALL MulVec3(Vector3f vec, Quaternion quat)
 	{
 		Vector3f res;
-		SSEStoreVector3(MulVec3(_mm_setr_ps(vec.x, vec.y, vec.z, 1.0f), quat.vec));
+		SSEStoreVector3(&res.x, MulVec3(_mm_setr_ps(vec.x, vec.y, vec.z, 1.0f), quat.vec));
 		return res;
 	}
 
@@ -218,12 +218,12 @@ struct alignas(16) Quaternion
 		return res; 
 	}
 
-	__forceinline Quaternion operator *  (float b) { Quaternion q; q.vec = _mm_mul_ps(this->vec, _mm_set1_ps(b)); return q; }
-	__forceinline Quaternion operator *= (float b) { this->vec = Mul(this->vec, _mm_set1_ps(b)); return *this; }
-	__forceinline Quaternion operator *  (const Quaternion& b) { Quaternion q; q.vec = Mul(this->vec, b.vec); return q; }
-	__forceinline Quaternion operator *= (const Quaternion& b) { this->vec = Mul(this->vec, b.vec); return *this; }
-	__forceinline Quaternion operator +  (const Quaternion& b) { Quaternion q; q.vec = _mm_add_ps(vec, b.vec); return q; }
-	__forceinline Quaternion operator += (const Quaternion& b) { vec = _mm_add_ps(vec, b.vec); return *this; }
+	__forceinline Quaternion operator *  (float b)             const { Quaternion q; q.vec = _mm_mul_ps(this->vec, _mm_set1_ps(b)); return q; }
+	__forceinline Quaternion operator *= (float b)                   { this->vec = Mul(this->vec, _mm_set1_ps(b)); return *this; }
+	__forceinline Quaternion operator *  (const Quaternion& b) const { Quaternion q; q.vec = Mul(this->vec, b.vec); return q; }
+	__forceinline Quaternion operator *= (const Quaternion& b)       { this->vec = Mul(this->vec, b.vec); return *this; }
+	__forceinline Quaternion operator +  (const Quaternion& b) const { Quaternion q; q.vec = _mm_add_ps(vec, b.vec); return q; }
+	__forceinline Quaternion operator += (const Quaternion& b)       { vec = _mm_add_ps(vec, b.vec); return *this; }
 };
 
 __forceinline Quaternion MakeQuat(float scale = 0.0f)                     
