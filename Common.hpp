@@ -336,6 +336,9 @@ __forceinline __constexpr double Abs(double x)
     return BitCast<double>(ix);
 }
 
+template<typename T> __forceinline __constexpr 
+bool IsPowerOfTwo(T x) noexcept { return (x != 0) && ((x & (x - 1)) == 0); }
+
 __forceinline __constexpr int NextPowerOf2(int x)
 {
     x--;

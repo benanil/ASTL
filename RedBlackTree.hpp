@@ -75,8 +75,7 @@ public:
 		}
 	};
 
-	static constexpr bool test = stackCapacity > 0;
-	using AllocatorT = ConditionalT<test, StackNodeAllocator, FixedSizeGrowableAllocator<Node>>;
+	using AllocatorT = ConditionalT<(bool)stackCapacity, StackNodeAllocator, FixedSizeGrowableAllocator<Node>>;
 	
 	Node* m_root = nullptr;
 	AllocatorT m_allocator;

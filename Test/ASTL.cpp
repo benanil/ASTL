@@ -37,7 +37,6 @@ void PassingToConstFunction(HashSet<int>& testSet)
     printf("ours %s the test\n", allExist ? "passed" : "failed");
 }
 
-
 template <typename MapT> void TestMap(const char* name, MapT& map) {
     printf("\n%s BEGIN\n", name);
 
@@ -143,6 +142,13 @@ int main()
     stackArray.Add(3);
     stackArray.Add(4);
     stackArray.Add(5);
+
+    StackQueue<int, 8> stackQueue;
+    stackQueue.Enqueue(6);
+    stackQueue.Enqueue(5);
+    stackQueue.Enqueue(4);
+    stackQueue.Enqueue(3);
+
 
     for (const KeyValuePair<int, float>& x : stackHashMap)
     {

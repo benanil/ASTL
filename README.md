@@ -5,6 +5,7 @@ Astl is header only data structures, algorithms and math library that is targeti
 faster compile times and ease of use, the code is writen in a way that is easier to read<br>
 modify and use, there is no other external dependencies C++ headers are not included<br>
 not even C headers included, so everything is from scratch. this should work with C++14 and above<br>
+tested with GCC and MSVC<br>
 
 only include is immintrin.h that is for simd code,<br>
 speaking about simd, math library and other functions has optional simd instructions<br>
@@ -28,20 +29,21 @@ g++ -std=c++17 -w -O3 -mavx2 ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl
 ## Appendix
 All data structures has custom allocator support, but RedBlackTree has Growable fixed Size allocator that Stewart Lynch mentioned one of his videos,<br>
 it is fast to allocate and RedBlackTree is fast because of this.
-here is the data structures that I have:
+Each data structure has an header with same name except Map and Set these structures uses "RedBlackTree.hpp" header. <br>
+Here is the data structures:
 
 * Array
 * String // with small string optimization
 * Stack
-* Queue
+* Queue // power of 2 growing 'and' operator instead of modulo
 * PriorityQueue
 * HashMap  // using Ankerl's algorithm (way faster than stl)
 * HashSet
 * Map // using Red Black Tree
 * Set
 
-Each data structure has an header with same name except Map and Set these structures uses "RedBlackTree.hpp" header. <br>
-Additionally each data structure has static versions to use Stack memory instaed of heap, this will impact performance remarkably <br>
+# Stack Memory Data Structures
+Each data structure has static versions to use Stack memory instaed of heap, this will improve performance remarkably <br>
 These data structures are safe because, if user exceed the static limit it will use heap memory
 
 * StackArray
@@ -515,3 +517,4 @@ Here are some related and helpful links
  - [Better Assert by (Chris Wellons)](https://nullprogram.com/blog/2022/06/26/)
  - [Fast dense HashMap-Set by (Martinus Ankerl)](https://github.com/martinus/unordered_dense)
  - [Fast Matrix Inverse](https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html)
+ - [Stack Allocated Containers](https://blog.voxagon.se/2015/02/24/stack-allocated-containers.html)

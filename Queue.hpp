@@ -67,9 +67,10 @@ private:
 	uint capacity = 0;                                            
 	uint front    = 0;
 	uint rear     = 0;
+	uint size     = 0;	
 	AllocatorT allocator{};
 public:
-	Queue() : ptr(nullptr), capacity(0), front(0), rear(0)
+	Queue() : ptr(nullptr), capacity(0), front(0), rear(0), size(0)
 	{ }
 	
 	~Queue()
@@ -78,22 +79,22 @@ public:
 		{
 			allocator.Deallocate(ptr, capacity);
 			ptr      = nullptr;
-			capacity = front = rear = 0;
+			capacity = front = rear = size = 0;
 		}
 	}
 
-	explicit Queue(int _capacity) : capacity(NextPowerOf2(_capacity + 1)), front(0), rear(0)
+	explicit Queue(int _capacity) : capacity(NextPowerOf2(_capacity + 1)), front(0), rear(0), size(0)
 	{
 		ptr = allocator.AllocateUninitialized((int)capacity);
 	}
 
-	Queue(int _capacity, uint count) : capacity((uint)NextPowerOf2(_capacity + 1)), front(count), rear(0)
+	Queue(int _capacity, uint count) : capacity((uint)NextPowerOf2(_capacity + 1)), front(count), rear(0), size(0)
 	{
 		ptr = allocator.Allocate((int)capacity);
 	}
 
 	Queue(int _size, const ValueT& val) 
-	: capacity((uint)NextPowerOf2(_size + (_size / 2))), front(0), rear(0)
+	: capacity((uint)NextPowerOf2(_size)), front(0), rear(0), size(_size)
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
 		
@@ -103,8 +104,8 @@ public:
 		}
 	}
 
-	Queue(ValueT* p, int size)
-	: capacity((uint)NextPowerOf2(size + (size / 2))), front((uint)size), rear(0)
+	Queue(ValueT* p, int _size)
+	: capacity((uint)NextPowerOf2(_size)), front((uint)size), rear(0), size(_size)
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
 		Copy(ptr, p, size);
@@ -112,7 +113,7 @@ public:
 
 	// copy constructor
 	Queue(const Queue& other) 
-	: capacity(other.capacity), front(other.front), rear(other.rear)
+	: capacity(other.capacity), front(other.front), rear(other.rear), size(other.size)
 	{
 		Copy(ptr, other.ptr, other.capacity);
 	}
@@ -134,6 +135,9 @@ public:
 				ptr[i] = otherPtr[otherRear];
 				otherRear = (otherRear + 1) & e;
 			}
+			front = newSize;
+			rear  = 0;
+			size  = newSize;
 		}
 		return *this;
 	}
@@ -149,7 +153,8 @@ public:
 			capacity       = other.capacity;
 			front          = other.front;
 			rear           = other.rear;
-			other.capacity = other.front = other.rear = 0;
+			size           = other.size;
+			other.capacity = other.front = other.rear = other.size = 0;
 			other.ptr      = nullptr;
 		}
 		return *this;
@@ -179,7 +184,7 @@ public:
 		if (capacity != InitialSize)
 		{
 			ptr      = allocator.Reallocate(ptr, InitialSize, capacity);
-			capacity =  front = rear = 0;
+			capacity = front = rear = size = 0;
 		}
 	}
 
@@ -188,7 +193,7 @@ public:
 	ConstIterator cbegin() const  { return { ptr, capacity, rear  }; }
 	ConstIterator cend()   const  { return { ptr, capacity, front }; }
 
-	bool Any()     const { return Size() > 0;  }
+	bool Any()   const { return Size() > 0;  }
 	bool Empty() const { return Size() == 0; }
 
 	template<typename... Args>
@@ -197,7 +202,8 @@ public:
 		GrowIfNecessary(1);
 		new (ptr + front) ValueT(Forward<Args>(args)...);
 		uint idx = front;
-		front   = IncrementIndex(front);
+		front = IncrementIndex(front);
+		size++;
 		return ptr[idx];
 	}
 
@@ -205,7 +211,8 @@ public:
 	{
 		GrowIfNecessary(1);
 		ptr[front] = value;
-		front   = IncrementIndex(front);
+		front = IncrementIndex(front);
+		size++;
 	}
 
 	void Enqueue(const ValueT* begin, uint count)
@@ -218,6 +225,7 @@ public:
 			f &= e;
 		}
 		front += count;
+		size  += count;
 	}
 
 	void Enqueue(const ValueT* begin, const ValueT* end)
@@ -240,10 +248,11 @@ public:
 			r &= e;
 		}
 		rear = r;
+		size -= count;
 		return true;
 	}
 
-	void Dequeue(ValueT* result, int count)
+	void Dequeue(ValueT* result, uint count)
 	{
 		ASSERT(Size() + count <= capacity);
 		uint r = rear, e = capacity-1;
@@ -253,6 +262,7 @@ public:
 			r &= e; // better than modulo 
 		}
 		rear = r;
+		size -= count;
 	}
 
 	ValueT Dequeue()
@@ -260,6 +270,7 @@ public:
 		ASSERT(rear != front);
 		ValueT val = Forward<ValueT>(ptr[rear]);
 		rear = IncrementIndex(rear);
+		size--;
 		return val; 
 	}
 
@@ -269,18 +280,12 @@ public:
 			return false;
 		out = Forward<ValueT>(ptr[rear]);
 		rear = IncrementIndex(rear);
+		size--;
 		return true;
 	}
 
-	uint Size() const 
-	{
-		if (front < rear)
-		{
-			return front + (capacity - rear);
-		}
-		return front - rear; 
-	}
-
+	uint Size() const { return size; }
+	
 	// todo: shrink to fit
 
 private:
@@ -293,11 +298,9 @@ private:
 	void GrowIfNecessary(uint _size)
 	{
 		ASSERT(capacity != (1 << 31)); // max size
-		
-		uint size    = Size();
 		uint newSize = NextPowerOf2((int)(size + _size));
 		
-		if (AX_LIKELY(newSize < capacity))
+		if (AX_LIKELY(newSize <= capacity))
 		{
 			return; // no need to grow
 		}
@@ -314,12 +317,12 @@ private:
 				ptr[capacity++] = Forward<ValueT>(ptr[i]);
 			}
 		}
-		
 		// move everything to the right
 		for (uint i = 0; i < size; ++i)
 		{
-			ptr[newCapacity - 1 - i] = Forward<ValueT>(ptr[capacity - 2 - i]);
+			ptr[newCapacity - 1 - i] = Forward<ValueT>(ptr[capacity - 1 - i]);
 		}
+		capacity = newCapacity;
 
 		rear     = newCapacity - size; 
 		front    = 0;

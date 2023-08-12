@@ -32,8 +32,10 @@ __forceinline __constexpr T Exchange(T& obj, U&& new_value)
   return old_value;
 }
 
+// Aligned memory codes taken from Game Engine Architecture book by Jason Gregory
+
 // Shift the given address upwards if/as necessary to// ensure it is aligned to the given number of bytes.
-inline uint64_t  AlignAddress(uint64_t addr, uint64_t align)
+inline uint64_t AlignAddress(uint64_t addr, uint64_t align)
 {
     const uint64_t  mask = align - 1;
     ASSERT((align & mask) == 0); // pwr of 2
@@ -460,14 +462,15 @@ struct StackAllocator
         bool stackAllocated = ptr >= arr && ptr <= arr + capacity;
         T* old = ptr, *_new;
 
-        if (stackAllocated && count > capacity)
+        if (stackAllocated && count > capacity) 
         {
+            // warning stack size exceeded consider using greater capacity or use heap memory
             _new = new T[count];
             for (int i = 0; i < oldCount; i++)
                 _new[i] = (T&&)old[i];
             return _new;
         }
-        else
+        else if (!stackAllocated)
         {
             _new = new T[count];
             if_constexpr (IsPod)
@@ -485,6 +488,7 @@ struct StackAllocator
             return _new;
         }
         // if stack allocated and size is not greater than capacity code does nothing
+        return old;
     }
 };
 

@@ -173,9 +173,6 @@ __forceinline __constexpr float Floor(float x) {
 	return x - (x-whole);
 }
 
-template<typename T> __forceinline __constexpr 
-bool IsPowerOfTwo(T x) noexcept { return (x != 0) && ((x & (x - 1)) == 0); }
-
 //  ######################################  
 //  #####  [TRIGONOMETRIC FUNCTINS]  #####  
 //  ######################################  
