@@ -33,7 +33,7 @@ __forceinline __constexpr T Exchange(T& obj, U&& new_value)
 }
 
 // Shift the given address upwards if/as necessary to// ensure it is aligned to the given number of bytes.
-inline uint64_t  AlignAddress(uint64_t  addr, uint64_t  align)
+inline uint64_t  AlignAddress(uint64_t addr, uint64_t align)
 {
     const uint64_t  mask = align - 1;
     ASSERT((align & mask) == 0); // pwr of 2
@@ -42,7 +42,7 @@ inline uint64_t  AlignAddress(uint64_t  addr, uint64_t  align)
 
 // Shift the given pointer upwards if/as necessary to// ensure it is aligned to the given number of bytes.
 template<typename T>
-inline T* AlignPointer(T* ptr, uint64_t  align)
+inline T* AlignPointer(T* ptr, uint64_t align)
 {
     const uint64_t  addr = (uint64_t )ptr;
     const uint64_t  addrAligned = AlignAddress(addr, align);
@@ -50,7 +50,7 @@ inline T* AlignPointer(T* ptr, uint64_t  align)
 }
 
 // Aligned allocation function. IMPORTANT: 'align'// must be a power of 2 (typically 4, 8 or 16).
-inline void* AllocAligned(uint64_t  bytes, uint64_t  align)
+inline void* AllocAligned(uint64_t bytes, uint64_t align)
 {
     // Allocate 'align' more bytes than we need.
     uint64_t  actualBytes = bytes + align;
@@ -240,7 +240,10 @@ inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
 template<typename T> 
 struct Allocator 
 {
-    static const bool IsPOD = false;
+    static const bool IsPod = false;
+    // we don't want to use same initial size for all data types because we want 
+    // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
+    static const int InitialSize = 384 / MIN((int)sizeof(T), 128);
 
     T* Allocate(int count) const {
         return new T[count]{};
@@ -270,7 +273,8 @@ struct Allocator
 template<typename T>
 struct MallocAllocator
 {
-    static const bool IsPOD = true;
+    static const bool IsPod = true;
+    static const int InitialSize = 384 / MIN((int)sizeof(T), 128);
 
     T* Allocate(int count) const 
     {
@@ -301,6 +305,7 @@ template<typename T>
 struct FixedSizeGrowableAllocator
 {
     static const bool IsPOD = false;
+    static const int InitialSize = NextPowerOf2(512 / MIN((int)sizeof(T), 128));
 
     struct Fragment
     {
@@ -313,18 +318,13 @@ struct FixedSizeGrowableAllocator
     Fragment* base = nullptr;
     Fragment* current = nullptr;
 
-    static __constexpr int InitialSize()
-    {
-        return NextPowerOf2(512 / MIN((int)sizeof(T), 128));
-    }
-
     FixedSizeGrowableAllocator()
     {
-        currentCapacity = InitialSize();
+        currentCapacity = InitialSize;
         base = new Fragment;
         current = base;
         base->next = nullptr;
-        base->ptr = new T[InitialSize()];
+        base->ptr = new T[InitialSize];
         base->size = 0;
     }
 
@@ -392,7 +392,7 @@ struct FixedSizeGrowableAllocator
         T* ptr = current->ptr + current->size;
         current->size += count;
         for (int i = 0; i < count; i++)
-            ptr[i].T();
+            new (ptr + i) T();
         return ptr;
     }
 
@@ -417,6 +417,76 @@ struct FixedSizeGrowableAllocator
     }
 };
 
+// stack allocation for data structures
+// this is a lot faster than heap allocations such as malloc
+// fixed size, recommended to use for small allocations
+// for safety if we grow too much this will use heap memory
+template<typename T, int capacity, bool isPod = false>
+struct StackAllocator
+{
+    static const bool IsPod = isPod;
+    static const int InitialSize = capacity;
+
+    T arr[capacity]{};
+
+    T* Allocate(int count)
+    {
+        if (count <= capacity) return arr;
+        return new T[count]{};
+    }
+
+    T* AllocateUninitialized(int count) 
+    {
+        if (count <= capacity) return arr;
+        return new T[count];
+    }
+      
+    void Deallocate(T* ptr, int count) const 
+    {
+        // is stack allocated?
+        if (ptr >= arr && ptr <= arr + capacity)
+        {
+            for (int i = 0; i < count; i++)
+                ptr[i].~T();
+        }
+        else
+        {
+            delete[] ptr;
+        }
+    }
+      
+    T* Reallocate(T* ptr, int oldCount, int count) const
+    {
+        bool stackAllocated = ptr >= arr && ptr <= arr + capacity;
+        T* old = ptr, *_new;
+
+        if (stackAllocated && count > capacity)
+        {
+            _new = new T[count];
+            for (int i = 0; i < oldCount; i++)
+                _new[i] = (T&&)old[i];
+            return _new;
+        }
+        else
+        {
+            _new = new T[count];
+            if_constexpr (IsPod)
+            {
+                MemCpy<alignof(T)>(_new, old, MIN(oldCount, count) * sizeof(T));
+            }
+            else
+            {
+                for (int i = 0; i < MIN(count, oldCount); ++i)
+                {
+                    _new[i] = (T&&)old[i];
+                }
+            }
+            delete[] old;
+            return _new;
+        }
+        // if stack allocated and size is not greater than capacity code does nothing
+    }
+};
 
 // todo add ScopedPtr
 // todo add ScopedFn

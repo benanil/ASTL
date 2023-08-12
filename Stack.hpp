@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.hpp"
+#include "Memory.hpp"
 
 AX_NAMESPACE
 
@@ -10,14 +10,10 @@ class Stack
 public:
 	using Iterator = T*;
 	using ConstIterator = const T*;
-
-    // we don't want to use same initial size for all data types because we want 
-	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-	// if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
-	static const int InitialSize = 384 / MIN((int)sizeof(T), 128);    //  1         384
-                                                                          //  2         192
-public:                                                                   //  4         96
-    int size     = 0;                                                     //  8         48
+	static const int InitialSize = AllocatorT::InitialSize;
+                                                           
+public:                                                    
+    int size     = 0;                                      
     int capacity = 0;
     T*  ptr      = nullptr;
     AllocatorT allocator{};
@@ -128,7 +124,7 @@ private:
 	{
 		if (size + 1 >= capacity)
 		{
-			int newSize = MAX(CalculateArrayGrowth(capacity), InitialSize);
+			int newSize = size + 1 <= InitialSize ? InitialSize : CalculateArrayGrowth(capacity);
 			if (ptr) ptr = allocator.Reallocate(ptr, capacity, newSize);
 			else     ptr = allocator.Allocate(newSize);
 			capacity    = newSize; 
@@ -136,32 +132,7 @@ private:
 	}
 };
 
-// recommended using static array instead of this.
-#ifdef false
-template<typename T, int MAXSize>
-class FixedStack
-{
-private:
-	int size = 0;
-public:
-	T arr[MAXSize];
-	__constexpr FixedStack() { }
-
-	__constexpr void Push(const T& value) { arr[size++] = value; }
-	__constexpr T&   Pop()                { return arr[--size];  }
-	__constexpr bool Any()   const        { return size > 0;     }
-	__constexpr bool Empty() const        { return size == 0;    }
-	
-	__constexpr T&   operator[](int index) { return arr[index];  }
-	__constexpr T    GetLast()             { return arr[size - 1]; }
-	__constexpr T    GetFirst()            { return arr[0]; }
-	__constexpr void Clear()               { memset(arr, 0, MAXSize * sizeof(T)); size = 0; }
-
-	__constexpr T* begin()              { return arr;        }
-	__constexpr T* end()                { return arr + size; }
-	__constexpr const T* cbegin() const { return arr;        }
-	__constexpr const T* cend()   const { return arr + size; }
-};
-#endif
+template<typename T, int size>
+using FixedStack = Stack<T, StackAllocator<T, size>>;
 
 AX_END_NAMESPACE

@@ -31,7 +31,7 @@ it is fast to allocate and RedBlackTree is fast because of this.
 here is the data structures that I have:
 
 * Array
-* String
+* String // with small string optimization
 * Stack
 * Queue
 * PriorityQueue
@@ -40,7 +40,18 @@ here is the data structures that I have:
 * Map // using Red Black Tree
 * Set
 
-each data structure has an header with same name except Map and Set these structures uses "RedBlackTree.hpp" header.
+Each data structure has an header with same name except Map and Set these structures uses "RedBlackTree.hpp" header. <br>
+Additionally each data structure has static versions to use Stack memory instaed of heap, this will impact performance remarkably <br>
+These data structures are safe because, if user exceed the static limit it will use heap memory
+
+* StackArray
+* StackStack
+* StackQueue
+* StackPriorityQueue
+* StackHashMap
+* StackHashSet
+* StackMap
+* StackSet
 
 here is the example usage of data structures
 
@@ -104,10 +115,21 @@ bool finded1 = ourMap.Find(5ull) != ourMap.end();
 ASSERT(finded1 == false);
 ASSERT(num == String("no its five"));
 
-String val1 = ourMap.At(4);
-ourMap.TryEmplace(33, "33ull");
-ASSERT(val1 == String("no its five"));
-ourMap.Erase(33);
+StackHashMap<int, float, 32> stackHashMap;
+float flt = 0.5f;
+Random::PCG pcg;
+Random::PCGInitialize(pcg, 1254567);
+stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+
+StackArray<int, 5> stackArray;
+stackArray.Add(1);
+stackArray.Add(2);
+stackArray.Add(3);
+stackArray.Add(4);
+stackArray.Add(5);
 ```
 data structures and algorithms are tested with many algorithms<br>
 you can see more examples in AdventOfCodeTests.cpp<br>

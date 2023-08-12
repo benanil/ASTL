@@ -12,14 +12,10 @@ class Array
 public:
     using Iterator = ValueT*;
     using ConstIterator = const ValueT*;
-    
-    // we don't want to use same initial size for all data types because we want 
-    // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-    // if this initial size is big for your needs, use static array please.[ byte    |  InitialSize ]
-    static const int InitialSize = 384 / MIN((int)sizeof(ValueT), 128);//  1         384
-                                                                           //  2         192
-private:                                                                   //  4         96
-	ValueT* arr = nullptr;                                                 //  8         48
+	static const int InitialSize = AllocatorT::InitialSize;
+                                                                       
+private:                                                               
+	ValueT* arr = nullptr;                                             
 	int m_count = 0;
 	int m_capacity = 0;
 	AllocatorT allocator{};
@@ -280,11 +276,11 @@ public:
 	{
 		if (_size > m_capacity)
 		{
-			GrowIfNecessary(_size );
+			GrowIfNecessary(_size);
 		}
 		else if (_size < m_capacity)
 		{
-			if_constexpr (!AllocatorT::IsPOD)
+			if_constexpr (!AllocatorT::IsPod)
 			{
 				for (int i = m_count - 1; i >= _size; --i)
 				{
@@ -354,10 +350,11 @@ private:
 	void GrowIfNecessary(int _size)
 	{
 		ASSERT(_size <= INT32_MAX);
+		
 		if (AX_UNLIKELY(_size > m_capacity))
 		{
 			int oldCapacity = m_capacity;
-			m_capacity = MAX(CalculateArrayGrowth(_size), InitialSize);
+			m_capacity = _size <= InitialSize ? InitialSize : CalculateArrayGrowth(_size);
 
 			if (arr) // array can be nullptr (first initialization)
 				arr = allocator.Reallocate(arr, oldCapacity, m_capacity);
@@ -395,7 +392,7 @@ private:
 			arr[i++] = (ValueT&&) arr[j++];
 		}
 
-		if_constexpr (!AllocatorT::IsPOD)
+		if_constexpr (!AllocatorT::IsPod)
 		{
 			for (int i = newSize; i < m_count; ++i)
 			{
@@ -405,5 +402,8 @@ private:
 		m_count = newSize;
 	}
 };
+
+template<typename T, int size>
+using StackArray = Array<T, StackAllocator<T, size>>;
 
 AX_END_NAMESPACE

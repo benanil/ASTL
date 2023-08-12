@@ -44,12 +44,10 @@ template<> struct Hasher<int>
 */
 template<typename KeyT,
          typename HasherT = Hasher<KeyT>,
-         typename AllocatorT = Allocator<KeyT>>
+         typename AllocatorT = Allocator<KeyT>,
+         int stackSize = 0>
 class HashSet
 {
-    using Iterator = KeyT*;
-    using ConstIterator = const KeyT*;
-    
     struct Bucket
     {
         static const uint32_t DistInc = 1U << 8U;             // skip 1 byte fingerprint
@@ -57,11 +55,14 @@ class HashSet
         uint32_t distAndFingerprint;  // upper 3 byte: distance to original bucket. lower byte: fingerprint from hash
         uint32_t valueIdx;            // index into the m_values vector.
     };
-
+    
+    using Iterator = KeyT*;
+    using ConstIterator = const KeyT*;
+    using BucketAllocT = ConditionalT<(bool)stackSize, StackAllocator<Bucket, stackSize, true>, MallocAllocator<Bucket>>;
     static const uint8 initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
 
     Array<KeyT, AllocatorT> m_keys{};
-    Array<Bucket, MallocAllocator<Bucket>> m_buckets {16u};
+    Array<Bucket, BucketAllocT> m_buckets {16u};
  
     uint32_t m_num_buckets         = 0;
     uint32_t m_max_bucket_capacity = 0;
@@ -514,5 +515,8 @@ public:
     Iterator insert(const KeyT& key)     { return DoTryInsert(key).first; }
 #endif
 };
+
+template<typename KeyT, int size, typename HasherT = Hasher<KeyT>>
+using StackHashSet = HashSet<KeyT, HasherT, StackAllocator<KeyT, size>, size>;
 
 AX_END_NAMESPACE

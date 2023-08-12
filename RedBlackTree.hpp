@@ -8,7 +8,7 @@
 
 AX_NAMESPACE
 
-template<typename ValueT>
+template<typename ValueT, int stackCapacity = 0>
 class RedBlackTree
 {
 public:
@@ -55,8 +55,31 @@ public:
 		}
 	};
 
+	struct StackNodeAllocator
+	{
+		Node arr[stackCapacity];
+		int index = 0;
+	
+		Node* AllocateUninitialized(int count)
+		{
+			if (index < stackCapacity) return arr + (index++);
+			return new Node(); // overflow
+		}
+		
+		void Deallocate(Node* ptr, int count) const 
+		{
+			if (ptr >= arr && ptr <= arr + stackCapacity) // is stack allocated?
+				ptr->~ValueT();
+			else
+				delete ptr;
+		}
+	};
+
+	static constexpr bool test = stackCapacity > 0;
+	using AllocatorT = ConditionalT<test, StackNodeAllocator, FixedSizeGrowableAllocator<Node>>;
+	
 	Node* m_root = nullptr;
-	FixedSizeGrowableAllocator<Node> m_allocator{};
+	AllocatorT m_allocator;
 	static Node m_protect;
 
 	RedBlackTree()
@@ -519,13 +542,19 @@ public:
 	}
 };
 
-template<typename ValueT>
-typename RedBlackTree<ValueT>::Node RedBlackTree<ValueT>::m_protect(&m_protect);
+template<typename ValueT, int stackCapacity>
+typename RedBlackTree<ValueT, stackCapacity>::Node RedBlackTree<ValueT, stackCapacity>::m_protect(&m_protect);
 
 template<typename ValueT>
-using Set = RedBlackTree<ValueT>;
+using Set = RedBlackTree<ValueT, 0>;
 
 template<typename KeyT, typename ValueT>
-using Map = RedBlackTree<KeyValuePair<KeyT, ValueT>>;
+using Map = RedBlackTree<KeyValuePair<KeyT, ValueT>, 0>;
+
+template<typename ValueT, int size>
+using StackSet = RedBlackTree<ValueT, size>;
+
+template<typename KeyT, typename ValueT, int size>
+using StackMap = RedBlackTree<KeyValuePair<KeyT, ValueT>, size>;
 
 AX_END_NAMESPACE

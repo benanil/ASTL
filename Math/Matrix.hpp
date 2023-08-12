@@ -115,7 +115,7 @@ struct alignas(16) Matrix4
 	const Vector4f& operator [] (int index) const { return v[index]; }
 	Vector4f& operator [] (int index) { return v[index]; }
 
-	Vector3f VECTORCALL  operator * (const Vector3f v)  noexcept { Vector4f x; x.vec = Vector3Transform(v, *this); return x.xyz(); };
+	Vector3f VECTORCALL  operator * (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
 	Vector4f VECTORCALL  operator * (const Vector4f& v) noexcept { Vector4f x; x.vec = Vector4Transform(v.vec, r); return x; };
 
 	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(*this, M); };
@@ -184,9 +184,9 @@ struct alignas(16) Matrix4
 		return m;
 	}
 
-	const Vector3f& GetForward() const { return v[2].xyz(); }
-	const Vector3f& GetUp()      const { return v[1].xyz(); }
-	const Vector3f& GetRight()   const { return v[0].xyz(); }
+	const Vector3f GetForward() const { return v[2].xyz(); }
+	const Vector3f GetUp()      const { return v[1].xyz(); }
+	const Vector3f GetRight()   const { return v[0].xyz(); }
 
 	// please assign normalized vectors, returns view matrix
 	__forceinline static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
@@ -439,7 +439,7 @@ struct alignas(16) Matrix4
 	static Quaternion VECTORCALL ExtractRotation(const Matrix4 M, bool rowNormalize = true) 
 	{
 		Quaternion res;
-		QuaternionFromMatrix(&res.x, M.c);
+		QuaternionFromMatrix(&res.x, M.v);
 		return res;
 	}
 
@@ -504,7 +504,7 @@ struct alignas(16) Matrix4
 	__forceinline static Vector3f VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M)
 	{
 		Vector3f result;
-		SSEVector3Store(&result.x, Vector3Transform(_mm_loadu_ps(&V.x), M));
+		SSEStoreVector3(&result.x, Vector3Transform(_mm_loadu_ps(&V.x), M));
 		return result;
 	}
 
@@ -609,6 +609,10 @@ struct Matrix4
 		m.r[3][0] = m.r[3][1] = m.r[3][2] = 0.0f; m.r[3][3] = 1.0f;
 		return m;
 	}
+
+	const Vector3f GetForward() const { return v[2].xyz(); }
+	const Vector3f GetUp()      const { return v[1].xyz(); }
+	const Vector3f GetRight()   const { return v[0].xyz(); }
 
 	// please assign normalized vectors, returns view matrix
 	__forceinline static Matrix4 LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)

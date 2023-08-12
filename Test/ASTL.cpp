@@ -122,8 +122,32 @@ extern void EndAndPrintProfile();
 int main()
 {   
     AdventOfCodeTests();
+
     Matrix4 matrix = Matrix4::Identity();
     matrix = matrix * matrix;
+
+    StackHashMap<int, float, 32> stackHashMap;
+    float flt = 0.5f;
+    Random::PCG pcg;
+    Random::PCGInitialize(pcg, 1254567);
+    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+
+    StackArray<int, 5> stackArray;
+    stackArray.Add(1);
+    stackArray.Add(2);
+    stackArray.Add(3);
+    stackArray.Add(4);
+    stackArray.Add(5);
+
+    for (const KeyValuePair<int, float>& x : stackHashMap)
+    {
+        printf("stack test: %u, %f \n", x.key, x.value);
+    }
 
     String testStr = "floating test: ";
     testStr += 1234.567f;

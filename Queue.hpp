@@ -59,14 +59,12 @@ public:
 
 	using iterator = Iterator; // stl compatible
 	using const_iterator = ConstIterator;
-
+	static const int InitialSize = IsPowerOfTwo(AllocatorT::InitialSize) == false ?
+	                               NextPowerOf2(AllocatorT::InitialSize) : AllocatorT::InitialSize;
 private:
-	// we don't want to use same initial size for all data types because we want 
-	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-	static const int InitialSize = NextPowerOf2(512 / MIN((int)sizeof(ValueT), 128));
 							                                               
-	ValueT* ptr  = nullptr;                                                
-	uint capacity = InitialSize;                                            
+	ValueT* ptr   = nullptr;                                                
+	uint capacity = 0;                                            
 	uint front    = 0;
 	uint rear     = 0;
 	AllocatorT allocator{};
@@ -292,21 +290,19 @@ private:
 		return (x + 1) & (capacity-1);
 	}
 
-	uint CalculateQueueGrowth() const
-	{
-		ASSERT(capacity != (1 << 31)); // max size
-		return capacity << 1;
-	}
-
 	void GrowIfNecessary(uint _size)
 	{
-		uint size = Size();
-		if (AX_LIKELY(size + _size < capacity))
+		ASSERT(capacity != (1 << 31)); // max size
+		
+		uint size    = Size();
+		uint newSize = NextPowerOf2((int)(size + _size));
+		
+		if (AX_LIKELY(newSize < capacity))
 		{
 			return; // no need to grow
 		}
 
-		const uint newCapacity = MAX(CalculateQueueGrowth(), InitialSize);
+		const uint newCapacity = newSize <= InitialSize ? InitialSize : newSize;
 		if (ptr)  ptr = allocator.Reallocate(ptr, capacity, newCapacity);
 		else      ptr = allocator.Allocate(newCapacity);
 
@@ -351,7 +347,7 @@ class PriorityQueue
 public:
     // we don't want to use same initial size for all data types because we want 
     // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-    static const int InitialSize = 512 / MIN((int)sizeof(T), 128);
+    static const int InitialSize = AllocatorT::InitialSize;
 	
 	T*         heap     = nullptr;
 	int        size     = 0;
@@ -404,7 +400,7 @@ private:
 	{
 		if (size + adition >= capacity)
 		{
-			int newCapacity = MAX(CalculateArrayGrowth(size + adition), InitialSize);
+			int newCapacity = size + adition <= InitialSize ? InitialSize : CalculateArrayGrowth(size + adition);
 			if (heap)
 				heap = allocator.Reallocate(heap, capacity, newCapacity);
 			else
@@ -501,7 +497,12 @@ public:
 	void pop() { Pop(); }
 	const T& top() const { return Top(); }
 #endif
-
 };
+
+template<typename T, int capacity>
+using StackQueue = Queue<T, StackAllocator<T, capacity>>;
+
+template<typename T, PQCompare compare, int capacity>
+using StackPriorityQueue = PriorityQueue<T, compare, StackAllocator<T, capacity>>;
 
 AX_END_NAMESPACE

@@ -1,8 +1,9 @@
 #pragma once
 #include "BVH.hpp"
 
-#ifdef AX_SUPPORT_SSE
 AX_NAMESPACE
+
+#ifdef AX_SUPPORT_SSE
 
 struct HitRecord
 {
@@ -57,6 +58,6 @@ void CPU_RayTraceInitialize(const BVHData& data);
 
 HitRecord CPU_RayCast(RaySSE ray);
 
-AX_END_NAMESPACE
+#endif //AX_SUPPORT_SSE
 
-#endif // support sse
+AX_END_NAMESPACE

@@ -281,4 +281,9 @@ template<typename T> inline void ClearN(T* src, int n)
         src[i].~T();
 }
 
+template<typename T> inline void ConstructN(T* src, int n)
+{
+    new (n, src) T();
+}
+
 AX_END_NAMESPACE

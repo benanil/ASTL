@@ -307,12 +307,12 @@ __forceinline __constexpr To BitCast(const From& _Val)
 #if AX_CPP_VERSION >= AX_CPP17
 template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? a : b; }
 template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
-template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return MAX(a, MIN(b, x)); }
 #else
 # define MIN(a, b) ((a) < (b) ? (a) : (b))
 # define MAX(a, b) ((a) > (b) ? (a) : (b))
-# define Clamp(x, a, b) (MAX(a, MIN(b, x)))
 #endif
+
+template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return MAX(a, MIN(b, x)); }
 
 __forceinline __constexpr int64_t Abs(int64_t x) 
 {
@@ -403,5 +403,19 @@ struct KeyValuePair
         return key != other.key || value != other.value;
     }
 };
+
+// I hate this but I will use this for selecting allocator in data structures
+template <bool B, typename T, typename F>
+struct Conditional {
+    using Type = T;
+};
+
+template <typename T, typename F>
+struct Conditional<false, T, F> {
+    using Type = F;
+};
+
+template <bool B, typename T, typename F>
+using ConditionalT = typename Conditional<B, T, F>::Type;
 
 AX_END_NAMESPACE

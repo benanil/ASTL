@@ -42,14 +42,12 @@ template<> struct Hasher<int>
 };
 */
 template<typename KeyT,
-    typename ValueT,
-    typename HasherT = Hasher<KeyT>,
-    typename AllocatorT = Allocator<KeyValuePair<KeyT, ValueT>>>
+         typename ValueT,
+         typename HasherT = Hasher<KeyT>,
+         typename AllocatorT = Allocator<KeyValuePair<KeyT, ValueT>>,
+         int stackSize = 0> // stack size for buckets 
 class HashMap
 {
-    using Iterator = KeyValuePair<KeyT, ValueT>*;
-    using ConstIterator = const KeyValuePair<KeyT, ValueT>*;
-    
     struct Bucket
     {
         static const uint32_t DistInc = 1u << 8u;             // skip 1 byte fingerprint
@@ -58,10 +56,14 @@ class HashMap
         uint32_t valueIdx;           // index into the m_values vector.
     };
 
+    using Iterator = KeyValuePair<KeyT, ValueT>*;
+    using ConstIterator = const KeyValuePair<KeyT, ValueT>*;
+    using BucketAllocT  = ConditionalT<(bool)stackSize, StackAllocator<Bucket, stackSize, true>, MallocAllocator<Bucket>>;
+
     static const uint8 initial_shifts = 64u - 3u; // 2^(64-m_shift) number of buckets
 
     Array<KeyValuePair<KeyT, ValueT>, AllocatorT> m_values{};
-    Array<Bucket, MallocAllocator<Bucket>> m_buckets{};
+    Array<Bucket, BucketAllocT> m_buckets{};
 
     uint32 m_num_buckets         = 0u;
     uint32 m_max_bucket_capacity = 0u;
@@ -115,11 +117,11 @@ private:
         return m_num_buckets ? float(m_values.Size()) / float(m_num_buckets) : 0.0f;
     }
 
-    __constexpr uint32 MAXSize() const { return 1u << (sizeof(uint) * 8u - 1u); }
+    __constexpr uint32 MaxSize() const { return 1u << (sizeof(uint) * 8u - 1u); }
 
     uint32 CalcNumBuckets(uint8 shifts) const
     {
-        return MIN(MAXSize(), 1u << (64u - shifts));
+        return MIN(MaxSize(), 1u << (64u - shifts));
     }
 
     __constexpr uint8 CalcShiftsForSize(uint32 s)
@@ -134,7 +136,7 @@ private:
 
     void MaxLoadFactor(float ml) {
         m_max_load_factor = ml;
-        if (m_num_buckets != MAXSize()) {
+        if (m_num_buckets != MaxSize()) {
             m_max_bucket_capacity = uint32(float(m_num_buckets) * m_max_load_factor);
         }
     }
@@ -152,8 +154,8 @@ private:
         m_num_buckets = numBuckets;
         m_buckets.Resize(m_num_buckets);
 
-        if (AX_UNLIKELY(m_num_buckets == MAXSize())) {
-            m_max_bucket_capacity = MAXSize();
+        if (AX_UNLIKELY(m_num_buckets == MaxSize())) {
+            m_max_bucket_capacity = MaxSize();
         }
         else {
             m_max_bucket_capacity = uint32(float(m_num_buckets) * m_max_load_factor);
@@ -178,7 +180,7 @@ private:
 
     void IncreaseSize()
     {
-        ASSERT(m_max_bucket_capacity != MAXSize()); 
+        ASSERT(m_max_bucket_capacity != MaxSize());
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts));
         ClearAndFillBucketsFromValues();
@@ -437,7 +439,7 @@ public:
 
     ConstIterator Erase(ConstIterator it)
     {
-        uint64_t hash             = HasherT::Hash(it->key);
+        uint64_t hash           = HasherT::Hash(it->key);
         uint32 bucketIdx        = BucketIdxFromHash(hash);
         uint32 valueIdxToRemove = uint32(PointerDistance(cbegin(), it));
 
@@ -488,7 +490,7 @@ public:
 
     void ReHash(uint32 count)
     {
-        count = MIN(count, MAXSize());
+        count = MIN(count, MaxSize());
         uint8 shifts = CalcShiftsForSize(Size());
         if (shifts != m_shifts)
         {
@@ -500,7 +502,7 @@ public:
     
     void Reserve(uint32 capacity) 
     {
-        capacity = MIN(capacity, MAXSize());
+        capacity = MIN(capacity, MaxSize());
         m_values.Resize(capacity);
         uint8 shifts = CalcShiftsForSize(MAX(capacity, Size()));
         
@@ -593,5 +595,8 @@ public:
     }
 #endif
 };
+
+template<typename KeyT, typename ValueT, int size, typename HasherT = Hasher<KeyT>>
+using StackHashMap = HashMap<KeyT, ValueT, HasherT, StackAllocator<KeyValuePair<KeyT, ValueT>, size>, size>;
 
 AX_END_NAMESPACE 
