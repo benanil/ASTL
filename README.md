@@ -29,6 +29,9 @@ g++ -std=c++17 -w -O3 -mavx2 ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl
 to use namespace 
 ```
 #define AX_USE_NAMESPACE
+// after this define you should use ax:: prefix
+ax::Array<int> test;
+ax::Matrix4 mat;
 ```
 
 To disable SIMD:<br>
