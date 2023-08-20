@@ -12,7 +12,7 @@ speaking about simd, math library and other functions has optional simd instruct
 to better use cpu hardware<br>
 
 I've been working on this project almost one year, inspired from Stewart Lynch's Sane C++ videos,<br>
-although his data structures are not publicly awailable, I've made myself <br>
+although his data structures are not publicly available, I've made myself <br>
 and improved my algorithm skills a lot<br>
 
 I've tried to use templates as less as possible, but library has templates but with sane way<br>
@@ -24,7 +24,7 @@ with debug mode<br>
 cmake . -Bbuild
 ```
 ```
-g++ -std=c++17 -w -O3 -mavx2 ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl_test
+g++ -std=c++17 -w -O3 -mavx2 -march=native ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl_test
 ```
 to use namespace 
 ```
