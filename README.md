@@ -4,7 +4,7 @@
 Astl is header only data structures, algorithms and math library that is targeting high performance<br>
 faster compile times and ease of use, the code is writen in a way that is easier to read<br>
 modify and use, there is no other external dependencies C++ headers are not included<br>
-not even C headers included, so everything is from scratch. this should work with C++14 and above<br>
+not even C headers included, so everything is from scratch. this should work with C++11 and above<br>
 tested with GCC and MSVC<br>
 
 only include is immintrin.h that is for simd code,<br>

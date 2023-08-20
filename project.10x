@@ -40,8 +40,8 @@
 			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um</AdditionalIncludePath>
 		</AdditionalIncludePaths>
 		<Defines>
-			<Define></Define>
-			<Define></Define>
+			<Define>AX_SUPPORT_SSE</Define>
+			<Define>AX_SUPPORT_AVX2</Define>
 			<Define>AX_X64</Define>
 		</Defines>
 		<ConfigProperties>

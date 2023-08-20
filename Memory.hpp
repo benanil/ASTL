@@ -235,9 +235,6 @@ inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
     }
 }
 
-
-// todo remove template from allocators
-
 // some kind of object allocator
 template<typename T> 
 struct Allocator 
@@ -307,7 +304,11 @@ template<typename T>
 struct FixedSizeGrowableAllocator
 {
     static const bool IsPOD = false;
-    static const int InitialSize = NextPowerOf2(512 / MIN((int)sizeof(T), 128));
+    
+    static __constexpr int InitialSize()
+    {
+      return NextPowerOf2(512 / MIN((int)sizeof(T), 128));
+    } 
 
     struct Fragment
     {
@@ -322,11 +323,11 @@ struct FixedSizeGrowableAllocator
 
     FixedSizeGrowableAllocator()
     {
-        currentCapacity = InitialSize;
+        currentCapacity = InitialSize();
         base = new Fragment;
         current = base;
         base->next = nullptr;
-        base->ptr = new T[InitialSize];
+        base->ptr = new T[InitialSize()];
         base->size = 0;
     }
 

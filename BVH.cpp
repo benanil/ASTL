@@ -45,7 +45,7 @@ struct aabb
 	float area() 
 	{ 
 		__m128 e = _mm_sub_ps(bmax, bmin); // box extent
-		__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XMSelect1110);
+		__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XSelect1110);
 		return hsum_ps_sse3(eSurface);
 	}
 };
@@ -81,7 +81,7 @@ static void UpdateNodeBounds(BVHNode* bvhNode, const Tri* tris, uint nodeIdx)
 __forceinline float CalculateCost(const BVHNode* node)
 { 
 	__m128 e = _mm_sub_ps(node->maxv, node->minv); // box extent
-	__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XMSelect1110);
+	__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XSelect1110);
 	return node->triCount * hsum_ps_sse3(eSurface);
 }
 

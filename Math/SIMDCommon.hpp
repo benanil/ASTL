@@ -56,25 +56,25 @@ inline int AX_InitSIMD_CPUID()
 constexpr uint32_t AX_SELECT_0 = 0x00000000;
 constexpr uint32_t AX_SELECT_1 = 0xFFFFFFFF;
 
-#define g_XMSelect1000 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_0, AX_SELECT_0, AX_SELECT_0))
-#define g_XMSelect1100 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_1, AX_SELECT_0, AX_SELECT_0))
-#define g_XMSelect1110 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0))
-#define g_XMSelect1011 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1))
+#define g_XSelect1000 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_0, AX_SELECT_0, AX_SELECT_0))
+#define g_XSelect1100 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_1, AX_SELECT_0, AX_SELECT_0))
+#define g_XSelect1110 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_1, AX_SELECT_1, AX_SELECT_0))
+#define g_XSelect1011 _mm_castsi128_ps(_mm_setr_epi32(AX_SELECT_1, AX_SELECT_0, AX_SELECT_1, AX_SELECT_1))
 
-#define g_XMIdentityR0 _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f)
-#define g_XMIdentityR1 _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f)
-#define g_XMIdentityR2 _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f)
-#define g_XMIdentityR3 _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
+#define g_XIdentityR0 _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f)
+#define g_XIdentityR1 _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f)
+#define g_XIdentityR2 _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f)
+#define g_XIdentityR3 _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
 
-#define g_XMMaskXY _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
-#define g_XMMask3  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
-#define g_XMMaskX  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000))
-#define g_XMMaskY  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000))
-#define g_XMMaskZ  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000))
-#define g_XMMaskW  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF))
+#define g_XMaskXY _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
+#define g_XMask3  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
+#define g_XMaskX  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000))
+#define g_XMaskY  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000))
+#define g_XMaskZ  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000))
+#define g_XMaskW  _mm_castsi128_ps(_mm_setr_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF))
 
-#define g_XMOne         _mm_setr_ps( 1.0f, 1.0f, 1.0f, 1.0f)
-#define g_XMNegativeOne _mm_setr_ps( -1.0f, -1.0f, -1.0f, -1.0f)
+#define g_XOne         _mm_setr_ps( 1.0f, 1.0f, 1.0f, 1.0f)
+#define g_XNegativeOne _mm_setr_ps( -1.0f, -1.0f, -1.0f, -1.0f)
 
 __forceinline __m128 VECTORCALL SSESelect(const __m128 V1, const __m128 V2, const __m128& Control)
 {

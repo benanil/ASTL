@@ -190,7 +190,12 @@
     #define AX_CPP20 1920
 #endif
 
+#if AX_CPP_VERSION < AX_CPP14
+// below c++ 14 does not support constexpr
+#define __constexpr
+#else
 #define __constexpr constexpr
+#endif
 
 #if AX_CPP_VERSION >= AX_CPP17
 #   define if_constexpr if constexpr
@@ -337,7 +342,7 @@ __forceinline __constexpr double Abs(double x)
 }
 
 template<typename T> __forceinline __constexpr 
-bool IsPowerOfTwo(T x) noexcept { return (x != 0) && ((x & (x - 1)) == 0); }
+bool IsPowerOfTwo(T x) { return (x != 0) && ((x & (x - 1)) == 0); }
 
 __forceinline __constexpr int NextPowerOf2(int x)
 {

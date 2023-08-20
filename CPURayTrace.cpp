@@ -40,8 +40,8 @@ static inline HitRecord CreateHitRecord() {
 
 static bool VECTORCALL IntersectTriangle(const RaySSE& ray, const Tri* tri, Triout* o, int i)
 {
-	const __m128 edge1 = _mm_and_ps(_mm_sub_ps(tri->v1, tri->v0), g_XMSelect1110);
-	const __m128 edge2 = _mm_and_ps(_mm_sub_ps(tri->v2, tri->v0), g_XMSelect1110);
+	const __m128 edge1 = _mm_and_ps(_mm_sub_ps(tri->v1, tri->v0), g_XSelect1110);
+	const __m128 edge2 = _mm_and_ps(_mm_sub_ps(tri->v2, tri->v0), g_XSelect1110);
 	const __m128 h = SSEVector3Cross(ray.direction, edge2);
 	const __m128 a = _mm_dp_ps(edge1, h, 0xff);
 	// if (fabs(a) < 0.0001f) return false; // ray parallel to triangle

@@ -59,8 +59,13 @@ public:
 
 	using iterator = Iterator; // stl compatible
 	using const_iterator = ConstIterator;
-	static const int InitialSize = IsPowerOfTwo(AllocatorT::InitialSize) == false ?
-	                               NextPowerOf2(AllocatorT::InitialSize) : AllocatorT::InitialSize;
+	
+	static __constexpr int InitialSize()
+	{
+		return IsPowerOfTwo(AllocatorT::InitialSize) == false ?
+           NextPowerOf2(AllocatorT::InitialSize) : AllocatorT::InitialSize;
+	} 
+
 private:
 							                                               
 	ValueT* ptr   = nullptr;                                                
@@ -181,9 +186,9 @@ public:
 
 	void Clear()
 	{
-		if (capacity != InitialSize)
+		if (capacity != InitialSize())
 		{
-			ptr      = allocator.Reallocate(ptr, InitialSize, capacity);
+			ptr      = allocator.Reallocate(ptr, InitialSize(), capacity);
 			capacity = front = rear = size = 0;
 		}
 	}
@@ -305,7 +310,7 @@ private:
 			return; // no need to grow
 		}
 
-		const uint newCapacity = newSize <= InitialSize ? InitialSize : newSize;
+		const uint newCapacity = newSize <= InitialSize() ? InitialSize() : newSize;
 		if (ptr)  ptr = allocator.Reallocate(ptr, capacity, newCapacity);
 		else      ptr = allocator.Allocate(newCapacity);
 
@@ -348,9 +353,9 @@ template<typename T,
 class PriorityQueue 
 {
 public:
-    // we don't want to use same initial size for all data types because we want 
-    // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-    static const int InitialSize = AllocatorT::InitialSize;
+	// we don't want to use same initial size for all data types because we want 
+	// more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
+	static const int InitialSize = AllocatorT::InitialSize;
 	
 	T*         heap     = nullptr;
 	int        size     = 0;
@@ -361,12 +366,7 @@ public:
 	
 	~PriorityQueue()
 	{
-		if (heap)
-		{
-			allocator.Deallocate(heap, capacity);
-			heap = nullptr;
-			size  = capacity = 0;
-		}
+		Clear();
 	}
 
 	explicit PriorityQueue(int _size) : size(0), capacity(CalculateArrayGrowth(_size)) 
@@ -454,6 +454,16 @@ public:
 
 	bool Empty() const { return size == 0; }
 
+	void Clear()
+	{
+		if (heap)
+		{
+			allocator.Deallocate(heap, capacity);
+			heap = nullptr;
+			size  = capacity = 0;
+		}
+	}
+
 	void Push(const T& value) 
 	{
 		GrowIfNecessarry(1);
@@ -498,6 +508,7 @@ public:
 	template<typename... Args>
 	void emplace(Args && ... args) { Emplace(Forward<Args>(args)...); }
 	void pop() { Pop(); }
+	void clear() { Clear(); }
 	const T& top() const { return Top(); }
 #endif
 };

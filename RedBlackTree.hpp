@@ -55,25 +55,25 @@ public:
 		}
 	};
 
-	struct StackNodeAllocator
+struct StackNodeAllocator
+{
+	Node arr[stackCapacity];
+	int index = 0;
+
+	Node* AllocateUninitialized(int count)
 	{
-		Node arr[stackCapacity];
-		int index = 0;
+		if (index < stackCapacity) return arr + (index++);
+		return new Node; // overflow, create on heap
+	}
 	
-		Node* AllocateUninitialized(int count)
-		{
-			if (index < stackCapacity) return arr + (index++);
-			return new Node(); // overflow
-		}
-		
-		void Deallocate(Node* ptr, int count) const 
-		{
-			if (ptr >= arr && ptr <= arr + stackCapacity) // is stack allocated?
-				ptr->~ValueT();
-			else
-				delete ptr;
-		}
-	};
+	void Deallocate(Node* ptr, int count) const 
+	{
+		if (ptr >= arr && ptr <= arr + stackCapacity) // is stack allocated?
+			ptr->~ValueT();
+		else
+			delete ptr;
+	}
+};
 
 	using AllocatorT = ConditionalT<(bool)stackCapacity, StackNodeAllocator, FixedSizeGrowableAllocator<Node>>;
 	

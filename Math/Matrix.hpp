@@ -137,19 +137,19 @@ struct alignas(16) Matrix4
 	__forceinline static Matrix4 Identity()
 	{
 		Matrix4 M;
-		M.r[0] = g_XMIdentityR0;
-		M.r[1] = g_XMIdentityR1;
-		M.r[2] = g_XMIdentityR2;
-		M.r[3] = g_XMIdentityR3;
+		M.r[0] = g_XIdentityR0;
+		M.r[1] = g_XIdentityR1;
+		M.r[2] = g_XIdentityR2;
+		M.r[3] = g_XIdentityR3;
 		return M;
 	}
 
 	__forceinline static Matrix4 FromPosition(const float x, const float y, const float z)
 	{
 		Matrix4 M;
-		M.r[0] = g_XMIdentityR0;
-		M.r[1] = g_XMIdentityR1;
-		M.r[2] = g_XMIdentityR2;
+		M.r[0] = g_XIdentityR0;
+		M.r[1] = g_XIdentityR1;
+		M.r[2] = g_XIdentityR2;
 		M.r[3] = _mm_set_ps(1.0f, z, y, x);
 		return M;
 	}
@@ -165,7 +165,7 @@ struct alignas(16) Matrix4
 		M.r[0] = _mm_set_ps(0.0f, 0.0f, 0.0f, ScaleX);
 		M.r[1] = _mm_set_ps(0.0f, 0.0f, ScaleY, 0.0f);
 		M.r[2] = _mm_set_ps(0.0f, ScaleZ, 0.0f, 0.0f);
-		M.r[3] = g_XMIdentityR3;
+		M.r[3] = g_XIdentityR3;
 		return M;
 	}
 
@@ -177,9 +177,9 @@ struct alignas(16) Matrix4
 	__forceinline static Matrix4 CreateRotation(Vector3f right, Vector3f up, Vector3f forward)
 	{
 		Matrix4 m;
-		m.r[0] = _mm_and_ps(g_XMMask3, _mm_loadu_ps(&right.x));
-		m.r[1] = _mm_and_ps(g_XMMask3, _mm_loadu_ps(&up.x));
-		m.r[2] = _mm_and_ps(g_XMMask3, _mm_loadu_ps(&forward.x));
+		m.r[0] = _mm_and_ps(g_XMask3, _mm_loadu_ps(&right.x));
+		m.r[1] = _mm_and_ps(g_XMask3, _mm_loadu_ps(&up.x));
+		m.r[2] = _mm_and_ps(g_XMask3, _mm_loadu_ps(&forward.x));
 		m.r[3] = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f);
 		return m;
 	}
@@ -208,10 +208,10 @@ struct alignas(16) Matrix4
 		D1 = SSEVector3Dot(R1, NegEyePosition);
 		D2 = SSEVector3Dot(EyeDirection, NegEyePosition);
 		Matrix4 M;
-		M.r[0] = SSESelect(D0, R0, g_XMSelect1110); // no need select ?
-		M.r[1] = SSESelect(D1, R1, g_XMSelect1110);
-		M.r[2] = SSESelect(D2, EyeDirection, g_XMSelect1110);
-		M.r[3] = g_XMIdentityR3;
+		M.r[0] = SSESelect(D0, R0, g_XSelect1110); // no need select ?
+		M.r[1] = SSESelect(D1, R1, g_XSelect1110);
+		M.r[2] = SSESelect(D2, EyeDirection, g_XSelect1110);
+		M.r[3] = g_XIdentityR3;
 		return Matrix4::Transpose(M);
 	}
 
@@ -453,9 +453,9 @@ struct alignas(16) Matrix4
 		__m128 Q1 = _mm_mul_ps(q,Q0);
 
 		__m128 V0 = _mm_shuffle_ps(Q1,Q1,_mm_shuffle(3,0,0,1));
-		V0 = _mm_and_ps(V0,g_XMMask3);
+		V0 = _mm_and_ps(V0,g_XMask3);
 		__m128 V1 = _mm_shuffle_ps(Q1,Q1,_mm_shuffle(3,1,2,2));
-		V1 = _mm_and_ps(V1,g_XMMask3);
+		V1 = _mm_and_ps(V1,g_XMask3);
 		__m128  R0 = _mm_sub_ps(Constant1110, V0);
 		R0 = _mm_sub_ps(R0, V1);
 
@@ -483,7 +483,7 @@ struct alignas(16) Matrix4
 		M.r[1] = Q1;
 		Q1 = _mm_shuffle_ps(V1,R0,_mm_shuffle(3,2,1,0));
 		M.r[2] = Q1;
-		M.r[3] = g_XMIdentityR3;
+		M.r[3] = g_XIdentityR3;
 		return M;
 	}
 

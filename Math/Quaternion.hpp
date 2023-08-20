@@ -84,22 +84,22 @@ struct alignas(16) Quaternion
 
 		const __m128 Zero = _mm_setzero_ps();
 		__m128 Control = _mm_cmplt_ps(CosOmega, Zero);
-		__m128 Sign = SSESelect(g_XMOne, g_XMNegativeOne, Control);
+		__m128 Sign = SSESelect(g_XOne, g_XNegativeOne, Control);
 
 		CosOmega = _mm_mul_ps(CosOmega, Sign);
 
 		Control = _mm_cmplt_ps(CosOmega, OneMINusEpsilon);
 
 		__m128 SinOmega = _mm_mul_ps(CosOmega, CosOmega);
-		SinOmega = _mm_sub_ps(g_XMOne, SinOmega);
+		SinOmega = _mm_sub_ps(g_XOne, SinOmega);
 		SinOmega = _mm_sqrt_ps(SinOmega);
 
 		__m128 Omega = _mm_atan2_ps(SinOmega, CosOmega);
 
 		__m128 V01 = _mm_permute_ps(T, _mm_shuffle(2, 3, 0, 1));
-		V01 = _mm_and_ps(V01, g_XMMaskXY);
+		V01 = _mm_and_ps(V01, g_XMaskXY);
 		V01 = _mm_xor_ps(V01, SignMask2);
-		V01 = _mm_add_ps(g_XMIdentityR0, V01);
+		V01 = _mm_add_ps(g_XIdentityR0, V01);
 
 		__m128 S0 = _mm_mul_ps(V01, Omega);
 		S0 = _mm_sin_ps(S0);
@@ -324,9 +324,9 @@ struct alignas(16) Quaternion
 		
 		float Omega  = ATan2(SinOmega, CosOmega);
 		Vector4f V01 = MakeVec4(T.z, T.w, T.x, T.y); 
-		uint uf = BitCast<uint>(V01.x); // V01 = _mm_and_ps(V01, g_XMMaskXY);
+		uint uf = BitCast<uint>(V01.x); // V01 = _mm_and_ps(V01, g_XMaskXY);
 		uf ^= 0x80000000;               // V01 = _mm_xor_ps(V01, SignMask2);
-		V01.x = BitCast<float>(uf);     // V01 = _mm_add_ps(g_XMIdentityR0, V01);
+		V01.x = BitCast<float>(uf);     // V01 = _mm_add_ps(g_XIdentityR0, V01);
 		V01.x += 1.0f;
 
 		Vector4f S0 = V01 * Omega;

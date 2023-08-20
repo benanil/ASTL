@@ -24,22 +24,12 @@ public:
 	
 	~Stack()
 	{ 
-		if (ptr) 
-		{ 
-			allocator.Deallocate(ptr, capacity);
-			ptr  = nullptr; 
-			size = capacity = 0;
-		} 
+		Clear();
 	}
 
 	explicit Stack(int _size) : size(0), capacity(CalculateArrayGrowth(_size)) 
 	{
 		ptr = allocator.AllocateUninitialized(capacity);
-	}
-	
-	Stack(int _size, int count) : size(count), capacity(CalculateArrayGrowth(_size)) 
-	{
-		ptr = allocator.Allocate(capacity);
 	}
 	
 	// copy constructor
@@ -80,7 +70,7 @@ public:
 	const T& Top()     const { return ptr[size - 1]; }                                 
 	T&       Top()           { return ptr[size - 1]; }                                        
 	bool     Any()     const { return size >  0;     }								  
-	bool     Empty() const { return size == 0;     } 								  
+	bool     Empty()   const { return size == 0;     } 								  
 	
 	void Clear()  
 	{

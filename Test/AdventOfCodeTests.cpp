@@ -97,7 +97,7 @@ static void Day15() // result 5511201
 
         Vector2i distance = MakeVec2(Abs(sensorPos.x - beaconPos.x), Abs(sensorPos.y - beaconPos.y)); // ManhattanDistance
         sensors[sensorPos] = distance.x + distance.y;
-        beaconXs.Insert(beaconPos.y == 2'000'000 ? beaconPos.x : INT32_MIN);
+        beaconXs.Insert(beaconPos.y == 2000000 ? beaconPos.x : INT32_MIN);
         boundsMIN = Min(boundsMIN, beaconPos - distance);
         boundsMAX = Max(boundsMAX, beaconPos + distance);
     }
@@ -106,7 +106,7 @@ static void Day15() // result 5511201
     // check each column if it contains # or not
     for (int j = boundsMIN.x; j <= boundsMAX.x; ++j)
     {
-        Vector2i columnPos = MakeVec2(j, 2'000'000);
+        Vector2i columnPos = MakeVec2(j, 2000000);
         if (sensors.Contains(columnPos)
             || beaconXs.Contains(columnPos.x)) continue; // if this beacon is sensor we will not count this
 

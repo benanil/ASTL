@@ -1,8 +1,6 @@
 // most of the functions are accurate and faster than stl 
 // convinient for game programming
 
-// todo IsNan function
-
 #pragma once
 
 #include "../Common.hpp" // includes MIN, MAX, Clamp, Abs and FAbs

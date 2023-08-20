@@ -129,7 +129,7 @@ int main()
     float flt = 0.5f;
     Random::PCG pcg;
     Random::PCGInitialize(pcg, 1254567);
-    stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
+    stackHashMap[Random::Seed32()] = flt += 1.0f;
     stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
     stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
     stackHashMap[Random::PCGNext(pcg)] = flt += 1.0f;
