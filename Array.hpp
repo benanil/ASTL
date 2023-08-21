@@ -152,12 +152,19 @@ public:
 
 	void Add(ConstIterator _begin, int _size)
 	{
-		ASSERT(m_count > INT32_MAX - _size); // array max size reached
+		ASSERT(m_count < INT32_MAX - _size); // array max size reached
 		GrowIfNecessary(m_count + _size);
 		for (int i = 0; i < _size; i++)
 		{
 			arr[m_count++] = *_begin++;
 		}
+	}
+
+	void AddUninitialized(int _size)
+	{
+		ASSERT(m_count < INT32_MAX - _size); // array max size reached
+		GrowIfNecessary(m_count + _size);
+		m_count += _size;
 	}
 
 	void Add(ConstIterator _begin, ConstIterator _end)

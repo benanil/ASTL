@@ -1,4 +1,5 @@
 #pragma once
+#include "Common.hpp"
 
 AX_NAMESPACE
 
@@ -130,15 +131,25 @@ inline int ParseNumber(const char*& curr)
   if (*curr == '-') curr++, negative = true;
   
   while (*curr > '\n' && IsNumber(*curr))
-  val = val * 10 + (*curr++ - '0');
+    val = val * 10 + (*curr++ - '0');
   
   return negative ? -val : val;
 }
 
-inline bool IsParsable(const char*& curr)
+inline int ParsePositiveNumber(const char*& curr)
+{
+    while (*curr && !IsNumber(*curr)) curr++; // skip whitespace
+
+    int val = 0l;
+    while (*curr > '\n' && IsNumber(*curr))
+        val = val * 10 + (*curr++ - '0');
+
+    return val;
+}
+
+inline bool IsParsable(const char* curr)
 {   // additional checks
 	if (*curr == 0 || *curr == '\n') return false;
-	while (IsWhitespace(*curr)) curr++;
 	if (!IsNumber(*curr) || *curr != '-') return false;
 	return true;
 }

@@ -42,32 +42,34 @@ template<> struct Hasher<Vector2s>
 #pragma warning(disable: 4996) // fopen
 #pragma warning(disable: 4554) // | operator
 
-inline char* ReadAllFile(const char* fileName, int* numCharacters = 0)
-{
-    FILE* fp = fopen(fileName, "r");
-    if (!fp) {
-        printf("file read failed");
-        return 0;
-    }
-    
-    fseek(fp, 0, SEEK_END);
-    int fsize = ftell(fp);
-    rewind(fp);
-    // BOM check
-    unsigned char test[3] = { 0 };
-    fread(test, 1, 3, fp);
-
-    if (test[0] != 0xEF || test[1] != 0xBB || test[2] != 0xBF) {
-        rewind(fp);
-    }
-
-    char* fcontent = (char*)calloc(fsize+1, 1);
-    fread(fcontent, 1, fsize, fp);
-    fclose(fp);
-   
-    if (numCharacters) *numCharacters = fsize;
-    return fcontent;
-}
+//inline char* ReadAllFile(const char* fileName, int* numCharacters = 0)
+//{
+//    // Open the file for reading
+//    FILE* file = fopen(fileName, "rb");
+//
+//    if (file == NULL) {
+//        perror("Error opening the file");
+//        return 0; // Return an error code
+//    }
+//
+//    // Determine the file size
+//    fseek(file, 0, SEEK_END);
+//    long file_size = ftell(file);
+//    rewind(file);
+//
+//    // Allocate memory to store the entire file
+//    char* buffer = (char*)malloc(file_size + 1); // +1 for null terminator
+//
+//    if (buffer == NULL) {
+//        fclose(file);
+//        return 0; // Return an error code
+//    }
+//
+//    // Read the entire file into the buffer
+//    fread(buffer, 1, file_size, file);
+//    buffer[file_size] = '\0'; // Null-terminate the buffer
+//    return buffer;
+//}
 
 template<typename T>
 inline int ManhattanDistance(Vector2<T> a, const Vector2<T>& b)
@@ -143,7 +145,7 @@ using DistanceAndPoint = APoint;
 
 static int Day12() // result should be 534
 {
-    FILE* file = fopen("Test/AOC12.txt", "r");
+  FILE* file = fopen("Test/AOC12.txt", "r");
 	TimeBlock("day12");
 	Vector2s startPos, targetPos;
 	short numRows = 0, numColumns = 0;
@@ -264,14 +266,14 @@ static int Day17() // result should be 3157
 		auto const visualize = [&]()
 		{
 			for (int i = 0; i < shapeSize; ++i) 
-				blocks.insert(position + shape[i]);
+				blocks.Insert(position + shape[i]);
 		
 			// system("cls");
 			for (int i = MAX(mapBounds.y, (short)7)+4; i >= 0; --i)
 			{
 				for (int j = 0; j < mapBounds.x; ++j)
 				{
-					if (blocks.contains(MakeVec2<short>(j, i))) printf("#");
+					if (blocks.Contains(MakeVec2<short>(j, i))) printf("#");
 					else printf(".");
 				}
 				printf("\n");

@@ -305,7 +305,7 @@ __forceinline __constexpr To BitCast(const From& _Val)
 #if AX_CPP_VERSION < AX_CPP17
   return *(const To*)&_Val;
 #else
-  return __builtin_bit_cast(To, _Val);
+    return __builtin_bit_cast(To, _Val);
 #endif
 }
 
