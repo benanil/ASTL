@@ -131,7 +131,7 @@ void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor)
     printf(")\n");
 }
 
-void BeginProfile(void)
+void BeginProfile()
 {
     GlobalProfiler.StartTSC = ReadCPUTimer();
 }
@@ -167,7 +167,7 @@ void EndAndPrintProfile()
 void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor) {}
 
 
-void BeginProfile(void) {}
+void BeginProfile() {}
 
 void EndAndPrintProfile() {}
 

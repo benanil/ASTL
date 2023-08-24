@@ -473,7 +473,7 @@ public:
     void Reserve(uint32 capacity) 
     {
         capacity = MIN((uint32)capacity, MAXSize());
-        m_keys.Resize(capacity);
+        m_keys.Reserve(capacity);
         uint8 shifts = CalcShiftsForSize(MAX(capacity, Size()));
         
         if (0 == m_num_buckets || shifts < m_shifts) {

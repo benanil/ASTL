@@ -5,6 +5,8 @@
 #pragma once
 
 #include "Math/Math.hpp"
+#include "Algorithm.hpp"
+
 
 AX_NAMESPACE 
 
@@ -175,7 +177,6 @@ inline uint32_t murmur_32_scramble(uint32_t k) {
 	return k;
 }
 
-// I recommend to use murmur hash with small strings
 // https://en.wikipedia.org/wiki/MurmurHash
 inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
 {
@@ -213,7 +214,7 @@ inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
 inline uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
 {
 	const uint64_t m = 0xc6a4a7935bd1e995ULL;
-	const int    r = 47;
+	const int      r = 47;
 	uint64_t       h = seed ^ (len * m);
 
 	const uint64_t * data = (const uint64_t *)key;
@@ -235,11 +236,10 @@ inline uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
 	uint64_t  d;
 	SmallMemCpy(&d, data, len & 7);
 	h ^= d;
-	h *= m;
-	h ^= h >> r;
+	h *= 0xbf58476d1ce4e5b9ULL;
+	h ^= h >> 27ULL;
 	h *= 0x94d049bb133111ebULL;
-	h ^= h >> 31ULL;
-	return h;
+	return h ^ (h >> 31ULL);
 }
 
 // https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h
@@ -344,19 +344,47 @@ namespace WYHash
 }
 
 // use WYHash if you don't need __constexpr
-__constexpr inline ulong StringToHash64(const char* str, ulong hash = 0)
+__constexpr inline uint64_t StringToHash64(const char* str, uint64_t len)
 {
-	while (*str)
-		hash = *str++ + (hash << 6ull) + (hash << 16ull) - hash;
-	return hash;
-}
+	const uint64_t m = 0xc6a4a7935bd1e995ULL;
+	const uint64_t r = 47;
+	uint64_t h       = 0x9E3779B97F4A7C15ull ^ (len * m);
+	uint64_t shift   = 0ull;
 
-__constexpr inline ulong PathToHash64(const char* str)
-{
-	ulong hash = 0u, idx = 0, shift = 0;
-	while (str[idx] && idx < 8)
-		hash |= ulong(str[idx]) << shift, shift += 8ull, idx++;
-	return StringToHash64(str + idx, MurmurHash(hash));
+	while (len >= 10)
+	{
+		uint64_t k = 0ull;
+    
+		while (shift < 60)
+		{
+			k     |= ulong(ToUpper(*str++) - '0') << shift;
+			shift += 6ull;
+		}
+		// fill missing 4 bits, 10 is random shift to choose for last 4 bit
+		k |= (~0xFFFFFFFFFFFFFFF8) & (k << 10ull);
+
+		k *= m;
+		k ^= k >> r;
+		k *= m;
+
+		h ^= k;
+		h *= m;
+		shift = 0ull;
+		len  -= 10;
+	}
+
+	uint64_t d = 0ull;
+	while (*str)
+	{
+		d     |= uint64_t(ToUpper(*str++) - '0') << shift;
+		shift += 6ull;
+	}
+
+	h ^= d;
+	h *= 0xbf58476d1ce4e5b9ULL;
+	h ^= h >> 27ULL;
+	h *= 0x94d049bb133111ebULL;
+	return h ^ (h >> 31ULL);
 }
 
 __constexpr inline uint StringToHash(const char* str, uint hash = 0)

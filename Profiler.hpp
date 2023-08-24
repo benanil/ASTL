@@ -49,6 +49,6 @@ struct profile_block
 
 void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor);
 
-void BeginProfile(void);
+void BeginProfile();
 
 void EndAndPrintProfile();

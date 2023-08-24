@@ -42,35 +42,6 @@ template<> struct Hasher<Vector2s>
 #pragma warning(disable: 4996) // fopen
 #pragma warning(disable: 4554) // | operator
 
-//inline char* ReadAllFile(const char* fileName, int* numCharacters = 0)
-//{
-//    // Open the file for reading
-//    FILE* file = fopen(fileName, "rb");
-//
-//    if (file == NULL) {
-//        perror("Error opening the file");
-//        return 0; // Return an error code
-//    }
-//
-//    // Determine the file size
-//    fseek(file, 0, SEEK_END);
-//    long file_size = ftell(file);
-//    rewind(file);
-//
-//    // Allocate memory to store the entire file
-//    char* buffer = (char*)malloc(file_size + 1); // +1 for null terminator
-//
-//    if (buffer == NULL) {
-//        fclose(file);
-//        return 0; // Return an error code
-//    }
-//
-//    // Read the entire file into the buffer
-//    fread(buffer, 1, file_size, file);
-//    buffer[file_size] = '\0'; // Null-terminate the buffer
-//    return buffer;
-//}
-
 template<typename T>
 inline int ManhattanDistance(Vector2<T> a, const Vector2<T>& b)
 {

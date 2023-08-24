@@ -7,6 +7,14 @@
 
 AX_NAMESPACE 
 
+inline bool StringEqual(const char *a, const char *b, int n) 
+{
+  for (int i = 0; i < n; i++)
+    if (a[i] != b[i])
+      return false;
+  return true;
+}
+
 // https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
 #ifdef AX_SUPPORT_SSE
 inline int StringLength(const char* s)
@@ -27,6 +35,7 @@ inline int StringLength(const char* s)
     }
 }
 
+// returns 0 if equal
 inline int StringCompare(const char* s1, const char* s2)
 {
     if (s1 == s2) 
@@ -61,6 +70,35 @@ inline int StringCompare(const char* s1, const char* s2)
 
     return false;
 }
+
+inline char* FindCharInString(const char* s, int c) 
+{
+    ASSERT(c >= 0 && c < 256);
+
+    __m128i* mem = reinterpret_cast<__m128i*>(const_cast<char*>(s));
+    const __m128i set = _mm_setr_epi8(c, 0, 0, 0, 0, 0, 0, 0, 
+                                      0, 0, 0, 0, 0, 0, 0, 0);
+
+    const uint8_t mode = _SIDD_UBYTE_OPS | _SIDD_CMP_EQUAL_ANY | _SIDD_LEAST_SIGNIFICANT;
+        
+    for (/**/; /**/; mem++) {
+
+        const __m128i chunk = _mm_loadu_si128(mem);
+
+        if (_mm_cmpistrc(set, chunk, mode)) {
+            // there is character c in a chunk
+            const int idx = _mm_cmpistri(set, chunk, mode);
+
+            return reinterpret_cast<char*>(mem) + idx;;
+        } else if (_mm_cmpistrz(set, chunk, mode)) {
+            // there is zero byte in a chunk
+            break;
+        }
+    }
+
+    return nullptr;
+}
+
 #else
 inline int StringLength(const char* s)
 {
@@ -81,6 +119,17 @@ inline int StringCompare(const char* a, const char* b)
     }
     return *a == *b;// strings are equal
 }
+
+
+inline char *FindCharInString(const char *s, int c) 
+{
+    int idx = 0;
+    while (s[idx])
+        if (s[idx++] == c)
+            return idx;
+    return nullptr;
+}
+
 #endif
 
 #include "Profiler.hpp"

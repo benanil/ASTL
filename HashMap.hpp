@@ -152,7 +152,7 @@ private:
     void ReallocateBuckets(uint32 numBuckets)
     {
         m_num_buckets = numBuckets;
-        m_buckets.Resize(m_num_buckets);
+        m_buckets.Reserve(m_num_buckets);
 
         if (AX_UNLIKELY(m_num_buckets == MaxSize())) {
             m_max_bucket_capacity = MaxSize();
@@ -503,7 +503,7 @@ public:
     void Reserve(uint32 capacity) 
     {
         capacity = MIN(capacity, MaxSize());
-        m_values.Resize(capacity);
+        m_values.Reserve(capacity);
         uint8 shifts = CalcShiftsForSize(MAX(capacity, Size()));
         
         if (0 == m_num_buckets || shifts < m_shifts) {

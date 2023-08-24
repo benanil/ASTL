@@ -40,18 +40,18 @@ public:
 
 	explicit Array(Array const& other) : Array(other.Data(), other.Size()) {}
 
-	explicit Array(uint _capacity) : m_capacity(_capacity)
+	explicit Array(int _capacity) : m_capacity(_capacity)
 	{
 		arr = allocator.AllocateUninitialized(m_capacity);
 	}
 
-	Array(uint _capacity, uint _count)
+	Array(int _capacity, int _count)
 		: m_capacity(_capacity), m_count(_count)
 	{
 		arr = allocator.Allocate(m_capacity);
 	}
 
-	Array(uint _count, const ValueT& val)
+	Array(int _count, const ValueT& val)
 		: m_capacity(_count + (_count / 2)), m_count(_count)
 	{
 		arr = allocator.AllocateUninitialized(m_capacity);
@@ -279,23 +279,26 @@ public:
 		Swap(arr[index], arr[--m_count]);
 	}
 
-	void Resize(int _size)
+	void Reserve(int _size)
 	{
 		if (_size > m_capacity)
 		{
 			GrowIfNecessary(_size);
 		}
-		else if (_size < m_capacity)
-		{
-			if_constexpr (!AllocatorT::IsPod)
-			{
-				for (int i = m_count - 1; i >= _size; --i)
-				{
-					arr[i].~ValueT();
-				}
-			}
-		}
 		m_count = _size;
+	}
+
+	void Resize(int _size)
+	{
+		if (_size != m_capacity)
+		{
+			if (arr) // array can be nullptr (first initialization)
+				arr = allocator.Reallocate(arr, m_capacity, _size);
+			else
+				arr = allocator.Allocate(_size);
+			m_capacity = _size;
+			m_count    = _size;
+		}
 	}
 
 	// you can use this function after removing elements in the array, this will reduct the amount of memory used

@@ -210,7 +210,7 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t  sizeInBytes)
     };
 }
 
-// use size for struct/class types such as Vector3 and Matrix4,
+// use size for structs and classes such as Vector3 and Matrix4,
 // and use MemCpy for big arrays or unknown size arrays
 template<int alignment = 0, int size = 0>
 inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
