@@ -160,7 +160,7 @@ void SearchInFolder(char* buffer, int fileSize)
                 while (curr = FindNextClass(curr))
                 {
                     curr += 6; // skip class and a space
-                    if (*curr == 'T') // skip TK_API
+                    if (*curr == 'T' && curr[1] == 'K') // skip TK_API
                         curr += 6;
                     
                     while (IsWhitespace(*curr))

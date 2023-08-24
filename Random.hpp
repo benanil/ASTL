@@ -5,8 +5,7 @@
 #pragma once
 
 #include "Math/Math.hpp"
-#include "Algorithm.hpp"
-
+#include "Algorithms.hpp"
 
 AX_NAMESPACE 
 
