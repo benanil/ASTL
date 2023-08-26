@@ -43,6 +43,7 @@
 			<Define>AX_SUPPORT_SSE</Define>
 			<Define>AX_SUPPORT_AVX2</Define>
 			<Define>AX_X64</Define>
+			<Define>_WIN32</Define>
 		</Defines>
 		<ConfigProperties>
 			<ConfigAndPlatform>

@@ -10,7 +10,6 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 # Add your source files here
 set(SOURCES
     Test/ASTL.cpp
-    Test/AdventOfCodeTests.cpp
     Profiler.cpp
 )
 

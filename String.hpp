@@ -9,10 +9,10 @@ AX_NAMESPACE
 
 inline bool StringEqual(const char *a, const char *b, int n) 
 {
-  for (int i = 0; i < n; i++)
-    if (a[i] != b[i])
-      return false;
-  return true;
+    for (int i = 0; i < n; i++)
+        if (a[i] != b[i])
+            return false;
+    return true;
 }
 
 // https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
@@ -126,7 +126,7 @@ inline char *FindCharInString(const char *s, int c)
     int idx = 0;
     while (s[idx])
         if (s[idx++] == c)
-            return idx;
+            return --idx;
     return nullptr;
 }
 
@@ -346,12 +346,6 @@ public:
     void Append(float f) { char arr[16]{}; FloatToString(arr, f); Append(arr); }
     void Append(int i)   { char arr[16]{}; IntToString(arr, i);   Append(arr); }
     
-    static bool CompareN(const char* a, const char* b, int n) 
-    {
-        for (int i = 0; i < n; i++)
-            if (a[i] != b[i]) return false;
-        return true;
-    }
 
     int IndexOf(const char* other) const
     {
@@ -360,7 +354,7 @@ public:
         int size = (int)GetSize();
 
         for (int i = size - otherLen; i >= 0; i--) {
-            if (CompareN(ptr + i, other, otherLen))
+            if (StringEqual(ptr + i, other, otherLen))
                 return i;
         }
         return -1;

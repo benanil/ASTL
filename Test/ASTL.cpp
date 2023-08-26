@@ -2,29 +2,9 @@
 #include "../Profiler.hpp"
 #include "AdventOfCode2021.cpp"
 #include "AdventOfCode2022.cpp"
-#include <stdio.h>
 
-#include <windows.h>
-#include <string.h>
 #include "../String.hpp"
 #include "../Array.hpp"
-
-bool HasExtension(const char* path, int size, const char* extension)
-{
-    int extLen = 0;
-    // go to end of extension
-    while (extension[1] != 0)
-        extension++, extLen++;
-    
-    if (size <= extLen) return false;
-
-    for (int i = 0; i <= extLen; i++)
-    {
-        if (*extension-- != path[--size])
-            return false;
-    }
-    return true;
-}
 
 bool IsRealClass(char* curr)
 {
@@ -36,12 +16,12 @@ bool IsRealClass(char* curr)
     if (*curr == 'T' && curr[1] == 'K') // skip TK_API
         curr += 6;
 
-    while (IsWhitespace(*curr) || *curr == '\n')
+    while (IsWhitespace(*curr) || *curr == '\n') 
         curr++;
 
     while (IsChar(*curr) || IsNumber(*curr))
         curr++;
-        
+
     while (IsWhitespace(*curr) || *curr == '\n')
         curr++;
 
@@ -73,161 +53,128 @@ char* FindNextClass(char* curr)
     return nullptr;
 }
 
-char* PathGoBackwards(char* path, int end, bool skipSeparator)
-{
-    while (end >= 0 && (path[end-1] != '/' && path[end-1] != '\\')) {
-        path[end--] = '\0'; // Null-terminate the string.
-    }
-    
-    path[end--] = '\0'; // Null-terminate the string.
-
-    if (skipSeparator && end >= 0) {
-        path[end--] = '\0'; // Null-terminate again to remove the separator.
-    }
-
-    return path + end + 1; // Return the new starting point of the path.
-}
-
-#include <sys/stat.h>
-
-bool FolderExists(const char* folder)
-{
-    struct stat sb;
-    return stat(folder, &sb) == 0 && S_ISDIR(sb.st_mode);
-}
-
 int numberOfClasses = 0;
+bool hashCheckFailed = false;
 HashSet<uint64_t> hashMap{};
 Array<char, MallocAllocator<char>> textBuffer{};
 
-void SearchInFolder(char* buffer, int fileSize)
+// search header files for class names and hash check
+void SearchHeaderFiles(char* buffer, int pathSize, const char* fileName, bool isFolder, uint64_t fileSize)
 {
-    printf("search directory: %s\n", buffer);
-
-    WIN32_FIND_DATA findFileData;
-    HANDLE hFind = FindFirstFile(buffer, &findFileData);
-
-    if (hFind == INVALID_HANDLE_VALUE) {
-        printf("Error opening directory\n");
-        getchar();
+    int fileLength = StringLength(fileName);
+    
+    if (!(FileHasExtension(fileName, fileLength, "hpp") || 
+          FileHasExtension(fileName, fileLength, ".h")))
+    {
         return;
     }
+    // zero the path buffer
+    SmallMemSet(buffer + pathSize, 0, MAX_PATH - pathSize);
+    // append file to folder
+    SmallMemCpy(buffer + pathSize, fileName, pathSize);
+        
+    FILE* file = fopen(buffer, "r");
+    printf("opening file: %s\n", fileName);
+    
+    if (file == NULL) {
+        printf("cannot oppen file\n");
+        return;
+    }
+    
+    if (fileSize + 1 > textBuffer.Capacity())
+        textBuffer.Resize((int)fileSize);
+    
+    MemSet(textBuffer.Data(), 0, textBuffer.Capacity());
+    // read header into text buffers
+    fread(textBuffer.Data(), 1, fileSize, file);
+    textBuffer[fileSize] = '\n';
+    
+    char* curr = textBuffer.Data();
+    
+    // search class names and hash them, then check for uniqueness
+    while (curr = FindNextClass(curr))
+    {
+        curr += 6; // skip class and a space
+        if (*curr == 'T' && curr[1] == 'K') // skip TK_API
+            curr += 6;
+                
+        while (IsWhitespace(*curr))
+            curr++;
+    
+        int nameLen = 0;
+        while (IsChar(*curr) || IsNumber(*curr))
+            nameLen++, curr++;
+    
+        *curr = '\0'; // null terminate  
+        curr -= nameLen;
+        uint64_t hash = StringToHash(curr, nameLen);
+        printf("class name: %s, hash: %llu \n", curr, hash);
+    
+        if (hashMap.Contains(hash))
+        {
+            printf("your class have collission: %s \n", curr);
+            getchar();
+            hashCheckFailed = true;
+            return;
+        }
+        hashMap.Insert(hash);
+        numberOfClasses++;
+        curr += nameLen + 1;
+    }
+    fclose(file);
+}
 
-    if (buffer[fileSize-1] == '*')
-        buffer[--fileSize] = 0;
-
-    printf("searching \n");
+void SearchInFolder(char* buffer, int fileSize)
+{
+    hashCheckFailed = false;
+    printf("search directory: %s\n", buffer);
 
     const int textMaxCharSize = 120 * 1000;
-
+    
     if (textBuffer.Capacity() < textMaxCharSize)
-    textBuffer.Resize(textMaxCharSize);
-
-    do 
+        textBuffer.Resize(textMaxCharSize);
+    
+    // from IO.hpp
+    VisitFolder(buffer, fileSize, SearchHeaderFiles);
+  
+    if (!hashCheckFailed)
     {
-        // is file?
-        if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) 
-        {
-            int filelength = StringLength(findFileData.cFileName);
-            if (HasExtension(findFileData.cFileName, filelength, "hpp") || 
-                HasExtension(findFileData.cFileName, filelength, ".h") )
-            {
-                // zero the path buffer
-                SmallMemSet(buffer + fileSize, 0, MAX_PATH - fileSize);
-                // append file to folder
-                SmallMemCpy(buffer + fileSize, findFileData.cFileName, filelength);
-            
-                FILE* file = fopen(buffer, "r");
-                printf("opening the file: %s\n", buffer);
-
-                if (file == NULL) {
-                    printf("cannot oppen file");
-                    return;
-                }
-
-                // Determine the file size
-                uint64_t fileSize = findFileData.nFileSizeLow;
-
-                if (fileSize + 1 > textBuffer.Capacity())
-                    textBuffer.Resize((int)fileSize);
-
-                MemSet(textBuffer.Data(), 0, textBuffer.Capacity());
-                fread(textBuffer.Data(), 1, fileSize, file);
-                textBuffer[fileSize] = '\n';
-
-                char* curr = textBuffer.Data();
-
-                while (curr = FindNextClass(curr))
-                {
-                    curr += 6; // skip class and a space
-                    if (*curr == 'T' && curr[1] == 'K') // skip TK_API
-                        curr += 6;
-                    
-                    while (IsWhitespace(*curr))
-                        curr++;
-
-                    int nameLen = 0;
-                    while (IsChar(*curr) || IsNumber(*curr))
-                        nameLen++, curr++;
-
-                    *curr = '\0'; // null terminate  
-                    curr -= nameLen;
-                    uint64_t hash = StringToHash(curr, nameLen);
-                    printf("class name: %s, hash: %llu \n", curr, hash);
-
-                    if (hashMap.Contains(hash))
-                    {
-                        printf("your class have collission: %s \n", curr);
-                        getchar();
-                        return;
-                    }
-                    hashMap.Insert(hash);
-                    numberOfClasses++;
-                    curr += nameLen + 1;
-                }
-                fclose(file);
-            }
-        }
-    } while (FindNextFile(hFind, &findFileData) != 0);
-
-    printf("Success no class collission founded in number of classes: %i\n", numberOfClasses);
-
-    FindClose(hFind);
+        printf("Success no class collission founded in number of classes: %i\n", numberOfClasses);
+    }
 }
 
 int main()
 {   
+    char absolute[MAX_PATH]{0};
+    AbsolutePath("..\\..\\Games\\Full\\..", absolute, MAX_PATH);
+    printf("absolute path: %s ", absolute);
+    getchar();
+    return 0;
+
     char buffer[MAX_PATH]{};
-    GetCurrentDirectory(MAX_PATH, buffer);
+    GetCurrentDirectory(buffer, MAX_PATH);
     
     int fileSize = StringLength(buffer);
-    buffer[fileSize]     = '\\';
-    buffer[fileSize + 1] = '*';
-    fileSize++; // skip '\\'
-
     SearchInFolder(buffer, fileSize);
 
     // try to search in editor folder
     // remove the last header files name from the path
     SmallMemSet(buffer + fileSize-1, 0, MAX_PATH - fileSize + 1);
     char* endPath = PathGoBackwards(buffer, fileSize, false);
-    SmallMemCpy(endPath, "Editor\\", 8);
+    SmallMemCpy(endPath, "Editor", 8);
     
     printf("editor file: %s \n", buffer);
 
     // (for toolkit)
-    if (FolderExists(buffer))
+    if (FileExist(buffer))
     {
         printf("editor file is exists\n");
-        fileSize = StringLength(buffer);
-        buffer[fileSize++] = '*';
-        SearchInFolder(buffer, fileSize);
+        SearchInFolder(buffer, StringLength(buffer));
     }
 
     getchar();
-
     return 0;
-    // AdventOfCodeTests(); // 2022
+    AdventOfCodeTests(); // 2022
     BeginProfile();
     {
         TimeBlock("all");

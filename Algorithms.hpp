@@ -121,8 +121,9 @@ inline T* BinarySearch(T* begin, int len, T value)
 }
 
 // String to number functions
-inline int ParseNumber(const char*& curr)
+inline int ParseNumber(const char*& ptr)
 {
+  const char* curr = ptr;
   while (*curr && (*curr != '-' && !IsNumber(*curr))) curr++; // skip whitespace
     
   int val = 0l;
@@ -133,17 +134,19 @@ inline int ParseNumber(const char*& curr)
   while (*curr > '\n' && IsNumber(*curr))
     val = val * 10 + (*curr++ - '0');
   
+  ptr = curr;
   return negative ? -val : val;
 }
 
-inline int ParsePositiveNumber(const char*& curr)
+inline int ParsePositiveNumber(const char*& ptr)
 {
+    const char* curr = ptr;
     while (*curr && !IsNumber(*curr)) curr++; // skip whitespace
 
     int val = 0l;
     while (*curr > '\n' && IsNumber(*curr))
         val = val * 10 + (*curr++ - '0');
-
+    ptr = curr;
     return val;
 }
 
@@ -154,8 +157,9 @@ inline bool IsParsable(const char* curr)
 	return true;
 }
 
-inline void ParseFloat(float* f, char*& ptr)
+inline float ParseFloat(char*& text)
 {
+    char* ptr = text;
     while (IsWhitespace(*ptr)) ptr++;
 	
     double sign = 1.0;
@@ -174,7 +178,8 @@ inline void ParseFloat(float* f, char*& ptr)
         fra = 10.0f * fra + (double)(*ptr++ - '0'), div *= 10.0f;
 	
     num += fra / div;
-    *f = (float)(sign * num);
+    text = ptr;
+    return (float)(sign * num);
 }
 
 inline int Pow10(int x) 

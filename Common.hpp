@@ -178,6 +178,16 @@
     #endif
 #endif
 
+#if defined(__clang__)
+#   define AX_NO_VECTORIZE _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
+#elif defined(__GNUC__) >= 8
+#   define AX_NO_VECTORIZE _Pragma("GCC unroll 0")
+#elif defined(_MSC_VER)
+#   define AX_NO_VECTORIZE __pragma(loop(no_vector))
+#else
+#   define AX_NO_VECTORIZE
+#endif
+
 #if defined(__clang__) || defined(__GNUC__)
     #define AX_CPP_VERSION __cplusplus
     #define AX_CPP14 201402L
@@ -305,7 +315,8 @@ __forceinline __constexpr To BitCast(const From& _Val)
 #if AX_CPP_VERSION < AX_CPP17
   return *(const To*)&_Val;
 #else
-    return __builtin_bit_cast(To, _Val);
+  return *(const To *)&_Val;
+  // return __builtin_bit_cast(To, _Val);
 #endif
 }
 
