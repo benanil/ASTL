@@ -1,5 +1,4 @@
 #pragma once
-#include "Common.hpp"
 
 AX_NAMESPACE
 
@@ -299,7 +298,8 @@ template<typename T> inline void ClearN(T* src, int n)
 
 template<typename T> inline void ConstructN(T* src, int n)
 {
-    new (n, src) T();
+    for (int i = 0; i < n; ++i) 
+        new (src + i) T();
 }
 
 AX_END_NAMESPACE

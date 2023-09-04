@@ -1,6 +1,9 @@
 
 #include "../IO.hpp"
-#include "../Algorithms.hpp"
+#include "../Array.hpp"
+#include "../HashSet.hpp"
+#include "../HashMap.hpp"
+#include "../Math/Vector.hpp"
 
 void Day1()
 {
@@ -86,12 +89,10 @@ void Day2()
 
 // didn't understand the day 3
 
-#include "../Array.hpp"
-#include "../HashSet.hpp"
 
 void Day4()
 {
-    char* text = ReadAllFile("Test/2021Day3.txt");
+    char* text = ReadAllFile("Test/2021Day4.txt");
     const char* curr = text;
  
     struct alignas(32) Square
@@ -188,3 +189,159 @@ void Day4()
         printf("day4 result: %i \n", unmarkedSum * movement);
     }
 }
+
+template<typename T>
+struct Line2D
+{
+    Vector2<T> begin, end;
+};
+
+// https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+template<typename T>
+inline bool LineIntersection(Vector2<T> p1, Vector2<T> p2,
+                             Vector2<T> p3, Vector2<T> p4, Vector2<T>* pOut)
+{   
+    // Store the values for fast access and easy
+    // equations-to-code conversion
+    T x1 = p1.x, x2 = p2.x, x3 = p3.x, x4 = p4.x;
+    T y1 = p1.y, y2 = p2.y, y3 = p3.y, y4 = p4.y;
+ 
+    T d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    // If d is zero, there is no intersection
+    if (d == 0) return false;
+ 
+    // Get the x and y
+    T pre = (x1*y2 - y1*x2), post = (x3*y4 - y3*x4);
+    T x = ( pre * (x3 - x4) - (x1 - x2) * post ) / d;
+    T y = ( pre * (y3 - y4) - (y1 - y2) * post ) / d;
+ 
+    // Check if the x and y coordinates are within both lines
+    if ( x < MIN(x1, x2) | x > MAX(x1, x2) ||
+        x < MIN(x3, x4) | x > MAX(x3, x4) ) return false;
+    if ( y < MIN(y1, y2) | y > MAX(y1, y2) ||
+        y < MIN(y3, y4) | y > MAX(y3, y4) ) return false;
+ 
+    // Return the point of intersection
+    pOut->x = x;
+    pOut->y = y;
+    return true;
+}
+
+// https://stackoverflow.com/questions/17692922/check-is-a-point-x-y-is-between-two-points-drawn-on-a-straight-line
+inline bool PointOnLine(Vector2s A, Vector2s B, Vector2s C)
+{
+    //Check C is within the bounds of the line
+    if (C.x > MAX(A.x, B.x) | C.x < MIN(A.x, B.x) || C.y < MIN(A.y, B.y) | C.y > MAX(A.y, B.y))
+        return false;
+    // Check for when AB is vertical
+    if (A.x == B.x) return Abs(A.x - C.x) < 1;
+    // Check for when AB is horizontal
+    if (A.y == B.y) return Abs(A.y - C.y) < 1;
+
+    // Check istance of the point form the line
+    float distFromLine = (float)Abs(((B.x - A.x) * (A.y - C.y))-((A.x - C.x) * (B.y - A.y))) /
+                                Sqrt((B.x - A.x) * (B.x - A.x) + (B.y - A.y) * (B.y - A.y));
+    return distFromLine < 0.1;
+}
+
+void Day5()
+{
+    char* text = ReadAllFile("Test/2021Day5.txt");
+    const char *curr = text; // "0,9 -> 5,9\n" "8,0 -> 0,8\n" "9,4 -> 3,4\n" "2,2 -> 2,1\n" "7,0 -> 7,4\n" "6,4 -> 2,0\n" "0,9 -> 2,9\n" "3,4 -> 1,4\n""0,0 -> 8,8\n""5,5 -> 8,2";
+  
+    Array<Line2D<short>> lines;
+    HashMap<uint32, int32> map;
+    int numInt = 0; // intersection count
+
+    while (*curr)
+    {
+        lines.AddUninitialized(1);
+        Line2D<short>& line = lines.Back();
+        
+        line.begin.x = ParseNumber(curr); curr++; // skip,
+        line.begin.y = ParseNumber(curr); curr += 4; // skip " -> "
+        line.end.x   = ParseNumber(curr); curr++; // skip,
+        line.end.y   = ParseNumber(curr); curr += *curr == '\n';
+
+        for (int i = 0; i < lines.Size()-1; i++)
+        {
+            Line2D<short>& linei = lines[i];
+            // is line horizontal?
+            if (line.begin.x == line.end.x && line.begin.x == linei.begin.x && linei.end.x == line.begin.x)
+            {
+                uint32 x = (uint32)line.begin.x;
+                short start = MAX(MIN(line.begin.y, line.end.y), MIN(linei.begin.y, linei.end.y));
+                short end   = MIN(MAX(line.begin.y, line.end.y), MAX(linei.begin.y, linei.end.y));
+                while (start <= end)
+                    numInt += map.Insert(x | (uint32(start++) << 16), 0)->value++ == 0;
+            }
+            // is line horizontal
+            else if (line.begin.y == line.end.y && line.begin.y == linei.begin.y && linei.end.y == line.begin.y)
+            {
+                uint32 y = uint32(line.begin.y) << 16;
+                short start = MAX(MIN(line.begin.x, line.end.x), MIN(linei.begin.x, linei.end.x));
+                short end   = MIN(MAX(line.begin.x, line.end.x), MAX(linei.begin.x, linei.end.x));
+                while (start <= end)
+                    numInt += map.Insert(start++ | y, 0)->value++ == 0;
+            }
+            else 
+            {
+                // check is diagonal
+                Vector2f lineDir  = ToVector2f(line.end - line.begin).Normalized();
+                Vector2f lineiDir = ToVector2f(linei.end - linei.begin).Normalized();
+                bool firstEnter = 0;
+                equal_branch:
+                if (AlmostEqual(lineDir.x, lineiDir.x) && AlmostEqual(lineDir.y, lineiDir.y))
+                {
+                    Vector2s end = Vector2s::LengthSquared(line.end - line.begin) > 
+                                   Vector2s::LengthSquared(linei.end - linei.begin) ? line.end : linei.end;
+                    if (PointOnLine(linei.begin, linei.end, line.begin))
+                    {
+                        Vector2s dir = ToVector2s(lineDir * 2.0f);
+                        Vector2s pos = line.begin;
+
+                        for (;pos != end; pos += dir)
+                        {
+                            uint32 key = pos.x | (uint32(pos.y) << 16);
+                            numInt += map.Insert(key, 0)->value++ == 0;
+                        }
+                        numInt += map.Insert(end.x | (uint32(end.y) << 16), 0)->value++ == 0;
+                    }
+                    if (PointOnLine(linei.begin, linei.end, line.end))
+                    {
+                        Vector2s dir = -ToVector2s(lineDir * 2.0f);
+                        Vector2s pos = linei.end;
+
+                        for (;pos != end; pos += dir)
+                        {
+                            uint32 key = pos.x | (uint32(pos.y) << 16);
+                            numInt += map.Insert(key, 0)->value++ == 0;
+                        }
+                        numInt += map.Insert(end.x | (uint32(end.y) << 16), 0)->value++ == 0;
+                    }
+                    continue;
+                }
+                
+                lineDir = Vector2f::Normalize(ToVector2f(line.begin - line.end));
+
+                if (!firstEnter)
+                {
+                    Swap(line.begin, line.end);
+                    firstEnter = 1;
+                    goto equal_branch;
+                }
+            }
+            Vector2s p;
+            // if this line intersection works only one point is intersected
+            if (LineIntersection(line.begin, line.end, lines[i].begin, lines[i].end, &p))
+            {
+                uint32 key = uint32(p.x) | (uint32(p.y) << 16);
+                KeyValuePair<uint32, int>* point = map.Insert(key, 0); // inserts if already not exist
+                numInt += point->value++ == 0;
+            }
+        }
+    }
+    
+    printf("day 5 result: %i", numInt);
+    free(text);
+} // 10787 low

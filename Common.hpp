@@ -324,6 +324,7 @@ __forceinline __constexpr To BitCast(const From& _Val)
 template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? a : b; }
 template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
 #else
+// using macro if less than 17 because we want this to be constexpr
 # define MIN(a, b) ((a) < (b) ? (a) : (b))
 # define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif

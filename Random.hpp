@@ -1,6 +1,37 @@
+
 // this header file contains random and hash functions
-// recommended use PCG for 32 bit random numbers. and Xoroshiro128Plus for 64bit
-// for big objects WYHash recommended, 
+// generate random numbers: PCG for 32 bit. and Xoroshiro128Plus for 64bit
+// Hash Chunk of Data     : WYHash::Hash or MurmurHash64
+
+// uint     WangHash(uint x);
+// uint     WangHashInverse(uint x);
+// uint64_t MurmurHash(uint64_t x);
+// uint64_t MurmurHashInverse(uint64_t x);
+// uint     Seed32() 
+// uint64_t Seed64()
+// float    NextFloat01(uint32 next) 
+// float    RepatMinMax(uint32 next, float min, float max) 
+// double   NextDouble01(uint64_t next) 
+// double   RepatMinMax(uint64_t next, double min, double max)      // usage:
+// uint32   RepatMinMax(uint32 next, uint32 min, uint32 max)        // RandomNextFloat01(PCGNext(pcg))
+// uint64_t RepatMinMax(uint64_t next, uint64_t min, uint64_t max)  // RepatMINMAX(PCGNext(pcg), 120, 200);
+// int      RepatMinMax(int next, int _min, int _max)               // RepatMINMAX(Xoroshiro128Plus(xoro), 120ull, 200ull);
+// uint32   PCGNext(PCG& pcg)
+// uint     PCG2Next(uint& rng_state)
+// void     PCGInitialize(PCG& pcg, uint64_t initstate, uint64_t seed)
+// void     PCGInitialize(PCG& pcg, uint64_t seed) 
+// void     Xoroshiro128PlusInit(uint64_t  s[2])
+// void     Xoroshiro128PlusSeed(uint64_t  s[2], uint64_t  seed)
+// uint64_t Xoroshiro128Plus(uint64_t  s[2])
+// void     Suffle(T* begin, uint64_t len)
+// uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
+// uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
+// uint64_t WYHash::Hash(void const* key, size_t len)
+// uint64_t WYHash::Hash(uint64_t x) 
+//#string hash functions
+// uint64_t StringToHash64(const char* str, uint64_t len)
+// uint     StringToHash(const char* str, uint hash = 0)
+// uint     PathToHash(const char* str)
 
 #pragma once
 
@@ -342,7 +373,6 @@ namespace WYHash
 	}
 }
 
-// use WYHash if you don't need __constexpr
 __constexpr inline uint64_t StringToHash64(const char* str, uint64_t len)
 {
 	const uint64_t m = 0xc6a4a7935bd1e995ULL;

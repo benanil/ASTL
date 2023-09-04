@@ -1,9 +1,25 @@
 #pragma once
 
+// char*  GetFileExtension(path, size);
+// bool   FileHasExtension(path, size, extension);
+// char*  PathGoBackwards (path, end, skipSeparator);
+// bool   FileExist(file);
+// uint64 FileSize(file);
+// bool   RenameFile(oldFile, newFile);
+// bool   MoveFile(oldLocation, newLocation);
+// bool   DeleteFile(file);
+// char*  ReadAllFile(fileName, buffer, numCharacters);
+// void   CopyFile(source, dst, buffer);
+// void   VisitFolder(path, pathLen, visitFn);
+// void   GetCurrentDirectory(buffer, bufferSize);
+// void   AbsolutePath(path, outBuffer, bufferSize);
+
 #include <stdio.h>
 #include <sys/stat.h>
+#include <memory.h> // malloc free
 
 #include "Algorithms.hpp"
+#include "IntFltTypesLimits.hpp"
 
 // path must be null terminated string
 inline const char* GetFileExtension(const char* path, int size)
@@ -17,7 +33,7 @@ inline bool FileHasExtension(const char* path, int size, const char* extension)
 {
     int extLen = 0;
     // go to end of extension
-    AX_NO_VECTORIZE while (extension[1] != 0)
+    while (extension[1] != 0)
         extension++, extLen++;
     
     if (size <= extLen) return false;
@@ -73,9 +89,21 @@ inline bool MoveFile(const char* oldLocation, const char* newLocation)
 
 inline bool DeleteFile(const char* file)
 {
-    return remove(file) != 0;
+  return remove(file) != 0;
 }
 
+bool CreateFolder(const char* folderName)
+{
+  return mkdir(folderName, 0777) == 0;
+}
+
+inline bool IsDirectory(const char* path)
+{
+  struct stat file_info; 
+  return stat(path, &file_info) == 0 && (file_info.st_mode & _S_IFDIR);
+}
+
+// don't forget to free
 // buffer is pre allocated memory if exist. otherwise null
 // note: if you define it you are responsible of deleting the buffer
 inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharacters = 0)
@@ -123,6 +151,8 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
     if (!bufferProvided) free(buffer);
 }
 
+typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, uint64_t fileSize);
+
 #ifdef _WIN32
 // if windows.h is not included forward declare the functions instead of including windows.h header
 #ifndef _MINWINBASE_
@@ -166,8 +196,6 @@ extern "C"
 
 #endif // windows.h included
 
-typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, uint64_t fileSize);
-
 // visit all files and folders in the path
 inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
 {
@@ -196,7 +224,6 @@ inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
 }
 
 #else
-
 #include <sys/types.h>
 #include <dirent.h>
 
@@ -204,7 +231,7 @@ inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
 
 inline void GetCurrentDirectory(char* buffer, uint64_t bufferSize)
 {
-    ASSERT(getcwd(buffer, bufferSize));
+  ASSERT(getcwd(buffer, bufferSize));
 }
 
 inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn) 

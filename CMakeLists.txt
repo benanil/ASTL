@@ -24,4 +24,5 @@ configure_file(Test/AOC22.txt ${CMAKE_BINARY_DIR}/Test/AOC22.txt COPYONLY)
 
 configure_file(Test/AOC22.txt ${CMAKE_BINARY_DIR}/Test/2021Day1.txt COPYONLY)
 configure_file(Test/AOC22.txt ${CMAKE_BINARY_DIR}/Test/2021Day2.txt COPYONLY)
-configure_file(Test/AOC22.txt ${CMAKE_BINARY_DIR}/Test/2021Day3.txt COPYONLY)
+configure_file(Test/AOC22.txt ${CMAKE_BINARY_DIR}/Test/2021Day4.txt COPYONLY)
+configure_file(Test/AOC22.txt ${CMAKE_BINARY_DIR}/Test/2021Day5.txt COPYONLY)

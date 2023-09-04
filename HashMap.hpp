@@ -283,7 +283,7 @@ private:
         }
     }
 
-    ConstIterator DoFind(const KeyT& key) const
+    ConstIterator ConstDoFind(const KeyT& key) const
     {
         if (AX_UNLIKELY(Empty()))
             return cend();
@@ -326,20 +326,67 @@ private:
         }
     }
 
+    Iterator DoFind(const KeyT& key)
+    {
+        if (AX_UNLIKELY(Empty()))
+            return end();
+
+        uint64_t mh               = HasherT::Hash(key);
+        uint32 distAndFingerPrint = DistAndFingerprintFromHash(mh);
+        uint32 bucketIdx          = BucketIdxFromHash(mh);
+        // first check two times without while loop. (unrolling for performance)
+        const Bucket* bucket      = &BucketAt(bucketIdx);
+
+        if (distAndFingerPrint == bucket->distAndFingerprint &&
+                                  key == m_values[bucket->valueIdx].key) {
+            return begin() + bucket->valueIdx;
+        }
+        
+        distAndFingerPrint = DistInc(distAndFingerPrint);
+        bucketIdx = Next(bucketIdx);
+        bucket = &BucketAt(bucketIdx);
+
+        if (distAndFingerPrint == bucket->distAndFingerprint &&
+                                  key == m_values[bucket->valueIdx].key) {
+            return begin() + bucket->valueIdx;
+        }
+        
+        distAndFingerPrint = DistInc(distAndFingerPrint);
+        bucketIdx = Next(bucketIdx);
+        bucket = &BucketAt(bucketIdx);
+
+        while (true) {
+            if (distAndFingerPrint == bucket->distAndFingerprint &&
+                                      key == m_values[bucket->valueIdx].key) {
+                return begin() + bucket->valueIdx;
+            }
+            else if (distAndFingerPrint > bucket->distAndFingerprint) {
+                return end();
+            }
+            distAndFingerPrint = DistInc(distAndFingerPrint);
+            bucketIdx = Next(bucketIdx);
+            bucket = &BucketAt(bucketIdx);
+        }
+    }
+
 public:
 
-    ConstIterator Find(KeyT const& key) const {
-        return (ConstIterator)DoFind(key);
+    ConstIterator ConstFind(KeyT const& key) const {
+        return (ConstIterator)ConstDoFind(key);
+    }
+
+    Iterator Find(KeyT const& key) {
+        return DoFind(key);
     }
 
     bool Contains(KeyT const& key) const 
     {
-        return DoFind(key) != cend();
+        return ConstDoFind(key) != cend();
     }
 
     ValueT& At(KeyT const& key)
     {
-        Iterator it = (Iterator)Find(key);
+        Iterator it = Find(key);
         if (AX_LIKELY(end() != it))
         {
             return it->value;
@@ -546,7 +593,7 @@ public:
     }
 
     const ValueT& operator[](const KeyT& key) const {
-        return Find(key)->value;
+        return ConstFind(key)->value;
     }
 
     friend bool operator == (const HashMap& a, const HashMap& b)
@@ -556,7 +603,7 @@ public:
         
         for (const KeyValuePair<KeyT, ValueT>& b_entry : b) 
         {
-            ConstIterator it = a.Find(b_entry.key);
+            ConstIterator it = a.ConstFind(b_entry.key);
             // map: check that key is here, then also check that value is the same
             if (a.cend() == it || !(b_entry.value == it->value)) {
                 return false;
@@ -580,9 +627,9 @@ public:
 
     Iterator erase(Iterator it) { return Erase(it); }
     
-    bool contains(KeyT const& key) const { return DoFind(key) != cend(); }
+    bool contains(KeyT const& key) const { return ConstDoFind(key) != cend(); }
     
-    ConstIterator find(KeyT const& key) const { return DoFind(key); }
+    ConstIterator find(KeyT const& key) const { return ConstDoFind(key); }
 
     uint32 erase(const KeyT& key) { return Erase(key); }
 

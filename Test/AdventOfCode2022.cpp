@@ -1,5 +1,3 @@
-#define ASTL_STL_COMPATIBLE
-
 #include "../Queue.hpp"
 #include "../Stack.hpp"
 #include "../String.hpp"
@@ -153,8 +151,8 @@ static int Day12() // result should be 534
 	{
 		Vector2s currentPoint = queue.Top().point;
 		char height = grid[currentPoint.y][currentPoint.x];
-		const auto find = map.Find(currentPoint);
-		if (currentPoint == targetPos || find == map.end()) break;
+		const auto find = map.ConstFind(currentPoint);
+		if (currentPoint == targetPos || find == map.cend()) break;
 
 		APoint current = find->value;
 
@@ -359,9 +357,9 @@ int Day22()
 			for (int x = 0; x < mapBounds.x; ++x)
 			{
 				Vector2i pos = MakeVec2(x, y);
-				auto const find = map.find(pos);
+				auto const find = map.ConstFind(pos);
 				if (pos == currentPosition) printf("X");
-				else if (find == map.end()) printf(" ");
+				else if (find == map.cend()) printf(" ");
 				else printf("%c", find->value);
 			}
 			printf("\n");
@@ -381,7 +379,7 @@ int Day22()
 		{
 			Vector2i direction = directions[currentDirection];
 			Vector2i newPos = currentPosition + direction;
-			const auto find = map.find(newPos);
+			const auto find = map.Find(newPos);
 
 			if (find == map.end())
 			{

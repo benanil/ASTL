@@ -21,6 +21,10 @@ struct Vector2
 	float Length()		  const { return Sqrt(LengthSquared()); }
 	float LengthSquared() const { return x * x + y * y; }
 
+	static float LengthEst(Vector2 v)     { return RSqrt(v.LengthSquared()); }
+	static float Length(Vector2 v)		  { return Sqrt(v.LengthSquared()); }
+	static float LengthSquared(Vector2 v) { return v.x * v.x + v.y * v.y; }
+
 	T& operator[] (int index) { return arr[index]; }
 	T  operator[] (int index) const { return arr[index]; }
 
@@ -42,10 +46,13 @@ struct Vector2
 		return Vector2(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
 	}
 
-	void Normalized() const { *this /= Length(); }
-	
-	Vector2 Normalize(Vector2 other) { return other.Normalize(); }
-	
+	Vector2& Normalized() { *this /= Length(); return *this; }
+	void NormalizeSelf()  { *this /= Length(); }
+	static Vector2 Normalize(Vector2 x) { return x / x.Length(); }
+	static Vector2 NormalizeEst(const Vector2& a) {
+		return a * RSqrt(a.x * a.x + a.y * a.y);
+	}
+
 	Vector2 operator - () { return { -x, -y }; }
 	Vector2 operator + (Vector2 other) const { return {x + other.x, y + other.y}; }
 	Vector2 operator * (Vector2 other) const { return {x * other.x, y * other.y}; }
@@ -152,6 +159,10 @@ struct Vector3
 	
 	static Vector3 NormalizeEst(const Vector3& a) {
 		return a * RSqrt(Vector3::Dot(a, a));
+	}
+
+	static float LengthEst(const Vector3& a) {
+		return RSqrt(Vector3::Dot(a, a));
 	}
 
 	Vector3 operator- () { return { -x, -y, -z }; }
@@ -278,6 +289,8 @@ template<typename T> __forceinline Vector2<T> Max(const Vector2<T>& a, const Vec
 template<typename T> __forceinline T Max3(const Vector3<T>& a) { return MAX(MAX(a.x, a.y), a.z); }
 template<typename T> __forceinline T Min3(const Vector3<T>& a) { return MIN(MIN(a.x, a.y), a.z); }
 
+__forceinline Vector2s ToVector2s(const Vector2f& vec) { return {(short)vec.x, (short)vec.y }; }
+__forceinline Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (float)vec.y }; }
 __forceinline Vector2f ToVector2f(const Vector2i& vec) { return {(float)vec.x, (float)vec.y }; }
 __forceinline Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec.y   }; }
 

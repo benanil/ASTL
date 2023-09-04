@@ -1,4 +1,18 @@
 
+// T&& Move(T&& obj);
+// T&& Forward(T& obj);
+// T Exchange(T& obj, U&& new_value);
+// uint64_t AlignAddress(uint64_t addr, uint64_t align)
+// T* AlignPointer(T* ptr, uint64_t align)
+// void* AllocAligned(uint64_t bytes, uint64_t align)
+// void FreeAligned(void* pMem)
+// void MemSet(void* dst, unsigned char val, uint64_t  sizeInBytes)
+// void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
+// struct Allocator;
+// struct MallocAllocator;
+// struct FixedSizeGrowableAllocator;
+// struct StackAllocator;
+
 #pragma once
 
 #include "Common.hpp"

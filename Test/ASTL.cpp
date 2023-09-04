@@ -145,11 +145,22 @@ void SearchInFolder(char* buffer, int fileSize)
 
 int main()
 {   
+    BeginProfile();
+    {
+        TimeBlock("all");
+        // Day1();
+        // Day2();
+        // Day4();
+        Day5();
+    }
+    EndAndPrintProfile();
+    getchar();
+
+    return 0;
+
     char absolute[MAX_PATH]{0};
     AbsolutePath("..\\..\\Games\\Full\\..", absolute, MAX_PATH);
     printf("absolute path: %s ", absolute);
-    getchar();
-    return 0;
 
     char buffer[MAX_PATH]{};
     GetCurrentDirectory(buffer, MAX_PATH);
@@ -172,18 +183,9 @@ int main()
         SearchInFolder(buffer, StringLength(buffer));
     }
 
-    getchar();
-    return 0;
     AdventOfCodeTests(); // 2022
-    BeginProfile();
-    {
-        TimeBlock("all");
-        Day1();
-        Day2();
-        Day4();
-    }
-    EndAndPrintProfile();
     getchar();
+
     return 0;
 }
   

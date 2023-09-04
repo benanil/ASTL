@@ -397,4 +397,30 @@ __forceinline void UnpackColorRGBAf(unsigned color, float* colorf) {
 	colorf[3] = float(color >> 24) * toFloat;
 }
 
+template<typename T> __forceinline __constexpr T Min3(T a, T b, T c) 
+{
+	T res = a < b ? a : b;
+	return res < c ? c : res;
+}
+
+template<typename T> __forceinline __constexpr T Max3(T a, T b, T c) 
+{
+	T res = a > b ? a : b;
+	return res > c ? c : res;
+}
+
+template<typename T> __forceinline __constexpr T Min4(T a, T b, T c, T d)
+{
+	T res = a < b ? a : b;
+	res = res < c ? c : res;
+	return res < d ? d : res;
+}
+
+template<typename T> __forceinline __constexpr T Max4(T a, T b, T c, T d)
+{   
+	T res = a > b ? a : b;
+	res = res > c ? c : res;
+	return res > d ? d : res;
+}
+
 AX_END_NAMESPACE 
