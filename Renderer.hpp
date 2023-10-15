@@ -57,8 +57,6 @@ void DeleteShader(Shader shader);
 
 void DeleteMesh(Mesh mesh);
 
-void HandleInput();
-
 void RenderFullScreen(Shader fullScreenShader, unsigned int texture);
 
 void BindShader(Shader shader);
@@ -73,6 +71,8 @@ void InitRenderer();
 
 void DestroyRenderer();
 
-void UpdateRenderArea();
+void ToggleDepthTest(bool val);
+
+void ToggleDepthWrite(bool val);
 
 #endif //AX_RENDERER_H

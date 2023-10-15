@@ -18,6 +18,7 @@
 
 #include "Memory.hpp"
 #include "Renderer.hpp"
+#include "Window.hpp"
 #include <stdlib.h> // exit failure
 
 int windowWidth_   = 1240;
@@ -162,7 +163,9 @@ typedef HGLRC WINAPI wglCreateContextAttribsARB_type(HDC hdc, HGLRC hShareContex
 wglCreateContextAttribsARB_type* wglCreateContextAttribsARB;
 
 typedef BOOL WINAPI wglChoosePixelFormatARB_type(HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
-wglChoosePixelFormatARB_type* wglChoosePixelFormatARB;
+wglChoosePixelFormatARB_type* wglChoosePixelFormatARB = nullptr;
+
+BOOL(WINAPI* wglSwapIntervalEXT)(int) = nullptr;
 
 static void fatal_error(char* msg)
 {
@@ -214,7 +217,8 @@ static void init_opengl_extensions(void)
     
     wglCreateContextAttribsARB = (wglCreateContextAttribsARB_type*)wglGetProcAddress("wglCreateContextAttribsARB");
     wglChoosePixelFormatARB    = (wglChoosePixelFormatARB_type*)wglGetProcAddress("wglChoosePixelFormatARB");
-    
+    wglSwapIntervalEXT         = (BOOL(WINAPI*)(int)) wglGetProcAddress("wglSwapIntervalEXT");
+
     wglMakeCurrent(dummy_dc, 0);
     wglDeleteContext(dummy_context);
     ReleaseDC(dummy_window, dummy_dc);
@@ -275,6 +279,7 @@ static LRESULT CALLBACK window_callback(HWND window, UINT msg, WPARAM wparam, LP
     case WM_SIZE:
         windowWidth_  = LOWORD(lparam);
         windowHeight_ = HIWORD(lparam);
+        UpdateRenderArea();
     break;
     case WM_MOVE:
         windowPosX_ = LOWORD(lparam);
@@ -359,11 +364,12 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
             }
         }
         
-        glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
         // Do OpenGL rendering here
         AXLoop();
+        wglSwapIntervalEXT(1); // vsync on
         SwapBuffers(dc);
     }
 

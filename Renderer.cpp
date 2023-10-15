@@ -26,8 +26,6 @@
 #include <math.h>
 
 static uint32  emptyVao         = 0;
-static Shader  fullScreenShader = {0};
-static Texture androidRobotTexture{};
 
 bool CheckAndLogGlError() 
 {
@@ -142,6 +140,7 @@ Mesh CreateMeshFromGLTF(GLTFMesh* gltf)
         glBufferData(GL_ARRAY_BUFFER, size * mesh.numVertex, gltf->vertexAttribs[i], GL_STATIC_DRAW);
         glVertexAttribPointer(v, gltf->attribNumComps[i], GL_BYTE + gltf->attribTypes[i], GL_FALSE, 0, nullptr);
         glEnableVertexAttribArray(v);
+        // traverse set bits instead of traversing each bit
         attributes &= ~1;
         int tz = TrailingZeroCount(attributes);
         attributes >>= tz;
@@ -247,30 +246,27 @@ void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 
 void InitRenderer()
 {
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
 #ifdef __ANDROID__
     InitWindow();
 #endif
-    androidRobotTexture = LoadTexture("Textures/forest.jpg");
-
-	const GLchar* fragmentShaderSource = "#version 150 core\n\
-		out vec4 color;\
-		in vec2 texCoord;\
-		uniform sampler2D tex;\
-		void main(){\
-			color = texture(tex, texCoord);\
-		}";
-    
-    fullScreenShader = CreateFullScreenShader(fragmentShaderSource);
     // create empty vao unfortunately this step is necessary for ogl 3.2
     glGenVertexArrays(1, &emptyVao);
     // setup any other gl related global states
     glClearColor(0.2f, 0.8f, 0.25f, 1.0f);
 }
 
+void ToggleDepthTest(bool val)
+{
+    if (val) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+}
+
+void ToggleDepthWrite(bool val) { glDepthMask(val); }
+
 void DestroyRenderer()
 {
-    DeleteTexture(androidRobotTexture);
-    DeleteShader(fullScreenShader);
+
 }
 
 static unsigned int currentShader = 0;
@@ -302,19 +298,16 @@ extern int windowHeight_, windowWidth_;
 void RenderMesh(Mesh mesh)
 {
     glBindVertexArray(mesh.vertexLayoutHandle);
-
+ 
     static float f = 1.0f; f += 0.01f;
-    const float distance = 3.14159265f; // this is distance from cube but I did use pi anyways  
+    const float distance = 4.14159265f; // this is distance from cube but I did use pi anyways  
     Vector3f position    = MakeVec3(sinf(f) * distance, 0.0f, cosf(f) * distance);
     float verticalFOV    = 65.0f, nearClip = 0.01f, farClip = 500.0f;
 
     Matrix4 projection = Matrix4::PerspectiveFovRH(verticalFOV * DegToRad, windowWidth_, windowHeight_, nearClip, farClip);
-    Matrix4 model      = Matrix4::FromPosition(0.0f, 0.0f, 0.0f);
-    Matrix4 view       = Matrix4::LookAtRH(position + Vector3f::Up(), -Vector3f::Normalize(position), Vector3f::Up());
+    Matrix4 model      = Matrix4::CreateScale(0.015f, 0.015f, 0.015f) * Matrix4::FromPosition(0.0f, -1.0f, 0.0f); // * Matrix4::RotationFromEuler(90.0f * RadToDeg, 0.3f, 0.0f)
+    Matrix4 view       = Matrix4::LookAtRH(position, -Vector3f::Normalize(position), Vector3f::Up());
     Matrix4 mvp        = model * view * projection;
-
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
 
     GLint mvpLoc   = glGetUniformLocation(currentShader, "mvp");
     GLint modelLoc = glGetUniformLocation(currentShader, "model");
@@ -328,9 +321,6 @@ void RenderMesh(Mesh mesh)
 
 void Render()
 {
-    UpdateRenderArea();
-
-    // RenderFullScreen(fullScreenShader, androidRobotTexture.handle);
     // Present the rendered image. This is an implicit glFlush.
 #ifdef __ANDROID__
     EGLBoolean swapResult = eglSwapBuffers(display_, surface_);

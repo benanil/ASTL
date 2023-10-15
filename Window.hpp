@@ -15,6 +15,10 @@ void GetWindowPos(int* x, int* y);
 
 void SetWindowName(const char* name);
 
+void HandleInput();
+
+void UpdateRenderArea();
+
 void TerminateWindow();
 
 extern struct android_app* g_android_app;

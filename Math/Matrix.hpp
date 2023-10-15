@@ -433,6 +433,11 @@ struct alignas(16) Matrix4
 	{
 		return FromQuaternion(Quaternion::FromEuler(eulerRadians));
 	}
+	
+	__forceinline static Matrix4 RotationFromEuler(float x, float y, float z)
+	{
+	  return FromQuaternion(Quaternion::FromEuler(MakeVec3(x, y, z)));
+	}
 
 	static Matrix3 VECTORCALL ConvertToMatrix3(const Matrix4 M)
 	{

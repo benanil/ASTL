@@ -1,4 +1,12 @@
 
+//                                           // 
+// simple fast and efficient parser for gltf //
+// Anilcan Gulkaya 2023                      //
+// No License whatsoever do WTF you want.    //
+//                                           //
+
+// Todo make this single file that people can include only one header and they are done.
+
 #include "GLTFParser.hpp"
 #include "String.hpp"
 #include "Array.hpp"
@@ -36,8 +44,6 @@
 #define stb__sbgrow(a,n)      (*((void **)&(a)) = stb__sbgrowf((a), (n), sizeof(*(a))))
 
 #pragma warning (disable : 6011)
-
-#include <stdlib.h>
 
 static void* stb__sbgrowf(void* arr, int increment, int itemsize)
 {
@@ -259,6 +265,13 @@ __private const char* ParseBufferViews(const char* curr, GLTFBufferView*& buffer
         else if (StrCmp16(curr, "byteLength")) bufferView.byteLength = ParsePositiveNumber(++curr); 
         else if (StrCmp16(curr, "byteStride")) bufferView.byteStride = ParsePositiveNumber(++curr); 
         else if (StrCmp16(curr, "target"))     bufferView.target = ParsePositiveNumber(++curr);         
+        else if (StrCmp16(curr, "name"))
+        {
+            curr += 6;
+            int numQuote = 0;
+            while (numQuote < 2)
+              numQuote += *curr++ == '"';
+        }
         else ASSERT(0 && "UNKNOWN buffer view value!"); 
     }
 }
@@ -573,7 +586,7 @@ __private const char* ParseNodes(const char* curr,
             float matrix[16]{};
             for (int i = 0; i < 16; i++)
             {
-                while (!IsNumber(*curr)) curr++; node.translation[0] = ParseFloat(curr);
+                node.translation[0] = ParseFloat(curr);
             }
             node.translation[0] = matrix[12];
             node.translation[1] = matrix[13];
@@ -726,7 +739,6 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
                 else if (StrCmp16(curr, "metallicRough")) { curr = ParseMaterialTexture(curr, material.metallicRoughness.metallicRoughnessTexture); }
                 else if (StrCmp16(curr, "baseColorFact"))
                 {
-                    float f;
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[0]);
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[1]);
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[2]);
@@ -831,7 +843,8 @@ __public ParsedGLTF ParseGLTF(const char* path)
         else if (StrCmp16(curr, "textures"))    curr = ParseTextures(curr, textures, stringAllocator);   
         else if (StrCmp16(curr, "meshes"))      curr = ParseMeshes(curr, meshes, stringAllocator);
         else if (StrCmp16(curr, "nodes"))       curr = ParseNodes(curr, nodes, stringAllocator, childs);
-        else if (StrCmp16(curr, "samplers"))    curr = SkipToNextNode(curr, '[', ']'); // todo add scenes
+        else if (StrCmp16(curr, "samplers"))    curr = SkipToNextNode(curr, '[', ']'); // todo samplers
+        else if (StrCmp16(curr, "cameras"))     curr = SkipToNextNode(curr, '[', ']'); // todo cameras
         else if (StrCmp16(curr, "materials")) 
             curr = ParseMaterials(curr, materials, stringAllocator);
         else {
@@ -878,8 +891,9 @@ __public ParsedGLTF ParseGLTF(const char* path)
             view        = bufferViews[accessor.bufferView];
             offset      = int64_t(accessor.byteOffset) + view.byteOffset;
             meshes[i].vertexAttribs[j]  = (char*)buffers[view.buffer].uri + offset;
-            meshes[i].attribTypes[j]    = (char)(accessor.componentType - 0x1400);
+            meshes[i].attribTypes[j]    = (char)(accessor.componentType - 0x1400); // 0x1400 GL_BYTE
             meshes[i].attribNumComps[j] = accessor.type;
+            // traverse set bits instead of traversing each bit
             attributes &= ~1;
             int tz = TrailingZeroCount(attributes);
             attributes >>= tz;
