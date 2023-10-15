@@ -1,18 +1,20 @@
 #pragma once
 
-AX_NAMESPACE
+#ifdef AX_USE_NAMESPACE
+namespace ax {
+#endif
 
-inline bool IsNumber(char a) { return a <= '9' && a >= '0'; };
-inline bool IsLower(char a) { return a >= 'a' && a <= 'z'; };
-inline bool IsUpper(char a) { return a >= 'A' && a <= 'Z'; };
-inline bool ToLower(char a) { return a < 'a' ? a + ('A' - 'a') : a; }
-inline bool ToUpper(char a) { return a > 'Z' ? a - 'a' + 'A' : a; }
+inline constexpr bool IsNumber(char a) { return a <= '9' && a >= '0'; };
+inline constexpr bool IsLower(char a) { return a >= 'a' && a <= 'z'; };
+inline constexpr bool IsUpper(char a) { return a >= 'A' && a <= 'Z'; };
+inline constexpr bool ToLower(char a) { return a < 'a' ? a + ('A' - 'a') : a; }
+inline constexpr bool ToUpper(char a) { return a > 'Z' ? a - 'a' + 'A' : a; }
 // is alphabetical character?
-inline bool IsChar(char a) { return IsUpper(a) || IsLower(a); };
-inline bool IsWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r'); }
+inline constexpr bool IsChar(char a) { return IsUpper(a) || IsLower(a); };
+inline constexpr bool IsWhitespace(char c) { return c <= ' '; }
 
 template<typename T>
-inline void Swap(T& a, T& b)
+inline constexpr void Swap(T& a, T& b)
 {
 	T temp = (T&&)a;
 	a = (T&&)b;
@@ -156,10 +158,10 @@ inline bool IsParsable(const char* curr)
 	return true;
 }
 
-inline float ParseFloat(char*& text)
+inline float ParseFloat(const char*& text)
 {
-    char* ptr = text;
-    while (IsWhitespace(*ptr)) ptr++;
+    const char* ptr = text;
+    while (!IsNumber(*ptr) && *ptr != '-') ptr++;
 	
     double sign = 1.0;
     if(*ptr == '-') sign = -1.0, ptr++; 
@@ -173,9 +175,11 @@ inline float ParseFloat(char*& text)
 
     double fra = 0.0, div = 1.0;
 
-    while (IsNumber(*ptr))
+    while (IsNumber(*ptr) && div < 1e8) // 1e8 is 1 and 8 zero 100000000
         fra = 10.0f * fra + (double)(*ptr++ - '0'), div *= 10.0f;
 	
+    while (IsNumber(*ptr)) ptr++;
+
     num += fra / div;
     text = ptr;
     return (float)(sign * num);
@@ -302,4 +306,6 @@ template<typename T> inline void ConstructN(T* src, int n)
         new (src + i) T();
 }
 
-AX_END_NAMESPACE
+#ifdef AX_USE_NAMESPACE
+}
+#endif

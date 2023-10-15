@@ -77,6 +77,7 @@ __constexpr __forceinline uint64_t MurmurHashInverse(uint64_t x) {
 
 namespace Random
 {
+
 	// these random seeds slower than PCG and MTwister but good choice for random seed
 	// also seeds are cryptographic 
 	__forceinline uint Seed32() {
@@ -92,15 +93,22 @@ namespace Random
 	}
 
 	__forceinline float NextFloat01(uint32 next) {
-		return float(next >> 8) / 16777216.0f;
+		return float(next >> 8) / (float)(1 << 24);
 	}
 	
 	__forceinline float RepatMinMax(uint32 next, float min, float max) {
 		return min + (NextFloat01(next) * Abs(min - max));
 	}
 	
-	__forceinline double NextDouble01(uint64_t next) {
-		return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
+	__forceinline double NextDouble01(uint64_t next) 
+	{
+		const int mask = (1 << 27) - 1;
+		// https://docs.oracle.com/javase/8/docs/api/java/util/Random.html
+		// long x = next & mask;
+		// x += (next >> 32) & (mask >> 1);
+		// return x / (double)(1L << 53);
+		return (((long)(next & (mask >> 1)) << 27) + ((next >> 32) & mask)) / (double)(1LL << 53LL);
+		// return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
 	}
 	
 	__forceinline double RepatMinMax(uint64_t next, double min, double max) {
@@ -165,7 +173,7 @@ namespace Random
 	
 	__forceinline void Xoroshiro128PlusSeed(uint64_t  s[2], uint64_t  seed)
 	{
-		s[0] |= 1; // non zero
+		seed |= 1; // non zero
 		s[0] = MurmurHash(seed); 
 		s[1] = MurmurHash(s[0] ^ (seed * 1099511628211ULL));
 	}

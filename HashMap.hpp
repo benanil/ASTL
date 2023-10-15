@@ -90,7 +90,7 @@ private:
     
     Bucket NextWhileLess(const KeyT& key) const
     {
-        uint64_t hash               = HasherT::Hash(key);
+        uint64_t hash             = HasherT::Hash(key);
         uint32 distAndFingerprint = DistAndFingerprintFromHash(hash);
         uint32 bucketIdx          = BucketIdxFromHash(hash);
 

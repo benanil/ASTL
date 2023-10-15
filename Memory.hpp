@@ -321,7 +321,7 @@ struct FixedSizeGrowableAllocator
     
     static __constexpr int InitialSize()
     {
-      return NextPowerOf2(512 / MIN((int)sizeof(T), 128));
+        return NextPowerOf2(512 / MIN((int)sizeof(T), 128));
     } 
 
     struct Fragment
@@ -335,9 +335,11 @@ struct FixedSizeGrowableAllocator
     Fragment* base = nullptr;
     Fragment* current = nullptr;
 
-    FixedSizeGrowableAllocator()
+    FixedSizeGrowableAllocator(int initialSize)
     {
-        currentCapacity = InitialSize();
+        // WARNING initial size must be power of two
+        ASSERT((initialSize & (initialSize - 1)) == 0);
+        currentCapacity = initialSize;
         base = new Fragment;
         current = base;
         base->next = nullptr;
@@ -345,8 +347,12 @@ struct FixedSizeGrowableAllocator
         base->size = 0;
     }
 
+    FixedSizeGrowableAllocator() : FixedSizeGrowableAllocator(InitialSize())
+    { }
+
     ~FixedSizeGrowableAllocator()
     {
+        if (!base) return;
         while (base)
         {
             delete[] base->ptr;
@@ -355,8 +361,18 @@ struct FixedSizeGrowableAllocator
             delete oldBase;
         }
     }
+    
+    // move constructor
+    FixedSizeGrowableAllocator(FixedSizeGrowableAllocator&& other)
+    {
+        currentCapacity = other.currentCapacity;
+        base = other.base;
+        current = other.current;
+        other.currentCapacity = 0;
+        other.base = other.current = nullptr;
+    }
 
-    // copy constructor. no need move constructor
+    // copy constructor.
     FixedSizeGrowableAllocator(const FixedSizeGrowableAllocator& other)
     {
         if (!other.base) return;
@@ -388,6 +404,13 @@ struct FixedSizeGrowableAllocator
             curr += start->size;
             start = start->next;
         }
+    }
+
+    void* TakeOwnership()
+    {
+        void* result = base;
+        base = nullptr;
+        return result;
     }
 
     void CheckFixGrow(int count)

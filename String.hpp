@@ -117,9 +117,8 @@ inline int StringCompare(const char* a, const char* b)
             else         return +1; // greater
         }
     }
-    return *a == *b;// strings are equal
+    return !(*a == *b);// strings are equal
 }
-
 
 inline char *FindCharInString(const char *s, int c) 
 {

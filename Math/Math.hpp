@@ -23,19 +23,32 @@ constexpr float Epsilon  = 0.0001f;
 //  #####  [BASE FUNCTINS]  #####  
 //  ######################################  
 
+__forceinline float Lerp(float x, float y, float t)
+{
+	return x + (y - x) * t;
+}
+
+__forceinline double Lerp(double x, double y, double t)
+{
+	return x + (y - x) * t;
+}
+
 __forceinline float Sqrt(float a)
 {
 #ifdef AX_SUPPORT_SSE
 	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));  
 #elif defined(__clang__)
 	return __builtin_sqrt(a);
-#else
-	// note: you can use this as constexpr, if you need Distance, Lenghth, Normalize at compile time this is usefull
+#endif
+}
+
+__forceinline constexpr float SqrtConstexpr(float a)
+{
 	// from: Jack W. Cerenshaw's math toolkit for real time development book: page 63 Listing 4.3
 	// I've removed some of the branches. slightly slower than sqrtf
 	// double version is also here: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
 	const double A = 0.417319242, B = 0.5901788532;
-	union { double fp; struct { unsigned lo, hi; }; } x;
+	union { double fp; struct { unsigned lo, hi; }; } x {};
 	if (a <= 0.001) return 0.0f;
 	x.fp = (double)a;
 	// grab the exponent
@@ -45,7 +58,7 @@ __forceinline float Sqrt(float a)
 	// get square root of normalized number
 	double root = A + B * x.fp;
 	root = 0.5 * (x.fp / root + root); // you can even remove this haha if you do that you might want to reduce this: 0.414213562
-	// root = 0.5 * (x.fp / root + root);
+	root = 0.5 * (x.fp / root + root);
 	// root = 0.5 * (x.fp / root + root); // iterate 3 times probably overkill
 	// now rebuild the result
 	x.fp = root;
@@ -58,7 +71,6 @@ __forceinline float Sqrt(float a)
 	x.hi &= 0x000fffffu;
 	x.hi += expo << 20u;
 	return x.fp;
-#endif
 }
 
 // original doom rsqrt implementation with comments :) maybe use _mm_rsqrt_ps instead ? and __builtin_sqrt if sse not supported
@@ -201,6 +213,12 @@ __forceinline float ASin(float z)
 
 // https://en.wikipedia.org/wiki/Sine_and_cosine
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
+
+__forceinline __constexpr float RepeatPI(float x) 
+{
+  return  FMod(x + PI, TwoPI) - PI;
+}
+
 __forceinline __constexpr float Sin(float x) 
 {
 	float xx = x * x * x;                // x^3
@@ -421,6 +439,40 @@ template<typename T> __forceinline __constexpr T Max4(T a, T b, T c, T d)
 	T res = a > b ? a : b;
 	res = res > c ? c : res;
 	return res > d ? d : res;
+}
+
+template<int numCol = 4> // number of columns of matrix, 3 or 4
+inline void QuaternionFromMatrix(float* Orientation, const float* m)
+{
+	int i, j, k = 0;
+	float root, trace = m[0*numCol+0] + m[1 * numCol + 1] + m[2 * numCol + 2];
+
+	if (trace > 0.0f)
+	{
+		root = Sqrt(trace + 1.0f);
+		Orientation[3] = 0.5f * root;
+		root = 0.5f / root;
+		Orientation[0] = root * (m[1 * numCol + 2] - m[2 * numCol + 1]);
+		Orientation[1] = root * (m[2 * numCol + 0] - m[0 * numCol + 2]);
+		Orientation[2] = root * (m[0 * numCol + 1] - m[1 * numCol + 0]);
+	}
+	else
+	{
+		static const int Next[3] = { 1, 2, 0 };
+		i = 0;
+		i += m[1 * numCol + 1] > m[0 * numCol + 0]; // if (M.m[1][1] > M.m[0][0]) i = 1
+		if (m[2 * numCol + 2] > m[i * numCol + i]) i = 2;
+		j = Next[i];
+		k = Next[j];
+
+		root = Sqrt(m[i * numCol + i] - m[j * numCol + j] - m[k * numCol + k] + 1.0f);
+
+		Orientation[i] = 0.5f * root;
+		root = 0.5f / root;
+		Orientation[j] = root * (m[i * numCol + j] + m[j * numCol + i]);
+		Orientation[k] = root * (m[i * numCol + k] + m[k * numCol + i]);
+		Orientation[3] = root * (m[j * numCol + k] - m[k*numCol+j]);
+	} 
 }
 
 AX_END_NAMESPACE 

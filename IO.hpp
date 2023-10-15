@@ -17,9 +17,16 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <memory.h> // malloc free
+#include <direct.h> // mkdir
 
 #include "Algorithms.hpp"
 #include "IntFltTypesLimits.hpp"
+
+#ifdef _WIN32
+constexpr char ASTL_FILE_SEPERATOR = '\\';
+#else
+constexpr char ASTL_FILE_SEPERATOR = '/';
+#endif
 
 // path must be null terminated string
 inline const char* GetFileExtension(const char* path, int size)
@@ -82,19 +89,12 @@ inline bool RenameFile(const char* oldFile, const char* newFile)
     return rename(oldFile, newFile) != 0;
 }
 
-inline bool MoveFile(const char* oldLocation, const char* newLocation)
-{
-    return rename(oldLocation, newLocation) != 0;
-}
-
-inline bool DeleteFile(const char* file)
-{
-  return remove(file) != 0;
-}
-
-bool CreateFolder(const char* folderName)
-{
-  return mkdir(folderName, 0777) == 0;
+inline bool CreateFolder(const char* folderName) {
+  return mkdir(folderName
+               #ifndef _WIN32
+               , 0777
+               #endif 
+               ) == 0;
 }
 
 inline bool IsDirectory(const char* path)
@@ -108,12 +108,24 @@ inline bool IsDirectory(const char* path)
 // note: if you define it you are responsible of deleting the buffer
 inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharacters = 0)
 {
+#ifdef __ANDROID__
+    AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, fileName, 0);
+    off_t size = AAsset_getLength(asset);
+
+    // Allocate memory to store the entire file
+    if (buffer == nullptr) buffer = (char*)malloc(size + 1); // +1 for null terminat
+    if (numCharacters) *numCharacters = size + 1;
+
+    AAsset_read(asset, buffer, size);
+    AAsset_close(asset);
+    return buffer;
+#else
     // Open the file for reading
     FILE* file = fopen(fileName, "rb");
 
     if (file == NULL) {
         perror("Error opening the file");
-        return 0; // Return an error code
+        return nullptr; // Return an error code
     }
 
     // Determine the file size
@@ -126,7 +138,7 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharact
 
     if (buffer == NULL) {
         fclose(file);
-        return 0; // Return an error code
+        return nullptr; // Return an error code
     }
 
     // Read the entire file into the buffer
@@ -135,7 +147,20 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharact
     fclose(file);
     if (numCharacters) *numCharacters = file_size + 1;
     return buffer;
+#endif
 }
+
+inline void FreeAllText(char* text)
+{
+    free(text);
+}
+
+struct ScopedText
+{
+    char* text;
+    ScopedText(char* txt) : text(txt) {}
+   ~ScopedText() { free(text); }
+};
 
 // buffer is pre allocated memory if exist. otherwise null. 
 // note: if you define it you are responsible of deleting the buffer
@@ -153,7 +178,12 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
 
 typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, uint64_t fileSize);
 
-#ifdef _WIN32
+#if _WIN32
+
+// #define WIN32_LEAN_AND_MEAN 
+// #define NOMINMAX
+// #include <Windows.h>
+
 // if windows.h is not included forward declare the functions instead of including windows.h header
 #ifndef _MINWINBASE_
 
@@ -190,10 +220,11 @@ extern "C"
 
     __declspec(dllimport) int __cdecl FindClose(void* hFindFile);
 
-#define GetCurrentDirectory(buffer, bufferLength) GetCurrentDirectoryA(bufferLength, buffer)
+#define GetCurrentDirectory(bufferLength, buffer) GetCurrentDirectoryA(bufferLength, buffer)
+#ifndef _PROCESSENV_
     __declspec(dllimport) uint64_t GetCurrentDirectoryA(uint64_t nBufferLength, char* lpBuffer);
+#endif
 }
-
 #endif // windows.h included
 
 // visit all files and folders in the path
@@ -226,12 +257,14 @@ inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
 #else
 #include <sys/types.h>
 #include <dirent.h>
+#include "String.hpp"
 
 #define MAX_PATH 260
 
-inline void GetCurrentDirectory(char* buffer, uint64_t bufferSize)
+inline uint64_t GetCurrentDirectory(char* buffer, uint64_t bufferSize)
 {
   ASSERT(getcwd(buffer, bufferSize));
+  return StringLength(buffer);
 }
 
 inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn) 
@@ -266,11 +299,11 @@ inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn)
 
     closedir(directory);
 }
-#endif // _WIN32
+#endif // 
 
 inline void AbsolutePath(const char* path, char* outBuffer, int bufferSize)
 {
-    GetCurrentDirectory(outBuffer, bufferSize);
+    GetCurrentDirectory(bufferSize, outBuffer);
     int currLength = 0;
 
     const char* curr = outBuffer;
@@ -284,7 +317,7 @@ inline void AbsolutePath(const char* path, char* outBuffer, int bufferSize)
             const char* newEnd = PathGoBackwards(outBuffer, currLength, true);
             currLength -= (int)(before - newEnd);
             path += 3; // skip two dot and seperator
-            outBuffer[currLength++] = '\\';
+            outBuffer[currLength++] = ASTL_FILE_SEPERATOR;
         }
         else 
         {

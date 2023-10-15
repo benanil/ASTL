@@ -9,9 +9,14 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 
 # Add your source files here
 set(SOURCES
+		GLTFParser.cpp
     Test/ASTL.cpp
     Profiler.cpp
+		Renderer.cpp
+		Window.cpp
 )
+
+include_directories(${CMAKE_SOURCE_DIR})
 
 # Add an executable target
 add_executable(astl_test ${SOURCES})

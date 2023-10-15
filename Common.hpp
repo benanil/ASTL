@@ -17,7 +17,9 @@
 #elif __CLANG__
 #       define __forceinline [[clang::always_inline]] 
 #elif __GNUC__
+#ifndef __forceinline
 #       define __forceinline inline __attribute__((always_inline))
+#endif
 #endif
 
 #ifdef _MSC_VER
@@ -211,6 +213,13 @@
 #   define if_constexpr if constexpr
 #else
 #   define if_constexpr if
+#endif
+
+#if AX_CPP_VERSION < AX_CPP14
+// below c++ 14 does not support constexpr
+#define __const const
+#else
+#define __const constexpr
 #endif
 
 // #define AX_USE_NAMESPACE

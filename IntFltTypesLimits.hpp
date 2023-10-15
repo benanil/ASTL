@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef _STDINT
+#if !defined(_STDINT) || !defined(_INTTYPES)
 typedef unsigned char      uint8   ;
 typedef unsigned char      uint8_t ;
 typedef unsigned short     uint16  ;
@@ -17,6 +17,9 @@ typedef int       int32  ;
 typedef int       int32_t;
 typedef long long int64  ;
 typedef long long int64_t;
+
+typedef signed long long int intptr_t;
+typedef unsigned long long int uintptr_t;
 
 #define INT8_MIN   (-127 - 1)
 #define INT16_MIN  (-32767 - 1)
@@ -47,9 +50,11 @@ typedef long long int64_t;
 
 #endif // defined stdint.h
 
+typedef uint8_t  uchar;
 typedef uint16_t ushort;
 typedef uint32_t uint;
 typedef uint64_t ulong;
+
 
 #ifndef _INC_FLOAT // include guard for 3rd party interop
 

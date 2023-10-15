@@ -154,7 +154,7 @@ struct alignas(16) Quaternion
 		Vector3f matrix[3] {
 			Vector3f::Cross(up, direction), up, direction  
 		};
-		QuaternionFromMatrix(&result.x, matrix);
+		QuaternionFromMatrix<3>(&result.x, &matrix[0].x);
 		return result;
 	}
 
@@ -274,9 +274,9 @@ struct alignas(16) Quaternion
 	{
 		Quaternion result;
 		Vector3f matrix[3] {
-			Vector3f::Cross(up, direction), up, direction  
+			Vector3f::Cross(up, direction), up, direction
 		};
-		QuaternionFromMatrix(&result.x, matrix);
+		QuaternionFromMatrix<3>(&result.x, &matrix[0].x);
 		return result;
 	}
 

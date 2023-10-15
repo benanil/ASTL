@@ -99,6 +99,7 @@ public:
 			if (arr != nullptr)
 				allocator.Deallocate(arr, m_capacity);
 			arr = other.arr;
+			allocator = other.allocator;
 			m_count = other.Size();
 			m_capacity = other.m_capacity;
 			other.m_capacity = 0;
@@ -143,6 +144,16 @@ public:
 	Array& operator += (const ValueT& type) { Add(type);                           return *this; }
 
 	Array& operator += (const Array& other) { Add(other.cbegin(), other.Size());   return *this; }
+
+	// you should know what are you doing if you want to use this function
+	// takes the ownership of the data, which means you need to make deallocation 
+	ValueT* TakeOwnership()
+	{
+		m_capacity = m_count = 0;
+		ValueT *res = arr;
+		arr = nullptr;
+		return res;
+	}
 
 	void Add(const ValueT& value)
 	{

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <N10X>
 	<Workspace>
-		<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,*.cu,*.README,</IncludeFilter>
+		<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,*.cu,</IncludeFilter>
 		<ExcludeFilter></ExcludeFilter>
 		<SyncFiles>true</SyncFiles>
 		<Recursive>true</Recursive>
@@ -10,27 +10,27 @@
 		<IsFolder>false</IsFolder>
 		<BuildCommand>build.bat</BuildCommand>
 		<RebuildCommand></RebuildCommand>
-		<BuildFileCommand>astl_test.exe</BuildFileCommand>
-		<CleanCommand>astl_test.exe</CleanCommand>
+		<BuildFileCommand></BuildFileCommand>
+		<CleanCommand></CleanCommand>
 		<BuildWorkingDirectory></BuildWorkingDirectory>
 		<CancelBuild></CancelBuild>
 		<RunCommand>astl_test.exe</RunCommand>
 		<RunCommandWorkingDirectory></RunCommandWorkingDirectory>
 		<DebugCommand></DebugCommand>
-		<ExePathCommand>my_program.exe</ExePathCommand>
+		<ExePathCommand></ExePathCommand>
 		<DebugSln></DebugSln>
 		<UseVisualStudioEnvBat>false</UseVisualStudioEnvBat>
 		<Configurations>
-			<Configuration>Release</Configuration>
 			<Configuration>Debug</Configuration>
+			<Configuration>Release</Configuration>
 		</Configurations>
 		<Platforms>
 			<Platform>x64</Platform>
 			<Platform>Win32</Platform>
 		</Platforms>
 		<AdditionalIncludePaths>
-			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\include</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\ATLMFC\include</AdditionalIncludePath>
+			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include</AdditionalIncludePath>
+			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\ATLMFC\include</AdditionalIncludePath>
 			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include</AdditionalIncludePath>
 			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt</AdditionalIncludePath>
 			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\um</AdditionalIncludePath>
@@ -41,10 +41,8 @@
 		</AdditionalIncludePaths>
 		<Defines>
 			<Define>AX_SUPPORT_SSE</Define>
-			<Define>AX_SUPPORT_AVX2</Define>
-			<Define>AX_X64</Define>
-			<Define>_WIN32</Define>
 			<Define>AX_USE_WINDOW</Define>
+			<Define>_WIN32</Define>
 		</Defines>
 		<ConfigProperties>
 			<ConfigAndPlatform>
@@ -52,26 +50,13 @@
 				<Defines></Defines>
 				<ForceIncludes></ForceIncludes>
 			</ConfigAndPlatform>
-			<ConfigAndPlatform>
-				<Name>Release:x64</Name>
-				<Defines></Defines>
-				<ForceIncludes></ForceIncludes>
-			</ConfigAndPlatform>
 			<Config>
 				<Name>Debug</Name>
 				<Defines></Defines>
 			</Config>
-			<Config>
-				<Name>Release</Name>
-				<Defines></Defines>
-			</Config>
 			<Platform>
 				<Name>x64</Name>
-				<Defines>
-					<Define>__clang__</Define>
-					<Define></Define>
-					<Define></Define>
-				</Defines>
+				<Defines></Defines>
 			</Platform>
 		</ConfigProperties>
 		<Children></Children>

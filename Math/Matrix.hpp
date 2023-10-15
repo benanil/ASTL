@@ -87,7 +87,7 @@ struct Matrix3
 	Quaternion ToQuaternion() const
 	{
 		Quaternion Orientation;
-		QuaternionFromMatrix(&Orientation.x, vec);
+		QuaternionFromMatrix<3>(&Orientation.x, &m[0][0]);
 		return Orientation;
 	}
 };
@@ -118,8 +118,8 @@ struct alignas(16) Matrix4
 	Vector3f VECTORCALL  operator * (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
 	Vector4f VECTORCALL  operator * (const Vector4f& v) noexcept { Vector4f x; x.vec = Vector4Transform(v.vec, r); return x; };
 
-	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(*this, M); };
-	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(*this, M); return *this; };
+	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(M, *this); };
+	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(M, *this); return *this; };
 
 	__forceinline static Matrix4 Make(float x, float y, float z, float w,
 	                                  float a, float b, float c, float d,
@@ -384,6 +384,13 @@ struct alignas(16) Matrix4
 		return res;
 	}
 
+	static Quaternion VECTORCALL ExtractRotation(const Matrix4 M, bool rowNormalize = true) 
+	{
+		Quaternion res;
+		QuaternionFromMatrix(&res.x, &M.m[0][0]);
+		return res;
+	}
+
 	__forceinline static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) noexcept
 	{
 		return MakeVec3(SSEVectorLengthf(matrix.r[0]), SSEVectorLengthf(matrix.r[2]), SSEVectorLengthf(matrix.r[1]));
@@ -435,14 +442,7 @@ struct alignas(16) Matrix4
 		SSEStoreVector3(&result.z.x, M.r[2]);
 		return result;
 	}
-
-	static Quaternion VECTORCALL ExtractRotation(const Matrix4 M, bool rowNormalize = true) 
-	{
-		Quaternion res;
-		QuaternionFromMatrix(&res.x, M.v);
-		return res;
-	}
-
+	
 	static Matrix4 VECTORCALL FromQuaternion(const Quaternion quaternion)
 	{
 		Matrix4 M;
@@ -829,7 +829,7 @@ struct Matrix4
 	static Quaternion ExtractRotation(const Matrix4 M) noexcept
 	{
 		Quaternion res;
-		QuaternionFromMatrix(&res.x, M.r);
+		QuaternionFromMatrix(&res.x, M.m[0][0]);
 		return res;
 	}
 
