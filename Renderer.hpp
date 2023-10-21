@@ -39,7 +39,7 @@ struct Mesh
 // you have to set vertex attributes yourself
 Mesh CreateMesh(void* vertexBuffer, void* indexBuffer, int numVertex, int numIndex, int vertexSize);
 
-Mesh CreateMeshFromGLTF(GLTFMesh* mesh);
+Mesh CreateMeshFromGLTF(GLTFPrimitive* mesh);
 
 Texture CreateTexture(int width, int height, void* data);
 

@@ -1,14 +1,20 @@
 
-#include "../Profiler.hpp"
+// #include "../Profiler.hpp"
 // #include "AdventOfCode2021.cpp"
 
-#include "../String.hpp"
-#include "../Array.hpp"
+// #include "../String.hpp"
+// #include "../Array.hpp"
 #include <stdio.h>
+// #include "../IO.hpp"
+
+//#define STB_IMAGE_IMPLEMENTATION
+#include "../stb_image.h"
+
+#if AX_USE_WINDOW
 
 #include "../Renderer.hpp"
 #include "../Window.hpp"
-#include "../glad.hpp"
+#include "../Common.hpp"
 
 ParsedGLTF gltf;
 Shader     shader;
@@ -16,17 +22,17 @@ Mesh       mesh;
 Texture    texture;
 Texture androidRobotTexture;
 
-const char* fragmentShaderSource = "#version 150 core\n\
-		out vec4 color;\
-		in vec2 texCoord;\
-		uniform sampler2D tex;\
-		void main(){\
-			color = texture(tex, texCoord);\
-		}";
+const char* fragmentShaderSource =
+"#version 150 core\n\
+out vec4 color;\
+in vec2 texCoord;\
+uniform sampler2D tex;\
+void main(){\
+    color = texture(tex, texCoord);\
+}";
 
 static Shader fullScreenShader{0};
 
-#if AX_USE_WINDOW
 void AXInit()
 {
     SetWindowName("Test Window");
@@ -40,8 +46,9 @@ int AXStart()
     androidRobotTexture = LoadTexture("Textures/forest.jpg");
     fullScreenShader = CreateFullScreenShader(fragmentShaderSource);
     gltf    = ParseGLTF("Meshes/Duck.gltf");
+    ASSERT(gltf.error == GLTFError_NONE);
     shader  = ImportShader("Shaders/3DFirstVert.glsl", "Shaders/3DFirstFrag.glsl");
-    mesh    = CreateMeshFromGLTF(&gltf.meshes[0]);
+    mesh    = CreateMeshFromGLTF(&gltf.meshes[0].primitives[0]);
     texture = LoadTexture(gltf.images[0].path);
     return 0;
 }
@@ -72,9 +79,85 @@ void AXExit()
     DestroyRenderer();
 }
 #else
+
+#include <string>
+#include <Windows.h>
+
 int main()
 {
-  return 0;
+    char compName[512]{0};
+    unsigned long compNameLen = 512;
+    int ret = GetComputerNameA(compName, &compNameLen);
+    int er = GetLastError();
+    printf("computer name: %s", compName);
+    
+    std::string startText = 
+    "object IntroForm: TIntroForm\n"
+    "Left = 189\n"
+    "Top = 225\n"
+    "AlphaBlendValue = 100\n"
+    "BorderStyle = bsNone\n"
+    "Caption = 'IntroForm'\n"
+    "ClientHeight = 230\n"
+    "ClientWidth = 661\n"
+    "Color = clBtnFace\n"
+    "Font.Charset = DEFAULT_CHARSET\n"
+    "Font.Color = clWindowText\n"
+    "Font.Height = -11\n"
+    "Font.Name = 'MS Sans Serif'\n"
+    "Font.Style = []\n"
+    "FormStyle = fsStayOnTop\n"
+    "OldCreateOrder = False\n"
+    "Position = poDesktopCenter\n"
+    "Visible = True\n"
+    "OnClose = FormClose\n"
+    "OnCreate = FormCreate\n"
+    "PixelsPerInch = 96\n"
+    "TextHeight = 13\n"
+    "object Image1: TImage\n"
+    "  Left = 0\n"
+    "  Top = 0\n"
+    "  Width = 666\n"
+    "  Height = 234\n"
+    "  Picture.Data = {";
+    
+    int x, y, comp;
+    unsigned char* img = stbi_load("banner.png", &x, &y, &comp, 4);
+    std::string imgBin;
+    
+    const char* binToCharMap = "0123456789ABCDEF";
+    for (int i = 0; i < x * y * 4;)
+    {
+        if ((i & 31) == 0) imgBin += "\n      ";
+        imgBin.push_back(binToCharMap[img[i] & 0xF]); img[i] >>= 4;
+        imgBin.push_back(binToCharMap[img[i]]); i++;
+
+        if ((i & 31) == 0) imgBin += "\n      ";
+        imgBin.push_back(binToCharMap[img[i] & 0xF]); img[i] >>= 4;
+        imgBin.push_back(binToCharMap[img[i]]); i++;
+
+        if ((i & 31) == 0) imgBin += "\n      ";
+        imgBin.push_back(binToCharMap[img[i] & 0xF]); img[i] >>= 4;
+        imgBin.push_back(binToCharMap[img[i]]); i++;
+
+        if ((i & 31) == 0) imgBin += "\n      ";
+        imgBin.push_back(binToCharMap[img[i] & 0xF]); img[i] >>= 4;
+        imgBin.push_back(binToCharMap[img[i]]); i++;
+    }
+
+    std::string endText =
+      "}\nend\n"
+      "  object Timer1: TTimer\n"
+      "    Interval = 2000\n"
+      "    OnTimer = Timer1Timer\n"
+      "    Left = 616\n"
+      "    Top = 16\n"
+      "  end\n"
+      "end\n";
+
+    std::string result = startText + imgBin + endText;
+    // WriteAllBytes("Test.dfm", result.data(), result.size());
+    return 0;
 }
 #endif
 

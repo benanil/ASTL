@@ -120,7 +120,7 @@ void Day4()
     {
         int index = boards.Size();
         boards.AddUninitialized(1);
-        SmallMemSet(&boards[index], 0, sizeof(Board));
+        MemsetZero(&boards[index], sizeof(Board));
 
         for (int i = 0; i < 5; i++)
         {

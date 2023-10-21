@@ -4,8 +4,8 @@
 enum GLTFAttribType
 {
     GLTFAttribType_POSITION   = 1 << 0,
-    GLTFAttribType_NORMAL     = 1 << 1,
-    GLTFAttribType_TEXCOORD_0 = 1 << 2,
+    GLTFAttribType_TEXCOORD_0 = 1 << 1,
+    GLTFAttribType_NORMAL     = 1 << 2,
     GLTFAttribType_TANGENT    = 1 << 3,
     GLTFAttribType_TEXCOORD_1 = 1 << 4
 };
@@ -15,11 +15,22 @@ enum GLTFErrorType
     GLTFError_NONE,
     GLTFError_UNKNOWN,
     GLTFError_UNKNOWN_ATTRIB,
+    GLTFError_UNKNOWN_MATERIAL_VAR,
+    GLTFError_UNKNOWN_PBR_VAR,
+    GLTFError_UNKNOWN_NODE_VAR,
+    GLTFError_UNKNOWN_TEXTURE_VAR,
+    GLTFError_UNKNOWN_ACCESSOR_VAR,
+    GLTFError_UNKNOWN_BUFFER_VIEW_VAR,
+    GLTFError_UNKNOWN_MESH_VAR,
+    GLTFError_UNKNOWN_CAMERA_VAR,
+    GLTFError_UNKNOWN_MESH_PRIMITIVE_VAR,
+    GLTFError_BUFFER_PARSE_FAIL,
+    GLTFError_BIN_NOT_EXIST,
     GLTFError_UNKNOWN_DESCRIPTOR,
     GLTFError_MAX
 };
 
-struct GLTFMaterial
+typedef struct GLTFMaterial_
 {
     // original value multiplied by 100 to get real value: float scale = ((float)scale) / 100.0f; 
     typedef short float16;
@@ -44,14 +55,14 @@ struct GLTFMaterial
     } metallicRoughness;
 
     bool doubleSided;
-};
+} GLTFMaterial;
 
-struct GLTFImage
+typedef struct GLTFImage_
 {
     char* path;
-};
+} GLTFImage;
 
-struct GLTFNode
+typedef struct GLTFNode_
 {
     int   type;  // 0 mesh or 1 camera
     int   index; // index of mesh or camera
@@ -61,49 +72,78 @@ struct GLTFNode
     float scale[3];
     int   numChildren;
     int*  children;
-};
+} GLTFNode;
 
-struct GLTFMesh
+typedef struct GLTFPrimitive_
 {
-    char  attribIndices[8]; // internal use only, +2 for padding
+    // pointers to binary file to lookup position, texture, normal..
+    void* vertexAttribs[6]; //<-when we are parsing we use this as an indicator to accessor.
     void* indices;
-    void* vertexAttribs[6];
     int   attributes; // GLTFAttribType Position, Normal, TexCoord, Tangent, masks
-    char  attribTypes[8]; // + 2 for padding
-    char  attribNumComps[8]; // + 2 for padding
-    char* name;
-
-    int   indexType;
-    int   numVertices;
+    int   indexType; // GL_UNSIGNED_INT, GL_UNSIGNED_BYTE.. 
     int   numIndices;
+    int   numVertices;
 
-    char  numAttributes;
     // internal use only. after parsing this is useless
-    char  indiceIndex; // indice index 
-    char  material; // material index
-    char  mode; // 4 is triangle
-};
+    short indiceIndex; // indice index to accessor
+    short vertexIndex; // vertex index to accessor
+    char  material;    // material index
+    char  mode;        // 4 is triangle
+} GLTFPrimitive;
 
-struct GLTFTexture
+typedef struct GLTFMesh_
+{
+    char* name;  
+    GLTFPrimitive* primitives;
+    unsigned long long numPrimitives;
+} GLTFMesh;
+
+typedef struct GLTFTexture_
 {
     int   sampler;
     int   source;
     char* name;
-};
+} GLTFTexture;
 
-struct GLTFCamera
+typedef struct GLTFCamera_
 {
-    float aspectRatio, yFov, zFar, zNear;
+    union {
+        float aspectRatio, yFov;
+        float xmag, ymag;
+    };
+    float zFar, zNear;
     int type; // 0 orthographic, 1 perspective
-};
+    char* name;
+} GLTFCamera;
 
-struct ParsedGLTF
+typedef struct GLTFSampler_
 {
-    int numMeshes;
-    int numNodes;
-    int numMaterials;
-    int numTextures;
-    int numImages;
+    char magFilter; // 0 GL_NEAREST, or 1 GL_LINEAR
+    char minFilter; // 0 GL_NEAREST, or 1 GL_LINEAR
+    char wrapS; // 0 GL_REPEAT, 1 GL_CLAMP_TO_EDGE, 2 GL_CLAMP_TO_BORDER, 3 GL_MIRRORED_REPEAT
+    char wrapT; //       10497               33071                 33069                 33648
+} GLTFSampler;
+
+typedef struct GLTFScene_
+{
+    char* name;
+    int   numNodes;   
+    int*  nodes;
+} GLTFScene;
+
+typedef struct ParsedGLTF_
+{
+    short numMeshes;
+    short numNodes;
+    short numMaterials;
+    short numTextures;
+    short numImages;
+    short numSamplers;
+    short numCameras;
+    short numScenes;
+
+    short defaultSceneIndex;
+    GLTFErrorType error;
 
     void* stringAllocator;
     void* intAllocator;
@@ -113,9 +153,10 @@ struct ParsedGLTF
     GLTFMaterial* materials;
     GLTFTexture*  textures;
     GLTFImage*    images;
-
-    GLTFErrorType error;
-};
+    GLTFSampler*  samplers;
+    GLTFCamera*   cameras;
+    GLTFScene*    scenes;
+} ParsedGLTF;
 
 // if there is an error error will be minus GLTFErrorType
 ParsedGLTF ParseGLTF(const char* path);

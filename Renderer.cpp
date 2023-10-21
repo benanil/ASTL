@@ -88,13 +88,6 @@ static GLenum ToGLType(GraphicType type)
     return GL_BYTE + (GLenum)type;
 }
 
-static int TypeToSize(GraphicType type)
-{
-    // BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT, FLOAT           
-    const int sizes[8]{ 1, 1, 2, 2, 4, 4, 4 };
-    return sizes[(int)type - (int)GraphicType_Byte];
-}
-
 // you have to set vertex attributes yourself
 Mesh CreateMesh(void* vertexBuffer, void* indexBuffer, int numVertex, int numIndex, int vertexSize)
 {
@@ -106,7 +99,7 @@ Mesh CreateMesh(void* vertexBuffer, void* indexBuffer, int numVertex, int numInd
     glBindVertexArray(mesh.vertexLayoutHandle);
 
     glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexHandles[0]);
-    glBufferData(GL_ARRAY_BUFFER, vertexSize * numVertex, vertexBuffer, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (uint64)vertexSize * numVertex, vertexBuffer, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexHandle);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndex * sizeof(uint32), indexBuffer, GL_STATIC_DRAW);
@@ -115,30 +108,35 @@ Mesh CreateMesh(void* vertexBuffer, void* indexBuffer, int numVertex, int numInd
     return mesh;
 }
 
-Mesh CreateMeshFromGLTF(GLTFMesh* gltf)
+Mesh CreateMeshFromGLTF(GLTFPrimitive* gltf)
 {
     Mesh mesh;
     mesh.indexType  = gltf->indexType;
     mesh.numIndex   = gltf->numIndices;
     mesh.numVertex  = gltf->numVertices;
     mesh.attributes = gltf->attributes;
-    
+    MemsetZero(mesh.vertexHandles, sizeof(unsigned int) * 6); // there are 6 vertex handles
+
     glGenBuffers(1, &mesh.indexHandle);
-    glGenBuffers(gltf->numAttributes, mesh.vertexHandles);
+    glGenBuffers(PopCount(gltf->attributes), mesh.vertexHandles);
 
     glGenVertexArrays(1, &mesh.vertexLayoutHandle);
     glBindVertexArray(mesh.vertexLayoutHandle);
-    
+
+    // number of components of attributes
+    // Position 3, TexCoord 2, Normal 3, Tangent 3, TexCoord2 2
+    const int attribIndexToNumComp[6] { 3, 2, 3, 3, 2 }; 
     int attributes = mesh.attributes;
     int i = 0, v = 0;
     
     while (attributes)
     {
         glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexHandles[v]);
-        unsigned int type = (int)(gltf->attribTypes[i]);
-        int size = TypeToSize((GraphicType)type) * gltf->attribNumComps[i];
-        glBufferData(GL_ARRAY_BUFFER, size * mesh.numVertex, gltf->vertexAttribs[i], GL_STATIC_DRAW);
-        glVertexAttribPointer(v, gltf->attribNumComps[i], GL_BYTE + gltf->attribTypes[i], GL_FALSE, 0, nullptr);
+ 
+        // all attributes are type of float position, texcoord..
+        int size = sizeof(float) * attribIndexToNumComp[i];
+        glBufferData(GL_ARRAY_BUFFER, (uint64)size * mesh.numVertex, gltf->vertexAttribs[i], GL_STATIC_DRAW);
+        glVertexAttribPointer(v, attribIndexToNumComp[i], GL_FLOAT, GL_FALSE, 0, nullptr); // all attributes are type of float position, texcoord..
         glEnableVertexAttribArray(v);
         // traverse set bits instead of traversing each bit
         attributes &= ~1;
@@ -147,11 +145,12 @@ Mesh CreateMeshFromGLTF(GLTFMesh* gltf)
         i += tz;
         v++;
     }
-
+    
+    // BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT, FLOAT           
+    const int TypeToSize[8]{ 1, 1, 2, 2, 4, 4, 4 };
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexHandle);
-    int indexSize = gltf->numIndices * TypeToSize((GraphicType)(gltf->indexType - GL_BYTE));
+    int indexSize = gltf->numIndices * TypeToSize[gltf->indexType - GL_BYTE];
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexSize, gltf->indices, GL_STATIC_DRAW);
-
     return mesh;
 }
 

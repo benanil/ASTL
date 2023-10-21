@@ -138,10 +138,10 @@ void SetWindowPosition(int x, int y)
     SetWindowPos(hwnd, nullptr, x, y, windowWidth_, windowHeight_, 0);
 }
 
-void SetWindowResizeCallback(void(*callback)(int, int)) { WindowResizeCallback = callback; }
-void SetWindowMoveCallback  (void(*callback)(int, int)) { WindowMoveCallback = callback; }
+void SetWindowResizeCallback(void(*callback)(int, int)) { WindowResizeCallback = callback;       }
+void SetWindowMoveCallback  (void(*callback)(int, int)) { WindowMoveCallback = callback;         }
 void GetWindowSize          (int* x, int* y)            { *x = windowWidth_; *y = windowHeight_; }
-void GetWindowPos           (int* x, int* y)            { *x = windowPosX_; *y = windowPosY_; }
+void GetWindowPos           (int* x, int* y)            { *x = windowPosX_; *y = windowPosY_;    }
 
 void SetWindowName(const char* name)
 {
@@ -157,8 +157,34 @@ void SetWindowName(const char* name)
     }
 }
 
+
+// Helper function to create an icon from image data
+HICON CreateIconFromImageData(const unsigned char* imageData, int width, int height, int numComponents) 
+{
+    BITMAPV5HEADER bi{};
+    bi.bV5Size     = sizeof(BITMAPV5HEADER);
+    bi.bV5Width    = width;
+    bi.bV5Height   = -height; // Negative height to indicate top-down bitmap
+    bi.bV5Planes   = 1;
+    bi.bV5BitCount = numComponents * 8;      
+
+    HBITMAP hBitmap = CreateBitmap(width, height, numComponents, 32, (const void*)imageData);
+
+    if (!hBitmap) { perror("bitmap creation failed!"); return nullptr; }
+
+    ICONINFO iconInfo = {0};
+    iconInfo.fIcon    = TRUE;
+    iconInfo.hbmMask  = NULL;
+    iconInfo.hbmColor = hBitmap;
+    HICON hIcon = CreateIconIndirect(&iconInfo);
+    DeleteObject(hBitmap);
+
+    return hIcon;
+}
+
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt for all values
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt for all values
+// See https://gist.github.com/nickrolfe/1127313ed1dbf80254b614a721b3ee9c
 typedef HGLRC WINAPI wglCreateContextAttribsARB_type(HDC hdc, HGLRC hShareContext, const int* attribList);
 wglCreateContextAttribsARB_type* wglCreateContextAttribsARB;
 

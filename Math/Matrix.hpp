@@ -572,7 +572,7 @@ struct Matrix4
 	__forceinline static Matrix4 Identity()
 	{
 		Matrix4 M;
-		SmallMemSet(&M, 0, sizeof(Matrix4));
+		MemsetZero(&M, sizeof(Matrix4));
 		M.m[0][0] = M.m[1][1] = M.m[2][2] = M.m[3][3] = 1.0f; 
 		return M;
 	}
@@ -580,7 +580,7 @@ struct Matrix4
 	__forceinline static Matrix4 FromPosition(float x, float y, float z)
 	{
 		Matrix4 M;
-		SmallMemSet(&M, 0, sizeof(Matrix4));
+		MemsetZero(&M, sizeof(Matrix4));
 		M.m[3][0] = x; M.m[3][1] = y; M.m[3][2] = z; M.m[3][3] = 1.0f; 
 		return M;
 	}

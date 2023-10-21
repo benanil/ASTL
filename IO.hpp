@@ -150,6 +150,29 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharact
 #endif
 }
 
+inline void WriteAllBytes(const char *filename, const char *bytes, unsigned long size) 
+{
+    // Open the file for writing in binary mode
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) 
+    {
+        perror("Failed to open file for writing");
+        return;
+    }
+
+    // Write the bytes to the file
+    size_t bytesWritten = fwrite(bytes, sizeof(char), size, file);
+    if (bytesWritten != size) 
+    {
+        perror("Error writing to file");
+        fclose(file);
+        return;
+    }
+
+    // Close the file
+    fclose(file);
+}
+
 inline void FreeAllText(char* text)
 {
     free(text);

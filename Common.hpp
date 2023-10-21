@@ -255,6 +255,8 @@ inline void SmallMemSet(void* dst, unsigned char val, uint64_t  size)
 #endif
 }
 
+inline void MemsetZero(void* dst, uint64_t size) { SmallMemSet(dst, 0, size); }
+
 template<typename T>
 __forceinline __constexpr T PopCount(T x)
 {
