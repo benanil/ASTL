@@ -256,14 +256,17 @@ static HGLRC init_opengl(HDC real_dc)
     init_opengl_extensions();
     // Now we can choose a pixel format the modern way, using wglChoosePixelFormatARB.
     int pixel_format_attribs[] = {
-        0x2001,     GL_TRUE, // WGL_DRAW_TO_WINDOW_ARB
-        0x2010,     GL_TRUE, // WGL_SUPPORT_OPENGL_ARB
-        0x2011,     GL_TRUE, // WGL_DOUBLE_BUFFER_ARB
+        0x2001,          1, // WGL_DRAW_TO_WINDOW_ARB
+        0x2010,          1, // WGL_SUPPORT_OPENGL_ARB
+        0x2011,          1, // WGL_DOUBLE_BUFFER_ARB
         0x2003,     0x2027,  // WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB
         0x2013,     0x202B,  // WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB
         0x2014,         32,  // WGL_COLOR_BITS_ARB
         0x2022,         24,  // WGL_DEPTH_BITS_ARB
         0x2023,          8,  // WGL_STENCIL_BITS_ARB
+        0x20A9,          1,  // WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB <- SRGB support
+        0x2041,          1,  // WGL_SAMPLE_BUFFERS_ARB           <- enable MSAA
+        0x2042,          8,  // WGL_SAMPLES_ARB                  <- 8x MSAA
         0
     };
     
@@ -334,8 +337,7 @@ static HWND create_window(HINSTANCE inst)
     
     if (!RegisterClassA(&window_class)) fatal_error("Failed to register window.");
     
-    // Specify a desired width and height, then adjust the rect so the window's client area will be
-    // that size.
+    // Specify a desired width and height, then adjust the rect so the window's client area will be that size.
     RECT rect{};
     rect.right  = windowWidth_;
     rect.bottom = windowHeight_;
@@ -371,8 +373,14 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
     gladLoaderLoadGL();
     ShowWindow(hwnd, show);
     UpdateWindow(hwnd);
-    AXStart();
     
+    // first thing that we will se is going to be black color instead of white
+    // if we clear before starting the engine
+    glClearColor(0.3f, 0.3f, 0.3f, 1.0f); 
+    SwapBuffers(dc);
+    
+    AXStart();
+
     bool running = true;
     while (running)
     {   
@@ -395,6 +403,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
         
         // Do OpenGL rendering here
         AXLoop();
+        SwitchToThread();
         wglSwapIntervalEXT(1); // vsync on
         SwapBuffers(dc);
     }

@@ -144,7 +144,7 @@ inline int ParsePositiveNumber(const char*& ptr)
     const char* curr = ptr;
     while (*curr && !IsNumber(*curr)) curr++; // skip whitespace
 
-    int val = 0l;
+    int val = 0;
     while (*curr > '\n' && IsNumber(*curr))
         val = val * 10 + (*curr++ - '0');
     ptr = curr;

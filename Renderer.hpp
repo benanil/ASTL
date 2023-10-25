@@ -63,6 +63,10 @@ void BindShader(Shader shader);
 
 void SetTexture(Texture texture, int index);
 
+void SetModelViewProjection(float* mvp);
+
+void SetModelMatrix(float* model);
+
 void RenderMesh(Mesh mesh);
 
 void Render();

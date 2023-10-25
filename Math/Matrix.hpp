@@ -154,6 +154,11 @@ struct alignas(16) Matrix4
 		return M;
 	}
 
+	__forceinline static Matrix4 FromPosition(const float* vec3)
+	{
+		return FromPosition(vec3[0], vec3[1], vec3[2]);
+	}
+
 	__forceinline static Matrix4 FromPosition(const Vector3f& vec3)
 	{
 		return FromPosition(vec3.x, vec3.y, vec3.z);
@@ -172,6 +177,11 @@ struct alignas(16) Matrix4
 	__forceinline static Matrix4 CreateScale(Vector3f vec3)
 	{
 		return CreateScale(vec3.x, vec3.y, vec3.z);
+	}
+	
+	__forceinline static Matrix4 CreateScale(float* vec3)
+	{
+		return CreateScale(vec3[0], vec3[1], vec3[2]);
 	}
 
 	__forceinline static Matrix4 CreateRotation(Vector3f right, Vector3f up, Vector3f forward)
@@ -447,7 +457,7 @@ struct alignas(16) Matrix4
 		SSEStoreVector3(&result.z.x, M.r[2]);
 		return result;
 	}
-	
+
 	static Matrix4 VECTORCALL FromQuaternion(const Quaternion quaternion)
 	{
 		Matrix4 M;
@@ -490,6 +500,11 @@ struct alignas(16) Matrix4
 		M.r[2] = Q1;
 		M.r[3] = g_XIdentityR3;
 		return M;
+	}
+
+	static Matrix4 VECTORCALL FromQuaternion(const float* quaternion)
+	{
+		return FromQuaternion({ quaternion[0], quaternion[1], quaternion[2], quaternion[3] });
 	}
 
 	__forceinline static Matrix4 VECTORCALL Transpose(const Matrix4 M)

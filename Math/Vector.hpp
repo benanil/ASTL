@@ -211,6 +211,7 @@ struct Vector3
 template<typename T> __forceinline Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; } 
 template<typename T> __forceinline Vector3<T> MakeVec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; } 
 template<typename T> __forceinline Vector3<T> MakeVec3(T a, T b, T c) { Vector3<T> v; v.x = a; v.y = b; v.z = c; return v; }
+template<typename T> __forceinline Vector3<T> MakeVec3(T* p) { Vector3<T> v; v.x = p[0]; v.y = p[1]; v.z = p[2]; return v; }
 
 using Vector2d = Vector2<double>;
 using Vector2f = Vector2<float>;

@@ -26,6 +26,7 @@ enum GLTFErrorType
     GLTFError_UNKNOWN_MESH_PRIMITIVE_VAR,
     GLTFError_BUFFER_PARSE_FAIL,
     GLTFError_BIN_NOT_EXIST,
+    GLTFError_FILE_NOT_FOUND,
     GLTFError_UNKNOWN_DESCRIPTOR,
     GLTFError_MAX
 };
@@ -86,7 +87,6 @@ typedef struct GLTFPrimitive_
 
     // internal use only. after parsing this is useless
     short indiceIndex; // indice index to accessor
-    short vertexIndex; // vertex index to accessor
     char  material;    // material index
     char  mode;        // 4 is triangle
 } GLTFPrimitive;
@@ -118,8 +118,8 @@ typedef struct GLTFCamera_
 
 typedef struct GLTFSampler_
 {
-    char magFilter; // 0 GL_NEAREST, or 1 GL_LINEAR
-    char minFilter; // 0 GL_NEAREST, or 1 GL_LINEAR
+    char magFilter; // 0 = GL_NEAREST = 0x2600 = 9728, or 1 = 0x2601 = GL_LINEAR = 9729
+    char minFilter; // 0 or 1 like above
     char wrapS; // 0 GL_REPEAT, 1 GL_CLAMP_TO_EDGE, 2 GL_CLAMP_TO_BORDER, 3 GL_MIRRORED_REPEAT
     char wrapT; //       10497               33071                 33069                 33648
 } GLTFSampler;

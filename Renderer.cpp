@@ -50,11 +50,12 @@ Texture CreateTexture(int width, int height, void* data)
     glBindTexture(GL_TEXTURE_2D, texture.handle);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     texture.width  = width;
     texture.height = height;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
     CheckAndLogGlError();
     return texture;
 }
@@ -108,6 +109,16 @@ Mesh CreateMesh(void* vertexBuffer, void* indexBuffer, int numVertex, int numInd
     return mesh;
 }
 
+inline char GLTFFilterToOGLFilter(char filter) {
+    return (int)filter + 0x2600; // // GL_NEAREST 0x2600 9728, GL_LINEAR 0x2601 9729
+}
+
+inline unsigned int GLTFWrapToOGLWrap(int wrap) {
+    unsigned int values[5] { 0x2901, 0x812F, 0x812D, 0x8370 }; // GL_REPEAT GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT
+    ASSERT(wrap < 5 && "wrong or undefined sampler type!"); 
+    return values[wrap];
+}
+
 Mesh CreateMeshFromGLTF(GLTFPrimitive* gltf)
 {
     Mesh mesh;
@@ -132,11 +143,10 @@ Mesh CreateMeshFromGLTF(GLTFPrimitive* gltf)
     while (attributes)
     {
         glBindBuffer(GL_ARRAY_BUFFER, mesh.vertexHandles[v]);
- 
         // all attributes are type of float position, texcoord..
         int size = sizeof(float) * attribIndexToNumComp[i];
         glBufferData(GL_ARRAY_BUFFER, (uint64)size * mesh.numVertex, gltf->vertexAttribs[i], GL_STATIC_DRAW);
-        glVertexAttribPointer(v, attribIndexToNumComp[i], GL_FLOAT, GL_FALSE, 0, nullptr); // all attributes are type of float position, texcoord..
+        glVertexAttribPointer(v, attribIndexToNumComp[i], GL_FLOAT, GL_FALSE, 0, nullptr); // all attributes are type of float, position, texcoord..
         glEnableVertexAttribArray(v);
         // traverse set bits instead of traversing each bit
         attributes &= ~1;
@@ -294,25 +304,21 @@ void SetTexture(Texture texture, int index)
 
 extern int windowHeight_, windowWidth_;
 
+static Matrix4 modelViewProjection;
+static Matrix4 modelMatrix;
+
+void SetModelViewProjection(float* mvp) { SmallMemCpy(&modelViewProjection.m[0][0], mvp, 16 * sizeof(float)); }
+void SetModelMatrix(float* model)       { SmallMemCpy(&modelMatrix.m[0][0], model, 16 * sizeof(float)); }
+
 void RenderMesh(Mesh mesh)
 {
     glBindVertexArray(mesh.vertexLayoutHandle);
- 
-    static float f = 1.0f; f += 0.01f;
-    const float distance = 4.14159265f; // this is distance from cube but I did use pi anyways  
-    Vector3f position    = MakeVec3(sinf(f) * distance, 0.0f, cosf(f) * distance);
-    float verticalFOV    = 65.0f, nearClip = 0.01f, farClip = 500.0f;
-
-    Matrix4 projection = Matrix4::PerspectiveFovRH(verticalFOV * DegToRad, windowWidth_, windowHeight_, nearClip, farClip);
-    Matrix4 model      = Matrix4::CreateScale(0.015f, 0.015f, 0.015f) * Matrix4::FromPosition(0.0f, -1.0f, 0.0f); // * Matrix4::RotationFromEuler(90.0f * RadToDeg, 0.3f, 0.0f)
-    Matrix4 view       = Matrix4::LookAtRH(position, -Vector3f::Normalize(position), Vector3f::Up());
-    Matrix4 mvp        = model * view * projection;
 
     GLint mvpLoc   = glGetUniformLocation(currentShader, "mvp");
     GLint modelLoc = glGetUniformLocation(currentShader, "model");
 
-    glUniformMatrix4fv(mvpLoc  , 1, false, &mvp.m[0][0]);
-    glUniformMatrix4fv(modelLoc, 1, false, &model.m[0][0]);
+    glUniformMatrix4fv(mvpLoc  , 1, false, &modelViewProjection.m[0][0]);
+    glUniformMatrix4fv(modelLoc, 1, false, &modelMatrix.m[0][0]);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexHandle);
     glDrawElements(GL_TRIANGLES, mesh.numIndex, mesh.indexType, nullptr);

@@ -134,7 +134,7 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharact
     rewind(file);
 
     // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = (char*)malloc(file_size + 1); // +1 for null terminator
+    if (buffer == nullptr) buffer = (char*)calloc(file_size + 40, 1); // +1 for null terminator
 
     if (buffer == NULL) {
         fclose(file);

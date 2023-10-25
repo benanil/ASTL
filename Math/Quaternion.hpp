@@ -240,6 +240,13 @@ __forceinline Quaternion MakeQuat(float _x, float _y, float _z, float _w)
 	return v; 
 }
 
+__forceinline Quaternion MakeQuat(float* _x)
+{
+	Quaternion v;
+	v.vec = _mm_loadr_ps(_x);
+	return v;
+}
+
 #else
 // todo
 
@@ -436,6 +443,12 @@ __forceinline Quaternion MakeQuat(float _x, float _y, float _z, float _w)
 {
 	Quaternion v{_x, _y, _z, _w};
 	return v; 
+}
+
+__forceinline Quaternion MakeQuat(float* _x)
+{
+	Quaternion v{ _x[0], _x[1], _x[2], _x[3] };
+	return v;
 }
 
 #endif // AX_SUPPORT_SSE
