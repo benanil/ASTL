@@ -41,9 +41,9 @@ Mesh CreateMesh(void* vertexBuffer, void* indexBuffer, int numVertex, int numInd
 
 Mesh CreateMeshFromGLTF(GLTFPrimitive* mesh);
 
-Texture CreateTexture(int width, int height, void* data);
+Texture CreateTexture(int width, int height, void* data, bool mipmap);
 
-Texture LoadTexture(const char* path);
+Texture LoadTexture(const char* path, bool mipmap);
 
 Shader LoadShader(const char* vertexSource, const char* fragmentSource);
 

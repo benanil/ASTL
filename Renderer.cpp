@@ -43,24 +43,24 @@ bool CheckAndLogGlError()
 }
 
 // for now only .jpg files supported
-Texture CreateTexture(int width, int height, void* data)
+Texture CreateTexture(int width, int height, void* data, bool mipmap)
 {
     Texture texture;
     glGenTextures(1, &texture.handle);
     glBindTexture(GL_TEXTURE_2D, texture.handle);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mipmap ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     texture.width  = width;
     texture.height = height;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    if (mipmap) glGenerateMipmap(GL_TEXTURE_2D);
     CheckAndLogGlError();
     return texture;
 }
 
-Texture LoadTexture(const char* path)
+Texture LoadTexture(const char* path, bool mipmap)
 {
     int width, height, channels;
     unsigned char* image = nullptr;
@@ -79,7 +79,7 @@ Texture LoadTexture(const char* path)
 #else
     image = stbi_load(path, &width, &height, &channels, 3);
     ASSERT(image);
-    Texture texture = CreateTexture(width, height, image);
+    Texture texture = CreateTexture(width, height, image, mipmap);
     return texture;
 #endif
 }

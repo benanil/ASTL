@@ -80,6 +80,8 @@ typedef struct GLTFPrimitive_
     // pointers to binary file to lookup position, texture, normal..
     void* vertexAttribs[6]; //<-when we are parsing we use this as an indicator to accessor.
     void* indices;
+    
+    int   vertexComponentTypes[6]; //
     int   attributes; // GLTFAttribType Position, Normal, TexCoord, Tangent, masks
     int   indexType; // GL_UNSIGNED_INT, GL_UNSIGNED_BYTE.. 
     int   numIndices;
@@ -133,28 +135,35 @@ typedef struct GLTFScene_
 
 typedef struct ParsedGLTF_
 {
-    short numMeshes;
-    short numNodes;
-    short numMaterials;
-    short numTextures;
-    short numImages;
-    short numSamplers;
-    short numCameras;
-    short numScenes;
 
-    short defaultSceneIndex;
+    unsigned long long defaultSceneIndex;
     GLTFErrorType error;
 
     void* stringAllocator;
     void* intAllocator;
 
+    unsigned long long numMeshes;
     GLTFMesh*     meshes;
+    
+    unsigned long long numNodes;
     GLTFNode*     nodes;
+    
+    unsigned long long numMaterials;
     GLTFMaterial* materials;
+    
+    unsigned long long numTextures;
     GLTFTexture*  textures;
+    
+    unsigned long long numImages;
     GLTFImage*    images;
+    
+    unsigned long long numSamplers;
     GLTFSampler*  samplers;
+    
+    unsigned long long numCameras;
     GLTFCamera*   cameras;
+
+    unsigned long long numScenes;
     GLTFScene*    scenes;
 } ParsedGLTF;
 

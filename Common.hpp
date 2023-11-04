@@ -181,13 +181,13 @@
 #endif
 
 #if defined(__clang__)
-#   define AX_NO_VECTORIZE _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
+#   define AX_NO_UNROLL _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
 #elif defined(__GNUC__) >= 8
-#   define AX_NO_VECTORIZE _Pragma("GCC unroll 0")
+#   define AX_NO_UNROLL _Pragma("GCC unroll 0")
 #elif defined(_MSC_VER)
-#   define AX_NO_VECTORIZE __pragma(loop(no_vector))
+#   define AX_NO_UNROLL __pragma(loop(no_vector))
 #else
-#   define AX_NO_VECTORIZE
+#   define AX_NO_UNROLL
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)

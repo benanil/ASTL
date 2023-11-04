@@ -15,22 +15,25 @@
 #include "../Renderer.hpp"
 #include "../Window.hpp"
 #include "../Common.hpp"
+#include "../Math/Matrix.hpp"
+#include <math.h>
 
 ParsedGLTF gltf;
 Shader     shader;
-Mesh       mesh;
-Texture    texture;
+Mesh*      meshes;
+Texture*   textures;
 Texture androidRobotTexture;
 
 const char* fragmentShaderSource =
 "#version 150 core\n\
-out vec4 color;\
-in vec2 texCoord;\
-uniform sampler2D tex;\
-void main(){\
-    color = texture(tex, texCoord);\
+out vec4 color;\n\
+in vec2 texCoord;\n\
+uniform sampler2D tex;\n\
+void main(){\n\
+    vec4 texColor = texture(tex, texCoord);\n\
+    // Apply gamma correction to the color channels\n\
+    color = vec4(pow(texColor.rgb, vec3(1.0 / 2.18)), texColor.a);\n\
 }";
-
 static Shader fullScreenShader{0};
 
 void AXInit()
@@ -43,36 +46,101 @@ void AXInit()
 int AXStart()
 {
     InitRenderer();
-    androidRobotTexture = LoadTexture("Textures/forest.jpg");
+    androidRobotTexture = LoadTexture("Textures/forest.jpg", false);
     fullScreenShader = CreateFullScreenShader(fragmentShaderSource);
-    gltf    = ParseGLTF("Meshes/Duck.gltf");
+    gltf    = ParseGLTF("Meshes/Sponza/scene.gltf");
     ASSERT(gltf.error == GLTFError_NONE);
-    shader  = ImportShader("Shaders/3DFirstVert.glsl", "Shaders/3DFirstFrag.glsl");
-    mesh    = CreateMeshFromGLTF(&gltf.meshes[0].primitives[0]);
-    texture = LoadTexture(gltf.images[0].path);
+    shader = ImportShader("Shaders/3DFirstVert.glsl", "Shaders/3DFirstFrag.glsl");
+    meshes = (Mesh*)calloc(sizeof(Mesh) * gltf.numMeshes, 1);
+
+    for (int i = 0; i < gltf.numMeshes; ++i)
+    {
+        meshes[i] = CreateMeshFromGLTF(&gltf.meshes[i].primitives[0]);
+    }
+    
+    // textures = (Texture*)calloc(sizeof(Texture) * gltf.numImages, 1);
+    // 
+    // for (int i = 0; i < gltf.numImages; ++i)
+    // {
+    //     textures[i] = LoadTexture(gltf.images[i].path, true);
+    // }
     return 0;
 }
+
+extern int windowHeight_, windowWidth_;
 
 // do rendering and main loop here
 void AXLoop()
 {
     ToggleDepthTest(false);
-
     // works like a skybox
     RenderFullScreen(fullScreenShader, androidRobotTexture.handle);
-
     ToggleDepthTest(true);
 
+    Matrix4 projection, view, model, mvp;
+
+    if (true)//(gltf.numCameras == 0)
+    {
+        static float f = 1.0f; f += 0.001f;
+        const float distance = 15.14159265f; // this is distance from cube but I did use pi anyways  
+
+        float verticalFOV = 65.0f, nearClip = 0.01f, farClip = 500.0f;
+        Vector3f position = MakeVec3(sinf(f) * distance, 0.0f, cosf(f) * distance);
+        projection = Matrix4::PerspectiveFovRH(verticalFOV * DegToRad, windowWidth_, windowHeight_, nearClip, farClip);
+        view  = Matrix4::LookAtRH(position, -Vector3f::Normalize(position), Vector3f::Up());
+    }
+    else
+    {
+        GLTFCamera camera   = gltf.cameras[gltf.nodes[3].index];
+        Vector3f   position = MakeVec3(gltf.nodes[3].translation);
+        Quaternion rotation = MakeQuat(gltf.nodes[3].rotation);
+
+        projection = Matrix4::PerspectiveFovRH(camera.yFov, windowWidth_, windowHeight_, camera.zNear, camera.zFar);
+        view = Matrix4::LookAtRH(position, rotation.GetForward(), rotation.GetUp());
+    }
+    
     BindShader(shader);
-    SetTexture(texture, 0);
-    RenderMesh(mesh);
+
+    model = Matrix4::FromPosition(1.f, 0.f, 0.f) * Matrix4::CreateScale(1.f, 1.f, 1.f) * Matrix4::FromPosition(0.0f, -1.0f, 0.0f);
+    mvp = model * view * projection;
+
+    SetModelViewProjection(&mvp.m[0][0]);
+    SetModelMatrix(&model.m[0][0]);
+
+    // SetTexture(textures[0], 0); //SetTexture(textures[material.textures[0].index], 0);
+    RenderMesh(meshes[0]);
+
+    // for (int i = 0; i < gltf.numNodes; i++) 
+    // {
+    //     GLTFNode node = gltf.nodes[i];
+    //     // in this scene first mesh is shitty so pass that
+    //     if (node.type != 0) continue;
+    // 
+    //     model = Matrix4::CreateScale(1.0f, 1.0f, 1.0f) * Matrix4::FromQuaternion(node.rotation) * Matrix4::FromPosition(node.translation);
+    //     mvp = model * view * projection;
+    //     
+    //     SetModelViewProjection(&mvp.m[0][0]);
+    //     SetModelMatrix(&model.m[0][0]);
+    // 
+    //     GLTFMesh mesh = gltf.meshes[node.index];
+    //     for (int j = 0; j < mesh.numPrimitives; ++j)
+    //     {
+    //         GLTFMaterial material = gltf.materials[mesh.primitives[j].material];
+    //         SetTexture(textures[0], 0); //SetTexture(textures[material.textures[0].index], 0);
+    //         RenderMesh(meshes[node.index]);
+    //     }
+    // }
+
     Render();
 }
 
 void AXExit()
 {
     DeleteShader(shader);
-    DeleteMesh(mesh);
+
+    free(meshes);
+    free(textures);
+
     FreeGLTF(gltf);
     DeleteTexture(androidRobotTexture);
     DeleteShader(fullScreenShader);

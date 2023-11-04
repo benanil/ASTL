@@ -1,9 +1,19 @@
 
-//                                                         // 
-//        Simple fast and efficient parser for gltf        //
-//        Anilcan Gulkaya 2023                             //
-//        No License whatsoever do WTF you want.           //
-//                                                         //
+/****************************************************************
+*                                                               *
+*    Purpose:                                                   *
+*        Simple and efficient parser for GLTF format            *
+*        allows you to import 3d mesh, material and scene       *
+*    Author:                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com         *
+*    Restrictions:                                              *
+*        No animation and extension support yet.                *
+*    Warning:                                                   *
+*        Complex scenes will couse crash work in progress.      *
+*    License:                                                   *
+*        No License whatsoever do WTF you want.                 *
+*                                                               *
+****************************************************************/
 
 // Todo make this single file that people can include only one header and they are done.
 
@@ -30,8 +40,7 @@ void OutputDebugStringFormatted(const char *format, ...)
     OutputDebugString(buffer);
 }
 
-#define GLTFDebugLog(...) OutputDebugStringFormatted(__VA_ARGS__)
-
+#define GLTFDebugLog(...) 
 
 // https://github.com/nothings/stb/blob/master/deprecated/stretchy_buffer.h
 #define SBFree(a)         ((a) ? free(stb__sbraw(a)),0 : 0)
@@ -90,15 +99,16 @@ struct GLTFBuffer
 typedef FixedSizeGrowableAllocator<char> GLTFStringAllocator;
 
 // _otr must be const char*
-#ifdef AX_SUPPORT_SSE
+#if 0 // AX_SUPPORT_SSE
 //                                           generates bitmask for comparison for example if _otr == "names" 3rd argument is 0x11111
 #define StrCMP16(_str, _otr) StrCmp16(_str, _otr, (1 << (sizeof(_otr) - 1)) - 1)
 // compares strings length less than 16
 // Return 1 if strings are equal, 0 otherwise
 inline int StrCmp16(const char* a, const char* b, int cmpMask)
 {
-    int movemask = _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((const __m128i*)a),
-                                                    _mm_loadu_si128((const __m128i*)b)));
+    __m128i va = _mm_loadu_si128((const __m128i*)a);
+    __m128i vb = _mm_loadu_si128((const __m128i*)b);
+    int movemask = _mm_movemask_epi8(_mm_cmpeq_epi8(va, vb));
     return (movemask & cmpMask) == cmpMask;  
 }
 #else
@@ -113,10 +123,16 @@ inline int StrCmp16(const char* a, const char* b, int cmpMask)
 }
 #endif
 
+inline const char* SkipUntill(const char* curr, char character)
+{
+    AX_NO_UNROLL while (*curr != character) curr++;
+    return curr;
+}
+
 __private const char* GetStringInQuotes(char* str, const char* curr)
 {
     ++curr; // skip quote " 
-    while (*curr != '"') *str++ = *curr++;
+    AX_NO_UNROLL while (*curr != '"') *str++ = *curr++;
     *str = '\0'; // null terminate
     return ++curr;
 }
@@ -125,7 +141,7 @@ __private const char* SkipToNextNode(const char* curr, char open, char close)
 {
     int balance = 1;
     // skip to first open brackets
-    while (*curr++ != open);
+    AX_NO_UNROLL while (*curr++ != open);
 
     while (*curr && balance > 0)
     {
@@ -137,16 +153,18 @@ __private const char* SkipToNextNode(const char* curr, char open, char close)
 
 __private const char* CopyStringInQuotes(char*& str, const char* curr, GLTFStringAllocator& stringAllocator)
 {
-    while (*curr != '"') curr++; // find quote
+    curr = SkipUntill(curr, '"'); // find quote
     curr++; // skip "
     // get length in quotes
     const char* quote = curr;
-    while (*quote != '"') quote++;
+    curr = SkipUntill(quote, '"');
+
     int len = quote - curr;
-    char* alloc = stringAllocator.AllocateUninitialized(len + 1);
+    char* alloc = stringAllocator.AllocateUninitialized(len + 2);
     MemsetZero(alloc, len + 1);
     str = alloc;
-    while (*curr != '"') *alloc++ = *curr++;
+
+    AX_NO_UNROLL while (*curr != '"') *alloc++ = *curr++;
     *alloc = '\0'; // null terminate
     return ++curr;// skip quote
 }
@@ -171,13 +189,6 @@ __private const char* ParseAccessors(const char* curr, GLTFAccessor*& accessorAr
             if (*curr == '}') // next accessor
             {
                 SBPush(accessorArray, accessor);
-                GLTFDebugLog(
-                "\nbufferView: %i\n"
-                "componentType: %i\n"
-                "count: %i\n"
-                "byteOffset: %i\n"
-                "type: %i\n", accessor.bufferView, accessor.componentType, accessor.count, accessor.byteOffset, accessor.type);
-
                 MemsetZero(&accessor, sizeof(GLTFAccessor));
             }
 
@@ -220,7 +231,6 @@ __private const char* ParseBufferViews(const char* curr, GLTFBufferView*& buffer
 {
     GLTFBufferView bufferView{};
     curr += 13; // skip bufferViews"
-    GLTFDebugLog("buffer views\n");
 
     // read each buffer view
     while (true)
@@ -231,12 +241,6 @@ __private const char* ParseBufferViews(const char* curr, GLTFBufferView*& buffer
             if (*curr == '}') // next buffer view
             {
                 SBPush(bufferViews, bufferView);
-                GLTFDebugLog(
-                    "\nbuffer: %i\n"
-                    "byteOffset: %i\n"
-                    "byteLength: %i\n"
-                    "target: %i\n"
-                    "byteStride: %i\n", bufferView.buffer, bufferView.byteOffset, bufferView.byteLength, bufferView.target, bufferView.byteStride);
                 MemsetZero(&bufferView, sizeof(GLTFBufferView));
             }
             if (*curr++ == ']') return curr; // end all buffer views
@@ -288,7 +292,6 @@ __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffe
     while (binFilePath[binPathlen - 1] != '/' && binFilePath[binPathlen - 1] != '\\')
         binFilePath[--binPathlen] = '\0', endOfWorkDir--;
 
-    GLTFDebugLog("\nbuffers\n");
     // get path of 
     // read each buffer
     while (true)
@@ -314,7 +317,6 @@ __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffe
             while (*curr != '"') curr++;
             curr = GetStringInQuotes(endOfWorkDir, curr);
             buffer.uri = ReadAllFile(binFilePath);
-            GLTFDebugLog("file: %s\n", binFilePath);
             ASSERT(buffer.uri && "uri is not exist");
             if (!buffer.uri) return (const char*)GLTFError_BIN_NOT_EXIST;
         }
@@ -333,7 +335,7 @@ __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffe
 // write paths to path buffer, buffer is seperated by null terminators
 __private const char* ParseImages(const char* curr, GLTFImage*& images, GLTFStringAllocator& stringAllocator)
 {
-    while (*curr != '[') curr++;
+    curr = SkipUntill(curr, '[');
     curr++;
     
     GLTFImage image{};
@@ -351,7 +353,6 @@ __private const char* ParseImages(const char* curr, GLTFImage*& images, GLTFStri
         curr++;
         ASSERT(StrCMP16(curr, "uri") && "Unknown image value uri is the only val!");
         curr = CopyStringInQuotes(image.path, curr + 4, stringAllocator);
-        GLTFDebugLog("path: %s\n", image.path);
         SBPush(images, image);
     }
     return nullptr;
@@ -372,9 +373,7 @@ __private const char* ParseTextures(const char* curr, GLTFTexture*& textures, GL
             if (*curr == '}') // next buffer view
             {
                 SBPush(textures, texture);
-                GLTFDebugLog("sampler: %i\n"
-                             "source: %i\n"
-                             "name: %s\n", texture.sampler, texture.source, texture.name);
+                GLTFDebugLog("sampler: %i\n" "source: %i\n" "name: %s\n", texture.sampler, texture.source, texture.name);
                 MemsetZero(&texture, sizeof(GLTFTexture));
             }
 
@@ -414,19 +413,18 @@ __private const char* ParseAttributes(const char* curr, GLTFPrimitive* primitive
         
         curr++; // skip "
         int maskBefore = primitive->attributes;
-        if      (StrCMP16(curr, "POSITION"))   primitive->attributes |= GLTFAttribType_POSITION, GLTFDebugLog("POSITION");
-        else if (StrCMP16(curr, "NORMAL"))     primitive->attributes |= GLTFAttribType_NORMAL, GLTFDebugLog("NORMAL");
-        else if (StrCMP16(curr, "TEXCOORD_0")) primitive->attributes |= GLTFAttribType_TEXCOORD_0, GLTFDebugLog("TEXCOORD_0");
-        else if (StrCMP16(curr, "TANGENT"))    primitive->attributes |= GLTFAttribType_TANGENT, GLTFDebugLog("TANGENT");
-        else if (StrCMP16(curr, "TEXCOORD_1")) primitive->attributes |= GLTFAttribType_TEXCOORD_1, GLTFDebugLog("TEXCOORD_1");
+        if      (StrCMP16(curr, "POSITION"))   primitive->attributes |= GLTFAttribType_POSITION;
+        else if (StrCMP16(curr, "NORMAL"))     primitive->attributes |= GLTFAttribType_NORMAL;
+        else if (StrCMP16(curr, "TEXCOORD_0")) primitive->attributes |= GLTFAttribType_TEXCOORD_0;
+        else if (StrCMP16(curr, "TANGENT"))    primitive->attributes |= GLTFAttribType_TANGENT;
+        else if (StrCMP16(curr, "TEXCOORD_1")) primitive->attributes |= GLTFAttribType_TEXCOORD_1;
         // todo add joints and weights
         else { ASSERT(0 && "attribute variable unknown!"); return (const char*)GLTFError_UNKNOWN_ATTRIB; }
 
-        while (*curr++ != '"'); // skip quote because attribute in double quotes
+        SkipUntill(curr, '"'); // skip quote because attribute in double quotes
         // using bitmask will help us to order attributes correctly(sort) Position, Normal, TexCoord
         int newIndex = TrailingZeroCount(maskBefore ^ primitive->attributes);
         primitive->vertexAttribs[newIndex] = (void*)ParsePositiveNumber(curr);    
-        GLTFDebugLog("%i \n", (int)(uint64)primitive->vertexAttribs[newIndex]);
     }
 }
 
@@ -436,7 +434,6 @@ __private const char* ParseMeshes(const char* curr, GLTFMesh*& meshes, GLTFStrin
     curr += 7; // skip meshes" 
     GLTFMesh mesh{};
     int numMeshes = 0;
-    GLTFDebugLog("\nmeshes\n");
     // parse all meshes
     while (true)
     {
@@ -453,7 +450,6 @@ __private const char* ParseMeshes(const char* curr, GLTFMesh*& meshes, GLTFStrin
         
         if (StrCMP16(text, "name")) {
             curr = CopyStringInQuotes(mesh.name, curr, stringAllocator); 
-            GLTFDebugLog("name: %s\n", mesh.name);
             continue; 
         }
         else if (!StrCMP16(text, "primitives")) { 
@@ -470,9 +466,6 @@ __private const char* ParseMeshes(const char* curr, GLTFMesh*& meshes, GLTFStrin
                 if (*curr == '}')
                 {
                     SBPush(mesh.primitives, primitive);
-                    GLTFDebugLog("primitive.indices: %i\n", primitive.indiceIndex);
-                    GLTFDebugLog("primitive.mode: %i\n", primitive.mode);
-                    GLTFDebugLog("primitive.material: %i\n", primitive.material);
                     MemsetZero(&primitive, sizeof(GLTFPrimitive));
                     mesh.numPrimitives++;
                 }
@@ -498,7 +491,7 @@ __private const char* ParseNodes(const char* curr,
                                  GLTFStringAllocator& stringAllocator,
                                  FixedSizeGrowableAllocator<int>& intAllocator)
 {
-    while (*curr != '[') curr++;
+    curr = SkipUntill(curr, '[');
     curr++;
     GLTFNode node{};
     node.rotation[3] = 1.0f;
@@ -529,6 +522,7 @@ __private const char* ParseNodes(const char* curr,
         {
             // find how many childs there are:
             while (!IsNumber(*curr)) curr++;
+           
             const char* begin = curr;
             node.numChildren = 1;
             while (true)
@@ -578,7 +572,6 @@ __private const char* ParseNodes(const char* curr,
             node.translation[0] = ParseFloat(curr);
             node.translation[1] = ParseFloat(curr);
             node.translation[2] = ParseFloat(curr);
-            GLTFDebugLog("translation: %f, %f, %f\n", node.translation[0], node.translation[1], node.translation[2]);
         }
         else if (StrCMP16(curr, "rotation"))
         {
@@ -586,20 +579,17 @@ __private const char* ParseNodes(const char* curr,
             node.rotation[1] = ParseFloat(curr);
             node.rotation[2] = ParseFloat(curr);
             node.rotation[3] = ParseFloat(curr);
-            GLTFDebugLog("rotation: %f, %f, %f, %f\n", node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]);
         }
         else if (StrCMP16(curr, "scale"))
         {
             node.scale[0] = ParseFloat(curr);
             node.scale[1] = ParseFloat(curr);
             node.scale[2] = ParseFloat(curr);
-            GLTFDebugLog("scale: %f, %f, %f\n", node.scale[0], node.scale[1], node.scale[2]);
         }
         else if (StrCMP16(curr, "name"))
         {
             curr += 5;
             curr = CopyStringInQuotes(node.name, curr, stringAllocator);
-            GLTFDebugLog("name: %s\n", node.name);
             continue; // continue because we don't want to skip ] and it is not exist
         }
         else
@@ -619,7 +609,6 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
     curr += sizeof("camera'");
     char text[64]{};
     GLTFCamera camera{};
-    GLTFDebugLog("\nCameras\n");
     // parse all meshes
     while (true)
     {
@@ -629,7 +618,6 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
             {
                 SBPush(cameras, camera);
                 MemsetZero(&camera, sizeof(GLTFCamera));
-                GLTFDebugLog("Cameras\n");
             }
             if (*curr++ == ']') return curr; // end of cameras
         }
@@ -637,14 +625,14 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
         
         if (StrCMP16(text, "name")) {
             curr = CopyStringInQuotes(camera.name, curr, stringAllocator); 
-            GLTFDebugLog("Name: %s\n", camera.name);
             continue; 
         }
         if (StrCMP16(text, "type")) {
-            while (*curr++ != '"');
+            curr = SkipUntill(curr, '"');
+            curr++;
             camera.type = *curr == 'p'; // 0 orthographic 1 perspective 
-            while (*curr++ != '"'); // skip other quote because string is in double quote
-            GLTFDebugLog("type: %i\n", camera.type);
+            curr = SkipUntill(curr, '"');
+            curr++;
             continue; 
         }
         else if (!StrCMP16(text, "orthographic") && !StrCMP16(text, "perspective")) { 
@@ -659,12 +647,12 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
                 if (*curr++ == '}')  goto end_properties; // this is end of camera variables
             
             curr++;
-            if      (StrCMP16(curr, "zfar"))        { camera.zFar        = ParseFloat(curr); GLTFDebugLog("zfar: %f\n", camera.zFar);}
-            else if (StrCMP16(curr, "znear"))       { camera.zNear       = ParseFloat(curr); GLTFDebugLog("znear: %f\n", camera.zNear);}
-            else if (StrCMP16(curr, "aspectRatio")) { camera.aspectRatio = ParseFloat(curr); GLTFDebugLog("aspectRatio: %f\n", camera.aspectRatio);}
-            else if (StrCMP16(curr, "yfov"))        { camera.yFov        = ParseFloat(curr); GLTFDebugLog("yfov: %f\n", camera.yFov);}
-            else if (StrCMP16(curr, "xmag"))        { camera.xmag        = ParseFloat(curr); GLTFDebugLog("xmag: %f\n", camera.xmag);}
-            else if (StrCMP16(curr, "ymag"))        { camera.ymag        = ParseFloat(curr); GLTFDebugLog("ymag: %f\n", camera.ymag);}
+            if      (StrCMP16(curr, "zfar"))        { camera.zFar        = ParseFloat(curr); }
+            else if (StrCMP16(curr, "znear"))       { camera.zNear       = ParseFloat(curr); }
+            else if (StrCMP16(curr, "aspectRatio")) { camera.aspectRatio = ParseFloat(curr); }
+            else if (StrCMP16(curr, "yfov"))        { camera.yFov        = ParseFloat(curr); }
+            else if (StrCMP16(curr, "xmag"))        { camera.xmag        = ParseFloat(curr); }
+            else if (StrCMP16(curr, "ymag"))        { camera.ymag        = ParseFloat(curr); }
             else { ASSERT(0); return (const char*)GLTFError_UNKNOWN_CAMERA_VAR; }
         }
         end_properties:{}
@@ -675,9 +663,9 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
 __private const char* ParseScenes(const char* curr, GLTFScene*& scenes, 
           GLTFStringAllocator& stringAllocator, FixedSizeGrowableAllocator<int>& intAllocator)
 {
-    while (*curr++ != '[');
+    curr = SkipUntill(curr, '[');
+    curr++;
     GLTFScene scene{};
-    GLTFDebugLog("\nscanes\n");
     // read each node
     while (true)
     {
@@ -708,26 +696,22 @@ __private const char* ParseScenes(const char* curr, GLTFScene*& scenes,
             curr = begin;
             scene.nodes = intAllocator.AllocateUninitialized(scene.numNodes);
             scene.numNodes = 0;
-            GLTFDebugLog("nodes: ");
 
             while (*curr != ']')
             {
                 if (IsNumber(*curr))
                 {
                     scene.nodes[scene.numNodes] = ParsePositiveNumber(curr);
-                    GLTFDebugLog("%i, ", scene.nodes[scene.numNodes]);
                     scene.numNodes++;
                 }
                 curr++;
             }
-            GLTFDebugLog("\n");
             curr++;// skip ]
         }
         else if (StrCMP16(curr, "name"))
         {
             curr += 5;
             curr = CopyStringInQuotes(scene.name, curr, stringAllocator);
-            GLTFDebugLog("name: %s\n", scene.name);
         }
     } 
 }
@@ -745,7 +729,7 @@ inline char OGLWrapToWrap(int wrap)
 
 __private const char* ParseSamplers(const char* curr, GLTFSampler*& samplers)
 {
-    while (*curr != '[') curr++;
+    curr = SkipUntill(curr, '[');
     curr++;
     
     GLTFSampler sampler{};
@@ -767,17 +751,17 @@ __private const char* ParseSamplers(const char* curr, GLTFSampler*& samplers)
         ASSERT(*curr != '\0' && "parsing nodes not possible, probably forgot to close brackets!");
         curr++; // skips the "
 
-        if      (StrCMP16(curr, "magFilter")) sampler.magFilter = (char)(ParsePositiveNumber(curr) - 0x2600), GLTFDebugLog("magFilter %i\n", sampler.magFilter ); // GL_NEAREST 9728, GL_LINEAR 0x2601 9729
-        else if (StrCMP16(curr, "minFilter")) sampler.minFilter = (char)(ParsePositiveNumber(curr) - 0x2600), GLTFDebugLog("minFilter %i\n", sampler.minFilter ); // GL_NEAREST 9728, GL_LINEAR 0x2601 9729
-        else if (StrCMP16(curr, "wrapS"))     sampler.wrapS = (char)OGLWrapToWrap(ParsePositiveNumber(curr)), GLTFDebugLog("wrapS %i\n", sampler.wrapS );
-        else if (StrCMP16(curr, "wrapT"))     sampler.wrapT = (char)OGLWrapToWrap(ParsePositiveNumber(curr)), GLTFDebugLog("wrapT %i\n", sampler.wrapT );
+        if      (StrCMP16(curr, "magFilter")) sampler.magFilter = (char)(ParsePositiveNumber(curr) - 0x2600); // GL_NEAREST 9728, GL_LINEAR 0x2601 9729
+        else if (StrCMP16(curr, "minFilter")) sampler.minFilter = (char)(ParsePositiveNumber(curr) - 0x2600); // GL_NEAREST 9728, GL_LINEAR 0x2601 9729
+        else if (StrCMP16(curr, "wrapS"))     sampler.wrapS = (char)OGLWrapToWrap(ParsePositiveNumber(curr));
+        else if (StrCMP16(curr, "wrapT"))     sampler.wrapT = (char)OGLWrapToWrap(ParsePositiveNumber(curr));
         else { ASSERT(0 && "parse samplers failed!"); return (const char*)GLTFError_UNKNOWN; }
     }
 }
 
 __private const char* ParseMaterialTexture(const char* curr, GLTFMaterial::Texture& texture)
 {
-    while (*curr != '{') curr++;
+    curr = SkipUntill(curr, '[');
     curr++;
     while (true)
     {
@@ -790,19 +774,15 @@ __private const char* ParseMaterialTexture(const char* curr, GLTFMaterial::Textu
 
         if (StrCMP16(curr, "scale")) {
             curr = ParseFloat16(curr, texture.scale);
-            GLTFDebugLog("scale: %hd\n", texture.scale);
         }
         else if (StrCMP16(curr, "index")) {
             texture.index = (char)ParsePositiveNumber(curr);
-            GLTFDebugLog("index: %c\n", '0' + texture.index);
         }
         else if (StrCMP16(curr, "texCoord")) {
             texture.texCoord = (char)ParsePositiveNumber(curr);
-            GLTFDebugLog("texCoord: %c\n", '0' + texture.texCoord);
         }
         else if (StrCMP16(curr, "strength")) {
             curr = ParseFloat16(curr, texture.strength);
-            GLTFDebugLog("strength: %hd\n", texture.strength);
         }
         else if (StrCMP16(curr, "extensions")) {
             curr = SkipToNextNode(curr, '{', '}'); // currently extensions are not supported 
@@ -819,7 +799,7 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
 {
     // mesh, name, children, 
     // matrix, translation, rotation, scale
-    while (*curr != '[') curr++;
+    curr = SkipUntill(curr, '[');
     curr++; // skip '['
     GLTFMaterial material{};
     GLTFDebugLog("\nmaterials\n");
@@ -848,13 +828,14 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
         else if (StrCMP16(curr, "doubleSided"))
         {
             curr += 12; // skip doubleSided"
-            while (!IsLower(*curr)) curr++;
+            AX_NO_UNROLL while (!IsLower(*curr)) curr++;
             material.doubleSided = *curr == 't';
             GLTFDebugLog("doubleSided: %d\n", (int)material.doubleSided);
         }
         else if (StrCMP16(curr, "pbrMetallicRoug")) //pbrMetallicRoughhness
         {
-            while (*curr != '{') curr++;
+            curr = SkipUntill(curr, '{');
+    
             // parse until finish
             while (true)
             {
@@ -874,7 +855,7 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[2]);
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[3]);
                     GLTFDebugLog("baseColorFact: %hd, %hd, %hd\n", material.metallicRoughness.baseColorFactor[0], material.metallicRoughness.baseColorFactor[1], material.metallicRoughness.baseColorFactor[2]);
-                    while (*curr != ']') curr++;
+                    curr = SkipUntill(curr, ']');
                     curr++;
                 }
                 else if (StrCMP16(curr, "metallicFact"))
@@ -895,16 +876,16 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
             }
             pbr_end: {}
         }
-        else if (StrCMP16(curr, "normalTexture"))    texture = 0, GLTFDebugLog("normalTexture");
-        else if (StrCMP16(curr, "occlusionTextur"))  texture = 1, GLTFDebugLog("occlusionTextur");
-        else if (StrCMP16(curr, "emissiveTexture"))  texture = 2, GLTFDebugLog("emissiveTexture");
+        else if (StrCMP16(curr, "normalTexture"))    texture = 0;
+        else if (StrCMP16(curr, "occlusionTextur"))  texture = 1;
+        else if (StrCMP16(curr, "emissiveTexture"))  texture = 2;
         else if (StrCMP16(curr, "emissiveFactor")) 
         {
             curr = ParseFloat16(curr, material.emissiveFactor[0]); 
             curr = ParseFloat16(curr, material.emissiveFactor[1]);
             curr = ParseFloat16(curr, material.emissiveFactor[2]);
             GLTFDebugLog("emissiveFactor: %hd, %hd, %hd\n", material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
-            while (*curr != ']') curr++;
+            curr = SkipUntill(curr, ']');
             curr++;
         }
         else if (StrCMP16(curr, "extensions"))
@@ -913,7 +894,7 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
         }
         else if (StrCMP16(curr, "alphaMode"))
         {
-            while (*curr++ != ','); // skip this thing
+            curr = SkipUntill(curr, ','); // skip alpha mode
         }
         else {
             ASSERT(0 && "undefined material variable!");
@@ -946,7 +927,8 @@ __public ParsedGLTF ParseGLTF(const char* path)
     while (*curr)
     {
         // search for descriptor for example, accessors, materials, images, samplers
-        while (*curr && *curr != '"') curr++;
+        AX_NO_UNROLL while (*curr && *curr != '"') curr++;
+        
         if (*curr == '\0') break;
 
         curr++; // skips the "
@@ -1002,7 +984,7 @@ __public ParsedGLTF ParseGLTF(const char* path)
             // even though attrib definition in gltf is not ordered, this code will order it, 
             // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
             int j = 0;
-            while (attributes)
+            AX_NO_UNROLL while (attributes)
             {
                 accessor    = accessors[(uint64)primitive.vertexAttribs[j]];
                 view        = bufferViews[accessor.bufferView];

@@ -374,7 +374,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
     ShowWindow(hwnd, show);
     UpdateWindow(hwnd);
     
-    // first thing that we will se is going to be black color instead of white
+    // first thing that we will see is going to be black color instead of white
     // if we clear before starting the engine
     glClearColor(0.3f, 0.3f, 0.3f, 1.0f); 
     SwapBuffers(dc);
