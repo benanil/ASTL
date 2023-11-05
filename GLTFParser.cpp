@@ -28,18 +28,6 @@
 #define __private static
 #define __public 
 
-void OutputDebugStringFormatted(const char *format, ...)
-{
-    char buffer[4096];  // Adjust the buffer size as needed
-
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-
-    OutputDebugString(buffer);
-}
-
 #define GLTFDebugLog(...) 
 
 // https://github.com/nothings/stb/blob/master/deprecated/stretchy_buffer.h
@@ -179,7 +167,6 @@ __private const char* ParseAccessors(const char* curr, GLTFAccessor*& accessorAr
 {
     GLTFAccessor accessor{};
     curr += 10; // skip accessors"
-    GLTFDebugLog("\nAccessors\n");
     // read each accessor
     while (true)
     {
@@ -302,7 +289,6 @@ __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffe
             if (*curr == '}') // next buffer
             {
                 SBPush(bufferArray, buffer);
-                GLTFDebugLog("byteLength: %i\n", buffer.byteLength);
                 MemsetZero(&buffer, sizeof(GLTFBuffer));
                 MemsetZero(binFilePath, sizeof(binFilePath));
             }
@@ -339,7 +325,6 @@ __private const char* ParseImages(const char* curr, GLTFImage*& images, GLTFStri
     curr++;
     
     GLTFImage image{};
-    GLTFDebugLog("\nimages\n");
     // read each buffer
     while (true)
     {
@@ -362,7 +347,6 @@ __private const char* ParseTextures(const char* curr, GLTFTexture*& textures, GL
 {
     curr += sizeof("textures'");
     GLTFTexture texture{};
-    GLTFDebugLog("textures\n");
 
     // read each buffer
     while (true)
@@ -373,7 +357,6 @@ __private const char* ParseTextures(const char* curr, GLTFTexture*& textures, GL
             if (*curr == '}') // next buffer view
             {
                 SBPush(textures, texture);
-                GLTFDebugLog("sampler: %i\n" "source: %i\n" "name: %s\n", texture.sampler, texture.source, texture.name);
                 MemsetZero(&texture, sizeof(GLTFTexture));
             }
 
@@ -496,7 +479,6 @@ __private const char* ParseNodes(const char* curr,
     GLTFNode node{};
     node.rotation[3] = 1.0f;
     node.scale[0] = node.scale[1] = node.scale[2] = 1.0f; 
-    GLTFDebugLog("\nNodes\n");
     // read each node
     while (true)
     {
@@ -533,7 +515,6 @@ __private const char* ParseNodes(const char* curr,
             curr = begin;
             node.children = intAllocator.AllocateUninitialized(node.numChildren);
             node.numChildren = 0;
-            GLTFDebugLog("children: ");
 
             while (*curr != ']')
             {
@@ -598,7 +579,7 @@ __private const char* ParseNodes(const char* curr,
             return (const char*)GLTFError_UNKNOWN_NODE_VAR;
         }
 
-        while (*curr != ']') curr++;
+        curr = SkipUntill(curr, ']');
         curr++;
     }
     return nullptr;
@@ -802,7 +783,6 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
     curr = SkipUntill(curr, '[');
     curr++; // skip '['
     GLTFMaterial material{};
-    GLTFDebugLog("\nmaterials\n");
     // read each material
     while (true)
     {
@@ -823,14 +803,12 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
         if (StrCMP16(curr, "name"))
         {
             curr = CopyStringInQuotes(material.name, curr + 6, stringAllocator);
-            GLTFDebugLog("name: %s", material.name);
         }
         else if (StrCMP16(curr, "doubleSided"))
         {
             curr += 12; // skip doubleSided"
             AX_NO_UNROLL while (!IsLower(*curr)) curr++;
             material.doubleSided = *curr == 't';
-            GLTFDebugLog("doubleSided: %d\n", (int)material.doubleSided);
         }
         else if (StrCMP16(curr, "pbrMetallicRoug")) //pbrMetallicRoughhness
         {
@@ -854,19 +832,16 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[1]);
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[2]);
                     curr = ParseFloat16(curr, material.metallicRoughness.baseColorFactor[3]);
-                    GLTFDebugLog("baseColorFact: %hd, %hd, %hd\n", material.metallicRoughness.baseColorFactor[0], material.metallicRoughness.baseColorFactor[1], material.metallicRoughness.baseColorFactor[2]);
                     curr = SkipUntill(curr, ']');
                     curr++;
                 }
                 else if (StrCMP16(curr, "metallicFact"))
                 {
                     curr = ParseFloat16(curr, material.metallicRoughness.metallicFactor);
-                    GLTFDebugLog("metallicFact: %hd\n", material.metallicRoughness.metallicFactor);
                 }
                 else if (StrCMP16(curr, "roughnessFact"))
                 {
                     curr = ParseFloat16(curr, material.metallicRoughness.roughnessFactor);
-                    GLTFDebugLog("roughnessFact: %hd\n", material.metallicRoughness.roughnessFactor);
                 }
                 else
                 {
@@ -884,7 +859,6 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
             curr = ParseFloat16(curr, material.emissiveFactor[0]); 
             curr = ParseFloat16(curr, material.emissiveFactor[1]);
             curr = ParseFloat16(curr, material.emissiveFactor[2]);
-            GLTFDebugLog("emissiveFactor: %hd, %hd, %hd\n", material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]);
             curr = SkipUntill(curr, ']');
             curr++;
         }
@@ -984,7 +958,7 @@ __public ParsedGLTF ParseGLTF(const char* path)
             // even though attrib definition in gltf is not ordered, this code will order it, 
             // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
             int j = 0;
-            AX_NO_UNROLL while (attributes)
+            while (attributes)
             {
                 accessor    = accessors[(uint64)primitive.vertexAttribs[j]];
                 view        = bufferViews[accessor.bufferView];

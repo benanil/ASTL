@@ -1,4 +1,9 @@
 
+/****************************************************************
+*    Purpose: General purpose memory functions                  *
+*    Author : Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com    *
+****************************************************************/
+
 // T&& Move(T&& obj);
 // T&& Forward(T& obj);
 // T Exchange(T& obj, U&& new_value);
