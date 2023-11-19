@@ -23,7 +23,6 @@
 #include "Renderer.hpp"
 #include "IO.hpp"
 #include "Math/Matrix.hpp"
-#include <math.h>
 
 static uint32  emptyVao         = 0;
 

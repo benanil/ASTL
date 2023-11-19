@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ASTL_COMMON
+#define ASTL_COMMON
 
 #include "IntFltTypesLimits.hpp"
 
@@ -180,14 +181,16 @@
     #endif
 #endif
 
-#if defined(__clang__)
-#   define AX_NO_UNROLL _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
-#elif defined(__GNUC__) >= 8
-#   define AX_NO_UNROLL _Pragma("GCC unroll 0")
-#elif defined(_MSC_VER)
-#   define AX_NO_UNROLL __pragma(loop(no_vector))
-#else
-#   define AX_NO_UNROLL
+#ifndef AX_NO_UNROLL
+    #if defined(__clang__)
+    #   define AX_NO_UNROLL _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
+    #elif defined(__GNUC__) >= 8
+    #   define AX_NO_UNROLL _Pragma("GCC unroll 0")
+    #elif defined(_MSC_VER)
+    #   define AX_NO_UNROLL __pragma(loop(no_vector))
+    #else
+    #   define AX_NO_UNROLL
+    #endif
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -203,7 +206,7 @@
 #endif
 
 #if AX_CPP_VERSION < AX_CPP14
-// below c++ 14 does not support constexpr
+// below c++ 14 does not support constexpr functions
 #define __constexpr
 #else
 #define __constexpr constexpr
@@ -336,8 +339,10 @@ template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? 
 template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
 #else
 // using macro if less than 17 because we want this to be constexpr
-# define MIN(a, b) ((a) < (b) ? (a) : (b))
-# define MAX(a, b) ((a) > (b) ? (a) : (b))
+#   ifndef MIN
+#       define MIN(a, b) ((a) < (b) ? (a) : (b))
+#       define MAX(a, b) ((a) > (b) ? (a) : (b))
+#   endif
 #endif
 
 template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return MAX(a, MIN(b, x)); }
@@ -450,3 +455,5 @@ template <bool B, typename T, typename F>
 using ConditionalT = typename Conditional<B, T, F>::Type;
 
 AX_END_NAMESPACE
+
+#endif // ASTL_COMMON

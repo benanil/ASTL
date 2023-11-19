@@ -116,7 +116,7 @@ struct alignas(16) Matrix4
 	Vector4f& operator [] (int index) { return v[index]; }
 
 	Vector3f VECTORCALL  operator * (const Vector3f v)  noexcept { return Vector3Transform(v, *this); };
-	Vector4f VECTORCALL  operator * (const Vector4f& v) noexcept { Vector4f x; x.vec = Vector4Transform(v.vec, r); return x; };
+	Vector4f VECTORCALL  operator * (const Vector4f& v) noexcept { Vector4f x; x.vec = ::Vector4Transform(v.vec, r); return x; };
 
 	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(M, *this); };
 	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(M, *this); return *this; };
@@ -519,6 +519,13 @@ struct alignas(16) Matrix4
 		mResult.r[2] = _mm_shuffle_ps(vTemp3, vTemp4, _mm_shuffle(2, 0, 2, 0));
 		mResult.r[3] = _mm_shuffle_ps(vTemp3, vTemp4, _mm_shuffle(3, 1, 3, 1));
 		return mResult;
+	}
+
+	__forceinline static Vector4f VECTORCALL Vector4Transform(Vector4f V, const Matrix4& M)
+	{
+		Vector4f res;
+		res.vec = ::Vector4Transform(V.vec, M.r);
+		return res;
 	}
 
 	__forceinline static Vector3f VECTORCALL Vector3Transform(const Vector3f V, const Matrix4& M)

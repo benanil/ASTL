@@ -185,43 +185,68 @@ inline float ParseFloat(const char*& text)
     return (float)(sign * num);
 }
 
-inline int Pow10(int x) 
-{
-  int res = x != 0;
-  while (x-- > 0) res *= 10;
-  return res;
-}
+#ifndef AX_NO_UNROLL
+    #if defined(__clang__)
+    #   define AX_NO_UNROLL _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
+    #elif defined(__GNUC__) >= 8
+    #   define AX_NO_UNROLL _Pragma("GCC unroll 0")
+    #elif defined(_MSC_VER)
+    #   define AX_NO_UNROLL __pragma(loop(no_vector))
+    #else
+    #   define AX_NO_UNROLL
+    #endif  
+#endif
 
-inline int Log10(int n) // float version of this is declared in math.h
-{
-  return n < 10 ? 0 : 1 + Log10(n / 10);
-}
-
-// time complexity O(numDigits(x)), space complexity O(1)
-// @returns number of characters added
-inline int IntToString(char* ptr, int x, int afterPoint = 0)
-{
-    int len = Log10(x);
-    int blen = len;
+inline unsigned int Log10Algo(unsigned int n)
+{                                                                        
+	if (n <= 9) return 1;    
+	if (n <= 99) return 2;
+	if (n <= 999) return 3;
+	if (n <= 9999) return 4;
+	if (n <= 99999) return 5;
+	if (n <= 999999) return 6;
+	if (n <= 9999999) return 7;
+	if (n <= 99999999) return 8;
+	if (n <= 999999999) return 9;
+	if (n <= 2147483647) return 10; // 2147483647 = int max
+	return 0;
+}                                                                                        
+                                                                     
+// time complexity O(numDigits(x)), space complexity O(1)                                
+// @returns number of characters added                                                   
+inline int IntToString(char* ptr, int x, int afterPoint=0)                                      
+{                                                                                        
     int size = 0;
-
-    while (++blen <= afterPoint)
+    if (x < 0) ptr[size++] = '-', x = 0-x;
+    
+	int numDigits = Log10Algo(x);
+    int blen = numDigits;
+    
+    AX_NO_UNROLL while (++blen <= afterPoint)
     {
         ptr[size++] = '0';
     }
 
-    len = Pow10(len);
+	unsigned int const PowersOf10[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+	numDigits = PowersOf10[numDigits];
 
-    while (len)
+    while (numDigits)
     {
-        int digit = x / len;
+        int digit = x / numDigits;
         ptr[size++] = (char)(digit + '0');
-        x -= len * digit;
-        len /= 10;
+        x -= numDigits * digit;
+        numDigits /= 10;
     }
 
     ptr[size] = '\0';
     return size;
+}
+
+inline int Pow10(int x) 
+{
+	int res = x != 0;
+	while (x-- > 0) res *= 10;
+	return res;
 }
 
 // converts floating point to string

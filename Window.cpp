@@ -29,11 +29,18 @@ int windowPosY_    = 500;
 static char WindowName[128]{ 'A', 'S', 'T', 'L' };
 static void(*WindowMoveCallback)  (int, int) = nullptr;
 static void(*WindowResizeCallback)(int, int) = nullptr;
+static void(*MouseMoveCallback)(float, float) = nullptr;
+static void(*KeyPressCallback)(wchar_t) = nullptr;
+static void(*FocusChangedCallback)(bool) = nullptr;
 
 extern void AXInit();
 extern int  AXStart();
 extern void AXLoop();
 extern void AXExit();
+
+void UpdateRenderArea();
+
+#define AX_USE_WINDOW
 
 #if defined(AX_USE_WINDOW) && defined(__ANDROID__) 
 static void InitWindow()
@@ -107,6 +114,8 @@ void SetWindowResizeCallback(void(*callback)(int, int)) {}
 
 void SetWindowMoveCallback(void(*callback)(int, int)) {}
 
+void SetMouseMoveCallback(void(*callback)(float, float)) {}
+
 void GetWindowSize(int* x, int* y) { }
 
 void GetWindowPos(int* x, int* y) { }
@@ -120,6 +129,8 @@ void SetWindowName(const char* name) { }
 #define VC_EXTRALEAN
 #include <Windows.h>
 
+#pragma comment (lib, "gdi32.lib")
+#pragma comment (lib, "user32.lib")
 #pragma comment (lib, "opengl32.lib")
 
 static HWND hwnd = nullptr;
@@ -138,10 +149,14 @@ void SetWindowPosition(int x, int y)
     SetWindowPos(hwnd, nullptr, x, y, windowWidth_, windowHeight_, 0);
 }
 
-void SetWindowResizeCallback(void(*callback)(int, int)) { WindowResizeCallback = callback;       }
-void SetWindowMoveCallback  (void(*callback)(int, int)) { WindowMoveCallback = callback;         }
-void GetWindowSize          (int* x, int* y)            { *x = windowWidth_; *y = windowHeight_; }
-void GetWindowPos           (int* x, int* y)            { *x = windowPosX_; *y = windowPosY_;    }
+void SetFocusChangedCallback(void(*callback)(bool))      { FocusChangedCallback = callback; }
+void SetKeyPressCallback(void(*callback)(wchar_t))       { KeyPressCallback     = callback; }
+void SetMouseMoveCallback(void(*callback)(float, float)) { MouseMoveCallback    = callback; }
+void SetWindowResizeCallback(void(*callback)(int, int))  { WindowResizeCallback = callback; }
+void SetWindowMoveCallback(void(*callback)(int, int))    { WindowMoveCallback   = callback; }
+
+void GetWindowSize(int* x, int* y) { *x = windowWidth_; *y = windowHeight_; }
+void GetWindowPos(int* x, int* y)  { *x = windowPosX_; *y = windowPosY_;    }
 
 void SetWindowName(const char* name)
 {
@@ -157,29 +172,42 @@ void SetWindowName(const char* name)
     }
 }
 
-
-// Helper function to create an icon from image data
-HICON CreateIconFromImageData(const unsigned char* imageData, int width, int height, int numComponents) 
+void GetMonitorSize(int* width, int* height)
 {
-    BITMAPV5HEADER bi{};
-    bi.bV5Size     = sizeof(BITMAPV5HEADER);
-    bi.bV5Width    = width;
-    bi.bV5Height   = -height; // Negative height to indicate top-down bitmap
-    bi.bV5Planes   = 1;
-    bi.bV5BitCount = numComponents * 8;      
+    *width  = GetSystemMetrics(SM_CXSCREEN);
+    *height = GetSystemMetrics(SM_CYSCREEN);
+}
 
-    HBITMAP hBitmap = CreateBitmap(width, height, numComponents, 32, (const void*)imageData);
+// https://stackoverflow.com/questions/2382464/win32-full-screen-and-hiding-taskbar
+bool EnterFullscreen(int fullscreenWidth, int fullscreenHeight) 
+{
+    DEVMODE fullscreenSettings;
+    EnumDisplaySettings(NULL, 0, &fullscreenSettings);
+    windowWidth_  = fullscreenSettings.dmPelsWidth  = fullscreenWidth;
+    windowHeight_ = fullscreenSettings.dmPelsHeight = fullscreenHeight;
+    fullscreenSettings.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT;
 
-    if (!hBitmap) { perror("bitmap creation failed!"); return nullptr; }
+    SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+    SetWindowLongPtr(hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, fullscreenWidth, fullscreenHeight, SWP_SHOWWINDOW);
+    bool success = ChangeDisplaySettings(&fullscreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL;
+    ASSERT(success && "unable to make full screen");
+    ShowWindow(hwnd, SW_MAXIMIZE);
+    if (success && WindowResizeCallback) WindowResizeCallback(fullscreenWidth, fullscreenHeight);
+    return success;
+}
 
-    ICONINFO iconInfo = {0};
-    iconInfo.fIcon    = TRUE;
-    iconInfo.hbmMask  = NULL;
-    iconInfo.hbmColor = hBitmap;
-    HICON hIcon = CreateIconIndirect(&iconInfo);
-    DeleteObject(hBitmap);
-
-    return hIcon;
+bool ExitFullscreen(int windowX, int windowY, int windowedWidth, int windowedHeight) 
+{
+    SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_LEFT);
+    SetWindowLongPtr(hwnd, GWL_STYLE, WS_OVERLAPPEDWINDOW | WS_VISIBLE);
+    bool success = ChangeDisplaySettings(NULL, CDS_RESET) == DISP_CHANGE_SUCCESSFUL;
+    ASSERT(success && "unable to make windowed");
+    windowWidth_ = windowedWidth; windowHeight_ = windowedHeight;
+    SetWindowPos(hwnd, HWND_NOTOPMOST, windowX, windowY, windowedWidth, windowedHeight, SWP_SHOWWINDOW);
+    ShowWindow(hwnd, SW_RESTORE);
+    if (success && WindowResizeCallback) WindowResizeCallback(windowedWidth, windowedHeight);
+    return success;
 }
 
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt for all values
@@ -193,13 +221,14 @@ wglChoosePixelFormatARB_type* wglChoosePixelFormatARB = nullptr;
 
 BOOL(WINAPI* wglSwapIntervalEXT)(int) = nullptr;
 
-static void fatal_error(char* msg)
+#include <process.h> // exit
+static void FatalError(const char* msg)
 {
-  MessageBoxA(NULL, msg, "Error", MB_OK | MB_ICONEXCLAMATION);
-  exit(EXIT_FAILURE);
+    MessageBoxA(NULL, msg, "Error", MB_OK | MB_ICONEXCLAMATION);
+    exit(EXIT_FAILURE);
 }
 
-static void init_opengl_extensions(void)
+static void InitOpenGLExtensions(void)
 {
     // Before we can load extensions, we need a dummy OpenGL context, created using a dummy window.
     // We use a dummy window because you can only set the pixel format for a window once.
@@ -207,17 +236,17 @@ static void init_opengl_extensions(void)
     window_class.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     window_class.lpfnWndProc   = DefWindowProcA;
     window_class.hInstance     = GetModuleHandle(0);
-    window_class.lpszClassName = "Dummy_WGL_djuasiodwa";
+    window_class.lpszClassName = "Dummy_WGL_StagingWindow";
     
     if (!RegisterClass(&window_class)) 
-        fatal_error("Failed to register dummy OpenGL window.");
+        FatalError("Failed to register dummy OpenGL window.");
     
     HWND dummy_window = CreateWindowExA(0, window_class.lpszClassName, "ASTL Window",
                                         0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0,
                                         0, window_class.hInstance, 0);
     
     if (!dummy_window)
-        fatal_error("Failed to create dummy OpenGL window.");
+        FatalError("Failed to create dummy OpenGL window.");
     
     HDC dummy_dc = GetDC(dummy_window);
     PIXELFORMATDESCRIPTOR pfd{};
@@ -232,14 +261,14 @@ static void init_opengl_extensions(void)
     pfd.cStencilBits = 8;
     
     int pixel_format = ChoosePixelFormat(dummy_dc, &pfd);
-    if (!pixel_format) fatal_error("Failed to find a suitable pixel format.");
+    if (!pixel_format) FatalError("Failed to find a suitable pixel format.");
     
-    if (!SetPixelFormat(dummy_dc, pixel_format, &pfd)) fatal_error("Failed to set the pixel format.");
+    if (!SetPixelFormat(dummy_dc, pixel_format, &pfd)) FatalError("Failed to set the pixel format.");
     
     HGLRC dummy_context = wglCreateContext(dummy_dc);
-    if (!dummy_context) fatal_error("Failed to create a dummy OpenGL rendering context.");
+    if (!dummy_context) FatalError("Failed to create a dummy OpenGL rendering context.");
     
-    if (!wglMakeCurrent(dummy_dc, dummy_context)) fatal_error("Failed to activate dummy OpenGL rendering context.");
+    if (!wglMakeCurrent(dummy_dc, dummy_context)) FatalError("Failed to activate dummy OpenGL rendering context.");
     
     wglCreateContextAttribsARB = (wglCreateContextAttribsARB_type*)wglGetProcAddress("wglCreateContextAttribsARB");
     wglChoosePixelFormatARB    = (wglChoosePixelFormatARB_type*)wglGetProcAddress("wglChoosePixelFormatARB");
@@ -251,9 +280,9 @@ static void init_opengl_extensions(void)
     DestroyWindow(dummy_window);
 }
 
-static HGLRC init_opengl(HDC real_dc)
+static HGLRC InitOpenGL(HDC real_dc)
 {
-    init_opengl_extensions();
+    InitOpenGLExtensions();
     // Now we can choose a pixel format the modern way, using wglChoosePixelFormatARB.
     int pixel_format_attribs[] = {
         0x2001,          1, // WGL_DRAW_TO_WINDOW_ARB
@@ -274,12 +303,12 @@ static HGLRC init_opengl(HDC real_dc)
     UINT num_formats;
     wglChoosePixelFormatARB(real_dc, pixel_format_attribs, 0, 1, &pixel_format, &num_formats);
     if (!num_formats) 
-      fatal_error("Failed to set the OpenGL 3.3 pixel format.");
+      FatalError("Failed to set the OpenGL 3.3 pixel format.");
     
     PIXELFORMATDESCRIPTOR pfd;
     DescribePixelFormat(real_dc, pixel_format, sizeof(pfd), &pfd);
     if (!SetPixelFormat(real_dc, pixel_format, &pfd)) 
-      fatal_error("Failed to set the OpenGL 3.3 pixel format.");
+      FatalError("Failed to set the OpenGL 3.3 pixel format.");
     
     // Specify that we want to create an OpenGL 3.2 core profile context
     int gl32_attribs[] = {
@@ -291,95 +320,204 @@ static HGLRC init_opengl(HDC real_dc)
     
     HGLRC gl32_context = wglCreateContextAttribsARB(real_dc, 0, gl32_attribs);
     if (!gl32_context) 
-      fatal_error("Failed to create OpenGL 3.2 context.");
+      FatalError("Failed to create OpenGL 3.2 context.");
     
     if (!wglMakeCurrent(real_dc, gl32_context)) 
-      fatal_error("Failed to activate OpenGL 3.2 rendering context.");
+      FatalError("Failed to activate OpenGL 3.2 rendering context.");
     
     return gl32_context;
 }
 
-static LRESULT CALLBACK window_callback(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
+// Input Code
+unsigned long g_axDownKeys[2]{};
+unsigned long g_axLastKeys[2]{};
+unsigned long g_axPressedKeys[2]{};
+unsigned long g_axReleasedKeys[2]{};
+// mouse
+int g_axMouseDown = 0, g_axMouseLast = 0, g_axMousePressed = 0, g_axMouseReleased = 0;
+
+inline bool GetBit128(unsigned long bits[2], int idx)   { return !!(bits[idx > 63] & (1ul << (idx & 63ul))); }
+inline void SetBit128(unsigned long bits[2], int idx)   { bits[idx > 63] |= 1ul << (idx & 63); }
+inline void ResetBit128(unsigned long bits[2], int idx) { bits[idx > 63] &= ~(1ul << (idx & 63)); }
+
+bool GetKeyDown(char c)     { return GetBit128(g_axDownKeys, c); }
+
+bool GetKeyReleased(char c) { return GetBit128(g_axReleasedKeys, c); }
+
+bool GetKeyPressed(char c)  { return GetBit128(g_axPressedKeys, c); }
+
+static void SetPressedAndReleasedKeys()
+{
+    g_axReleasedKeys[0] = g_axLastKeys[0] & ~g_axDownKeys[0];
+    g_axReleasedKeys[1] = g_axLastKeys[1] & ~g_axDownKeys[1];
+    g_axPressedKeys[0] = ~g_axLastKeys[0] & g_axDownKeys[0];
+    g_axPressedKeys[1] = ~g_axLastKeys[1] & g_axDownKeys[1];
+    // Mouse
+    g_axMouseReleased = g_axMouseLast & ~g_axMouseDown;
+    g_axMousePressed  = ~g_axMouseLast & g_axMouseDown;
+}
+
+static void RecordLastKeys() {
+    g_axLastKeys[0] = g_axDownKeys[0];
+    g_axLastKeys[1] = g_axDownKeys[1];
+ 
+    g_axMouseLast = g_axMouseDown;
+}
+
+bool GetMouseDown(MouseButton button)     { return !!(g_axMouseDown & button); }
+bool GetMouseReleased(MouseButton button) { return !!(g_axMouseReleased & button); }
+bool GetMousePressed(MouseButton button)  { return !!(g_axMousePressed & button); }
+
+void GetMousePos(float* x, float* y)
+{
+    ASSERT((uint64_t)x & (uint64_t)y); // shouldn't be nullptr
+    POINT point;
+    GetCursorPos(&point);
+    *x = (float)point.x;
+    *y = (float)point.y;
+}
+
+void SetMousePos(float x, float y)
+{
+    SetCursorPos((int)x, (int)y);
+}
+
+float g_axMousePosX = 0.0, g_axMousePosY = 0.0f;
+
+void GetMouseWindowPos(float* x, float* y)
+{
+    *x = g_axMousePosX; *y = g_axMousePosY;
+}
+
+void SetMouseWindowPos(float x, float y)
+{
+    SetMousePos(windowPosX_ + x, windowPosY_ + y);
+}
+
+static LRESULT CALLBACK WindowCallback(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     LRESULT result = 0;
-    
+    wchar_t wch = 0;
+
     switch (msg)
     {
-    case WM_SIZE:
-        windowWidth_  = LOWORD(lparam);
-        windowHeight_ = HIWORD(lparam);
-        UpdateRenderArea();
-    break;
-    case WM_MOVE:
-        windowPosX_ = LOWORD(lparam);
-        windowPosY_ = HIWORD(lparam);
+        case WM_MOUSEMOVE:
+            g_axMousePosX = (float)LOWORD(lparam); 
+            g_axMousePosY = (float)HIWORD(lparam); 
+            if (MouseMoveCallback) MouseMoveCallback(g_axMousePosX, g_axMousePosY);
+            break;
+        case WM_LBUTTONDOWN: g_axMouseDown |= MouseButton_Left; break;
+        case WM_RBUTTONDOWN: g_axMouseDown |= MouseButton_Right; break;
+        case WM_MBUTTONDOWN: g_axMouseDown |= MouseButton_Middle; break;
+        case WM_LBUTTONUP:   g_axMouseDown &= ~MouseButton_Left; break;
+        case WM_RBUTTONUP:   g_axMouseDown &= ~MouseButton_Right; break;
+        case WM_MBUTTONUP:   g_axMouseDown &= ~MouseButton_Middle; break;
+        case WM_XBUTTONUP:   g_axMouseDown &= ~MouseButton_Middle; break;
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+        {
+            if (wparam > 127) break;
+            SetBit128(g_axDownKeys, wparam);
+            break;
+        }
+        case WM_SETFOCUS:
+        case WM_KILLFOCUS:
+            if (FocusChangedCallback) FocusChangedCallback(msg == WM_SETFOCUS);
+            break;
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+        {
+            if (wparam > 127) break;
+            ResetBit128(g_axDownKeys, wparam);
+            break;
+        }
+        case WM_CHAR:
+            ::MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (char*)&wparam, 1, &wch, 1);
+            if (KeyPressCallback) KeyPressCallback(wch);
         break;
-    case WM_CLOSE:
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        result = DefWindowProcA(window, msg, wparam, lparam);
-        break;
+        case WM_SIZE:
+            windowWidth_  = LOWORD(lparam);
+            windowHeight_ = HIWORD(lparam);
+            UpdateRenderArea();
+            if (WindowResizeCallback) WindowResizeCallback(windowWidth_, windowHeight_);
+            break;
+        case WM_MOVE:
+            windowPosX_ = LOWORD(lparam);
+            windowPosY_ = HIWORD(lparam);
+            break;
+        case WM_CLOSE:
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            result = DefWindowProcA(window, msg, wparam, lparam);
+            break;
     }
     return result;
 }
 
-static HWND create_window(HINSTANCE inst)
+static HWND WindowCreate(HINSTANCE inst)
 {
     WNDCLASSA window_class{};
     window_class.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    window_class.lpfnWndProc   = window_callback;
+    window_class.lpfnWndProc   = WindowCallback;
     window_class.hInstance     = inst;
     window_class.hCursor       = LoadCursor(0, IDC_ARROW);
     window_class.hbrBackground = 0;
     window_class.lpszClassName = "ASTLWindow";
+    window_class.hIcon         = LoadIconA(inst, "duck_icon");
     
-    if (!RegisterClassA(&window_class)) fatal_error("Failed to register window.");
+    if (!RegisterClassA(&window_class))
+        FatalError("Failed to register window.");
     
     // Specify a desired width and height, then adjust the rect so the window's client area will be that size.
     RECT rect{};
     rect.right  = windowWidth_;
     rect.bottom = windowHeight_;
-    DWORD window_style = WS_OVERLAPPEDWINDOW;
+    const DWORD window_style = WS_OVERLAPPED     |
+                               WS_CAPTION        |
+                               WS_SYSMENU        |
+                               WS_MINIMIZEBOX    |
+                               WS_MAXIMIZEBOX;
+
     AdjustWindowRect(&rect, window_style, false);
     
-    HWND window = CreateWindowExA(
-      0,
-      window_class.lpszClassName,
-      WindowName,
-      window_style,
-      CW_USEDEFAULT,
-      CW_USEDEFAULT,
-      windowWidth_,
-      windowHeight_,
-      0,
-      0,
-      inst,
-      0);
+    HWND window = CreateWindowExA(0,
+                                  window_class.lpszClassName,
+                                  WindowName, window_style,
+                                  CW_USEDEFAULT, CW_USEDEFAULT,
+                                  windowWidth_, windowHeight_,
+                                  0, 0, inst, 0);
     
-    if (!window) fatal_error("Failed to create window.");
+    if (!window) FatalError("Failed to create window.");
     return window;
 }
+
+float g_axDeltaTime = 0.001f;
+float GetDeltaTime() { return g_axDeltaTime; }
 
 int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
 {
     AXInit();
-
-    hwnd        = create_window(inst);
+    
+    hwnd        = WindowCreate(inst);
     HDC   dc    = GetDC(hwnd);
-    HGLRC rc    = init_opengl(dc);
+    HGLRC rc    = InitOpenGL(dc);
     
     gladLoaderLoadGL();
+    
     ShowWindow(hwnd, show);
     UpdateWindow(hwnd);
-    
     // first thing that we will see is going to be black color instead of white
     // if we clear before starting the engine
     glClearColor(0.3f, 0.3f, 0.3f, 1.0f); 
     SwapBuffers(dc);
     
     AXStart();
+
+    LARGE_INTEGER frequency, prevTime, currentTime;
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&prevTime);
 
     bool running = true;
     while (running)
@@ -397,7 +535,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
                 DispatchMessageA(&msg);
             }
         }
+
+        SetPressedAndReleasedKeys();
         
+        QueryPerformanceCounter(&currentTime);
+        g_axDeltaTime = (float)(currentTime.QuadPart - prevTime.QuadPart) / frequency.QuadPart;
+        prevTime = currentTime;
+
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
@@ -406,6 +550,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
         SwitchToThread();
         wglSwapIntervalEXT(1); // vsync on
         SwapBuffers(dc);
+
+        RecordLastKeys();
     }
 
     AXExit();

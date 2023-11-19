@@ -1,0 +1,23 @@
+1 VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080904E4"
+    BEGIN
+      VALUE "CompanyName", "My Company Name"
+      VALUE "FileDescription", "ASTL Application"
+      VALUE "FileVersion", "1.0"
+      VALUE "InternalName", "astl_test"
+      VALUE "LegalCopyright", "Anilcan Gulkaya"
+      VALUE "OriginalFilename", "astl_test.exe"
+      VALUE "ProductName", "My App"
+      VALUE "ProductVersion", "1.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x809, 1252
+  END
+END

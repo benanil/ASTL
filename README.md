@@ -20,9 +20,11 @@ I've tried to use templates as less as possible, but library has templates but w
 what pushed me into this is compile times of standard library and its slow performance <br>
 with debug mode<br>
 ## Here is how you can run test code:
+to use Visual Studio:
 ```
 cmake . -Bbuild
 ```
+to use with gcc:
 ```
 g++ -std=c++17 -w -O3 -mavx2 -march=native ASTL.cpp AdventOfCodeTests.cpp Profiler.cpp -o astl_test
 ```
@@ -175,32 +177,12 @@ For example, the total lines of code for all vectors, including SIMD and non-SIM
 amount to only 440 lines. The Stack data structure consists of just 160 lines, and the QueueHeader totals 500 lines, including PriorityQueue.<br>
 The Transform class encapsulates position, rotation, and scale properties, and it can be used with Euler angles as well.<br>
 The Math.hpp header file contains all the essential math functions, including:<br>
-
-* Pow
-* Exp
-* Sqrt
-* Fract
-* Log
-* Log2
-* Log10
-* Floor
-* Sign
-* CopySign
-* Abs
-* FAbs
-* Min
-* Max
+<br>
+Pow, Exp, Sqrt, Fract, Log, Log2, Log10, Floor, Sign, CopySign, Abs, FAbs, Min, Max<br>
 
 Additionally, the library provides trigonometric functions such as:
 
-* Sin
-* Cos
-* Tan
-* ATan
-* Atan2
-* ASin
-* ACos
-<br>
+Sin, Cos, Tan, ATan, Atan2, ASin, ACos <br>
 Most of these functions are constexpr, and for those that are not,<br>
 links are provided so that you can modify them to be constexpr as well.<br>
 Although constexpr math functions are officially introduced in C++23, you can still use these functions with C++14.<br>
@@ -313,65 +295,6 @@ alignment at runtime, and to preform single instruction with __movsb you should 
 
 Also library has Move<T>, and Forward<T> functions instead of std::move and std::forward
 
-this tested code performs same with simd and without simd, and compared to memcpy this is almost same, sometimes faster
-```cpp
-inline void MemCpyAligned32(void* dst, const void* src, uint64_t sizeInBytes)
-{
-    uint32_t*       dp  = (uint32_t*)dst;
-    const uint32_t* sp  = (const uint32_t*)src;
-    const uint32_t* end = (const uint32_t*)((char*)src + (sizeInBytes >> 2));
-        
-    while (sp < end)
-    {
-        dp[0] = sp[0];
-        dp[1] = sp[1];
-        dp[2] = sp[2];
-        dp[3] = sp[3];
-        dp += 4, sp += 4;
-    }
-    
-    switch (sizeInBytes & 3)
-    {
-        case 3: *dp++ = *sp++;
-        case 2: *dp++ = *sp++;
-        case 1: *dp++ = *sp++;
-    };
-}
-
-// use size for struct/class types such as Vector3 and Matrix4,
-// and use MemCpy for big arrays or unknown size arrays
-template<int alignment = 0, int size = 0>
-inline void MemCpy(void* dst, const void* src, uint64_t sizeInBytes)
-{
-    if constexpr (size != 0)
-#ifdef _MSC_VER
-    __movsb((unsigned char*)dst, (unsigned char const*)src, size);
-#else
-    __builtin_memcpy(dst, src, size);
-#endif
-    else if (alignment == 8)
-        MemCpyAligned64(dst, src, sizeInBytes);
-    else if (alignment == 4)
-        MemCpyAligned32(dst, src, sizeInBytes);
-    else
-    {
-        // check if both has same alignment
-        const uint64_t alignXor = uint64_t(dst) ^ uint64_t(src); 
-        if (!(alignXor & 7))
-            MemCpyAligned64(dst, src, sizeInBytes);
-        else if (!(alignXor & 3))
-            MemCpyAligned32(dst, src, sizeInBytes);
-        else
-        {
-            const char* cend = (char*)((char*)src + sizeInBytes);
-            const char* scp = (const char*)src;
-            char* dcp = (char*)dst;
-        
-            while (scp < cend) *dcp++ = *scp++;
-        }
-    }
-}
-
 ```
 unfortunately I've used templates with, allocators but using alignment and size instead of
 templates will have less code generated and it will be faster to compile so it is in my todo list.
@@ -386,18 +309,6 @@ struct Allocator
     void Deallocate(T* ptr, int count) const;
     T* Reallocate(T* ptr, int oldCount, int count) const;
 };
-
-template<typename T>
-struct MallocAllocator
-{
-    static constexpr bool IsPOD = true;
-
-    T* Allocate(int count) const; 
-    T* AllocateUninitialized(int count) const;
-    void Deallocate(T* ptr, int count) const;
-    T* Reallocate(T* ptr, int oldCount, int count) const;
-};
-
 template<typename T>
 struct FixedSizeGrowableAllocator // for red black tree
 {
@@ -469,37 +380,17 @@ struct Bitset256
 
 ```
 
-To detect the runtime hardware SIMD (Single Instruction, Multiple Data) support, the code you provided can be formatted as follows:
+# Windowing
+ASTL supports windowing which means you can create window (only windows supported for now) <br>
+it works like glfw and SDL, supports keyboard and mouse input <br>
+to change the icon of the .exe <br>
+windres icon.rc -O coff -o icon.res <br>
+also you can set the application information in info.rc and execute this command <br>
+windres info.rc -O coff -o info.res <br>
 
-```cpp
-enum CPUIDBits : int
-{
-    CPUIDBits_SSE    = (1 << 25),
-    CPUIDBits_SSE2   = (1 << 26),
-    CPUIDBits_SSE3   = (1 << 9),
-    CPUIDBits_SSE4_1 = (1 << 19),
-    CPUIDBits_SSE4_2 = (1 << 20),
-    CPUIDBits_AVX2   = (1 << 5),
-    CPUIDBits_AVX512 = (1 << 16),
-};
+# Further More
 
-// sometimes you might need runtime extension detection.
-// recommended using global variable like this in a cpp file:
-// int g_ax_simd_bits = 0; or inline int g_ax_simd_bits = 0; in here.
-// then call AX_InitSIMD_CPUID only once in program lifetime
-// then use !!(g_ax_simd_bits & CPUIDBits_SSE2) to get the support value
-inline int AX_InitSIMD_CPUID()
-{
-    int info[4];
-    AX_CPUID(1, info);
-    int mask = 1;
-    mask |= info[3] & (CPUIDBits_SSE | CPUIDBits_SSE2);
-    mask |= info[2] & (CPUIDBits_SSE3 | CPUIDBits_SSE4_1 | CPUIDBits_SSE4_2);
-    AX_CPUID(7, info);
-    mask |= info[1] & (CPUIDBits_AVX2 | CPUIDBits_AVX512);
-    return mask;
-}
-```
+you can detect the hardware SIMD (Single Instruction, Multiple Data) supporrt at runtime.
 
 also you can use BVH algorithm(Jacco Bikker's but optimized with SIMD) for Ray casting to the 3d scene<br>
 it will return mesh index, hit position hit color etc. algorithm located in BVH folder<br>

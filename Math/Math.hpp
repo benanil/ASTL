@@ -151,6 +151,27 @@ __forceinline __constexpr float Log2(float x)
 	return Log(x) / 0.6931471805599453094f; // ln(x) / ln(2) 
 }
 
+// https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
+__forceinline __constexpr unsigned int Log2(unsigned int v)
+{
+	unsigned int r = 0, shift = 0; // r = result of Log2(v)
+	r =     (v > 0xFFFF) << 4; v >>= r;
+	shift = (v > 0xFF  ) << 3; v >>= shift; r |= shift;
+	shift = (v > 0xF   ) << 2; v >>= shift; r |= shift;
+	shift = (v > 0x3   ) << 1; v >>= shift; r |= shift;
+	return r | (v >> 1);
+}
+
+inline unsigned int Log10(unsigned int v)
+{                                                   // this would work too
+	static unsigned int const PowersOf10[] = {      // if (n <= 9) return 1;    
+		1, 10, 100, 1000, 10000, 100000,            // if (n <= 99) return 2;
+		1000000, 10000000, 100000000, 1000000000    // if (n <= 999) return 3;
+	};                                              // ...
+	unsigned int t = (Log2(v) + 1) * 1233 >> 12;    // if (n <= 2147483647) return 10; // 2147483647 = int max
+	return t - (v < PowersOf10[t]);                                                      
+}                                                                                        
+
 __forceinline __constexpr bool IsZero(float x) noexcept { return Abs(x) <= 0.0001f; }
 __forceinline __constexpr bool AlmostEqual(float x, float  y) noexcept { return Abs(x-y) <= 0.001f; }
 __forceinline __constexpr float Sign(float x, float y) { return y < 0.0f ? -x : x; } //!< maybe use templates?
@@ -322,7 +343,7 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 	alignas(16) float a[4];
     half b[8]; 
 	SmallMemCpy(b, x, n * sizeof(half));
-	_mm_store_ps(a, _mm_cvtph_ps(_mm_loadu_epi16(x))); // MSVC does not have scalar instructions.
+	_mm_store_ps(a, _mm_cvtph_ps(_mm_loadu_epi16(b))); // MSVC does not have scalar instructions.
 	SmallMemCpy(res, a, n * sizeof(float));
 #else
 	for (int i = 0; i < n; i++)

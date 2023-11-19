@@ -1,34 +1,29 @@
 
-/****************************************************************
-*                                                               *
-*    Purpose:                                                   *
-*        Simple and efficient parser for GLTF format            *
-*        allows you to import 3d mesh, material and scene       *
-*    Author:                                                    *
-*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com         *
-*    Restrictions:                                              *
-*        No animation and extension support yet.                *
-*    Warning:                                                   *
-*        Complex scenes will couse crash work in progress.      *
-*    License:                                                   *
-*        No License whatsoever do WTF you want.                 *
-*                                                               *
-****************************************************************/
+/*****************************************************************
+*                                                                *
+*    Purpose:                                                    *
+*        Simple and efficient parser for GLTF format             *
+*        allows you to import 3d mesh, material and scene        *
+*    Author:                                                     *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com          *
+*    Restrictions:                                               *
+*        No animation and extension support yet.                 *
+*    Warning:                                                    *
+*        Complex scenes will couse crash work in progress.       *
+*    License:                                                    *
+*        No License whatsoever do WTF you want.                  *
+*                                                                *
+*****************************************************************/
 
-// Todo make this single file that people can include only one header and they are done.
-
+#include <memory.h>
+#include <stdint.h>
 #include "GLTFParser.hpp"
-#include "String.hpp"
-#include "Array.hpp"
-#include "Algorithms.hpp"
-#include <Windows.h>
+#include "Memory.hpp"
 #include "IO.hpp"
-#include <stdarg.h>
+#include "Algorithms.hpp"
 
 #define __private static
 #define __public 
-
-#define GLTFDebugLog(...) 
 
 // https://github.com/nothings/stb/blob/master/deprecated/stretchy_buffer.h
 #define SBFree(a)         ((a) ? free(stb__sbraw(a)),0 : 0)
@@ -47,11 +42,17 @@
 
 #pragma warning (disable : 6011)
 
+__forceinline int Max3GLTF(int a, int b, int c) 
+{
+    int res = a > b ? a : b;
+    return res > c ? res : c;
+}
+
 static void* stb__sbgrowf(void* arr, int increment, int itemsize)
 {
     int dbl_cur = arr ? CalculateArrayGrowth(stb__sbm(arr)) : 0;
     int min_needed = SBCount(arr) + increment;
-    int m = Max3(min_needed, dbl_cur, 16);
+    int m = Max3GLTF(min_needed, dbl_cur, 16);
     int* p;
     int size = (itemsize * m) + (sizeof(int) * 2);
     if (!arr) p = (int*)malloc(size);
@@ -86,9 +87,36 @@ struct GLTFBuffer
 
 typedef FixedSizeGrowableAllocator<char> GLTFStringAllocator;
 
-// _otr must be const char*
+#ifdef AX_SUPPORT_SSE
+inline int StringLength(const char* s)
+{
+    __m128i* mem = reinterpret_cast<__m128i*>(const_cast<char*>(s));
+    const __m128i zeros = _mm_setzero_si128();
+    
+    for (int result = 0; /**/; mem++, result += 16) 
+    {
+        const __m128i data = _mm_loadu_si128(mem);
+        const uint8_t mode = _SIDD_UBYTE_OPS | _SIDD_CMP_EQUAL_EACH | _SIDD_LEAST_SIGNIFICANT;
+
+        if (_mm_cmpistrc(data, zeros, mode)) 
+        {
+            int idx = _mm_cmpistri(data, zeros, mode);
+            return result + idx;
+        }
+    }
+}
+#else
+inline int StringLength(const char* s)
+{
+    const char* begin = s;
+    while (*s) s++;
+    return s - begin;
+}
+#endif
+
 #if 0 // AX_SUPPORT_SSE
-//                                           generates bitmask for comparison for example if _otr == "names" 3rd argument is 0x11111
+// _otr must be const char*
+// generates bitmask for comparison for example if _otr == "names" 3rd argument is 0x11111
 #define StrCMP16(_str, _otr) StrCmp16(_str, _otr, (1 << (sizeof(_otr) - 1)) - 1)
 // compares strings length less than 16
 // Return 1 if strings are equal, 0 otherwise
@@ -106,7 +134,7 @@ inline int StrCmp16(const char* a, const char* b, int cmpMask)
 {
     bool equal = true;
     while (*b)
-        equal &= *a++ == *b++;
+    equal &= *a++ == *b++;
     return equal;
 }
 #endif
@@ -115,6 +143,25 @@ inline const char* SkipUntill(const char* curr, char character)
 {
     AX_NO_UNROLL while (*curr != character) curr++;
     return curr;
+}
+
+__private const char* CopyStringInQuotes(char*& str, const char* curr, GLTFStringAllocator& stringAllocator)
+{
+    while (*curr != '"') curr++; // find quote
+    curr++; // skip "
+    // get length in quotes
+    const char* quote = curr;
+    while (*quote != '"') quote++;
+    int len = quote - curr;
+    char* alloc = stringAllocator.AllocateUninitialized(len + 1);
+    str = alloc;
+
+    while (*curr != '"')
+    {
+        *alloc++ = *curr++;
+    }
+    *alloc = '\0'; // null terminate
+    return ++curr;// skip quote
 }
 
 __private const char* GetStringInQuotes(char* str, const char* curr)
@@ -137,24 +184,6 @@ __private const char* SkipToNextNode(const char* curr, char open, char close)
         balance -= *curr++ == close;
     }
     return curr;
-}
-
-__private const char* CopyStringInQuotes(char*& str, const char* curr, GLTFStringAllocator& stringAllocator)
-{
-    curr = SkipUntill(curr, '"'); // find quote
-    curr++; // skip "
-    // get length in quotes
-    const char* quote = curr;
-    curr = SkipUntill(quote, '"');
-
-    int len = quote - curr;
-    char* alloc = stringAllocator.AllocateUninitialized(len + 2);
-    MemsetZero(alloc, len + 1);
-    str = alloc;
-
-    AX_NO_UNROLL while (*curr != '"') *alloc++ = *curr++;
-    *alloc = '\0'; // null terminate
-    return ++curr;// skip quote
 }
 
 __private const char* ParseFloat16(const char*& curr, short& flt)
@@ -180,7 +209,7 @@ __private const char* ParseAccessors(const char* curr, GLTFAccessor*& accessorAr
             }
 
             if (*curr == ']') // end all accessors
-                return ++curr;
+            return ++curr;
             curr++;
         }
         ASSERT(*curr != '\0' && "parsing accessors failed probably you forget to close brackets!");
@@ -195,7 +224,7 @@ __private const char* ParseAccessors(const char* curr, GLTFAccessor*& accessorAr
             int numQuotes = 0;
             // skip two quotes
             while (numQuotes < 2)
-                numQuotes += *curr++ == '"';
+            numQuotes += *curr++ == '"';
         }
         else if (StrCMP16(curr, "type"))
         {
@@ -210,7 +239,7 @@ __private const char* ParseAccessors(const char* curr, GLTFAccessor*& accessorAr
         else if (StrCMP16(curr, "min")) curr = SkipToNextNode(curr, '[', ']'); // skip min and max
         else if (StrCMP16(curr, "max")) curr = SkipToNextNode(curr, '[', ']');
         else 
-            return (const char*)GLTFError_UNKNOWN_ACCESSOR_VAR;
+        return (const char*)GLTFError_UNKNOWN_ACCESSOR_VAR;
     }
 }
 
@@ -243,7 +272,7 @@ __private const char* ParseBufferViews(const char* curr, GLTFBufferView*& buffer
             curr += 6; // we don't need name of the buffer.
             int numQuote = 0;
             while (numQuote < 2)
-              numQuote += *curr++ == '"';
+            numQuote += *curr++ == '"';
         }
         else {
             ASSERT(0 && "UNKNOWN buffer view value!");
@@ -251,6 +280,24 @@ __private const char* ParseBufferViews(const char* curr, GLTFBufferView*& buffer
         }
     }
 }
+
+#if _WIN32
+#ifndef _MINWINBASE_
+extern "C"
+{
+#define GetCurrentDirectory(bufferLength, buffer) GetCurrentDirectoryA(bufferLength, buffer)
+#ifndef _PROCESSENV_
+    __declspec(dllimport) uint64_t GetCurrentDirectoryA(uint64_t nBufferLength, char* lpBuffer);
+#endif
+}
+#endif
+#else
+inline uint64_t GetCurrentDirectory(char* buffer, uint64_t bufferSize)
+{
+    ASSERT(getcwd(buffer, bufferSize));
+    return StringLength(buffer);
+}
+#endif // windows.h included
 
 __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffer*& bufferArray)
 {
@@ -260,6 +307,12 @@ __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffe
     char* endOfWorkDir = binFilePath;
     int binPathlen = StringLength(path);
     
+#ifdef _WIN32
+    constexpr char ASTL_FILE_SEPERATOR = '\\';
+#else
+    constexpr char ASTL_FILE_SEPERATOR = '/';
+#endif
+
     if (path[0] >= 'C' && path[0] <= 'G' && path[1] == ':') // path is absolute
     {
         SmallMemCpy(binFilePath, path, binPathlen); // copy path to binfilePath: cwd/meshAdress/bla.gltf
@@ -277,7 +330,7 @@ __private const char* ParseBuffers(const char* curr, const char* path, GLTFBuffe
     
     // remove bla.gltf
     while (binFilePath[binPathlen - 1] != '/' && binFilePath[binPathlen - 1] != '\\')
-        binFilePath[--binPathlen] = '\0', endOfWorkDir--;
+    binFilePath[--binPathlen] = '\0', endOfWorkDir--;
 
     // get path of 
     // read each buffer
@@ -330,8 +383,8 @@ __private const char* ParseImages(const char* curr, GLTFImage*& images, GLTFStri
     {
         // search for name
         while (*curr && *curr != '"')
-            if (*curr++ == ']')
-                return curr; // end all images
+        if (*curr++ == ']')
+        return curr; // end all images
         
         ASSERT(*curr != '\0' && "parse images failed probably you forgot to close brackets");
 
@@ -361,7 +414,7 @@ __private const char* ParseTextures(const char* curr, GLTFTexture*& textures, GL
             }
 
             if (*curr == ']') // end all buffer views
-                return ++curr;
+            return ++curr;
             curr++;
         }
         ASSERT(*curr != '\0' && "parse images failed probably you forgot to close brackets");
@@ -392,7 +445,7 @@ __private const char* ParseAttributes(const char* curr, GLTFPrimitive* primitive
     while (true)
     {
         while (*curr != '"')
-            if (*curr++ == '}') return curr;
+        if (*curr++ == '}') return curr;
         
         curr++; // skip "
         int maskBefore = primitive->attributes;
@@ -404,10 +457,10 @@ __private const char* ParseAttributes(const char* curr, GLTFPrimitive* primitive
         // todo add joints and weights
         else { ASSERT(0 && "attribute variable unknown!"); return (const char*)GLTFError_UNKNOWN_ATTRIB; }
 
-        SkipUntill(curr, '"'); // skip quote because attribute in double quotes
+        curr = SkipUntill(curr, '"'); curr++;// skip quote because attribute in double quotes
         // using bitmask will help us to order attributes correctly(sort) Position, Normal, TexCoord
         int newIndex = TrailingZeroCount(maskBefore ^ primitive->attributes);
-        primitive->vertexAttribs[newIndex] = (void*)ParsePositiveNumber(curr);    
+        primitive->vertexAttribs[newIndex] = (void*)(uint64_t)ParsePositiveNumber(curr);    
     }
 }
 
@@ -469,6 +522,50 @@ __private const char* ParseMeshes(const char* curr, GLTFMesh*& meshes, GLTFStrin
     return nullptr;
 }
 
+__forceinline float Sqrt(float a)
+{
+#ifdef AX_SUPPORT_SSE
+    return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));  
+#elif defined(__clang__)
+    return __builtin_sqrt(a);
+#endif
+}
+
+inline void QuaternionFromMatrix(float* Orientation, const float* m)
+{
+    int i, j, k = 0;
+    const int numCol = 4;
+
+    float root, trace = m[0*numCol+0] + m[1 * numCol + 1] + m[2 * numCol + 2];
+
+    if (trace > 0.0f)
+    {
+        root = Sqrt(trace + 1.0f);
+        Orientation[3] = 0.5f * root;
+        root = 0.5f / root;
+        Orientation[0] = root * (m[1 * numCol + 2] - m[2 * numCol + 1]);
+        Orientation[1] = root * (m[2 * numCol + 0] - m[0 * numCol + 2]);
+        Orientation[2] = root * (m[0 * numCol + 1] - m[1 * numCol + 0]);
+    }
+    else
+    {
+        static const int Next[3] = { 1, 2, 0 };
+        i = 0;
+        i += m[1 * numCol + 1] > m[0 * numCol + 0]; // if (M.m[1][1] > M.m[0][0]) i = 1
+        if (m[2 * numCol + 2] > m[i * numCol + i]) i = 2;
+        j = Next[i];
+        k = Next[j];
+
+        root = Sqrt(m[i * numCol + i] - m[j * numCol + j] - m[k * numCol + k] + 1.0f);
+
+        Orientation[i] = 0.5f * root;
+        root = 0.5f / root;
+        Orientation[j] = root * (m[i * numCol + j] + m[j * numCol + i]);
+        Orientation[k] = root * (m[i * numCol + k] + m[k * numCol + i]);
+        Orientation[3] = root * (m[j * numCol + k] - m[k*numCol+j]);
+    } 
+}
+
 __private const char* ParseNodes(const char* curr,
                                  GLTFNode*& nodes,
                                  GLTFStringAllocator& stringAllocator,
@@ -521,7 +618,6 @@ __private const char* ParseNodes(const char* curr,
                 if (IsNumber(*curr))
                 {
                     node.children[node.numChildren] = ParsePositiveNumber(curr);
-                    GLTFDebugLog("children: %i", node.children[node.numChildren]);
                     node.numChildren++;
                 }
                 curr++;
@@ -531,7 +627,7 @@ __private const char* ParseNodes(const char* curr,
         {
             float matrix[16]{};
             for (int i = 0; i < 16; i++)
-                node.translation[0] = ParseFloat(curr);
+            node.translation[0] = ParseFloat(curr);
 
             node.translation[0] = matrix[12];
             node.translation[1] = matrix[13];
@@ -625,7 +721,7 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
         while (true)
         {
             while (*curr != '"')
-                if (*curr++ == '}')  goto end_properties; // this is end of camera variables
+            if (*curr++ == '}')  goto end_properties; // this is end of camera variables
             
             curr++;
             if      (StrCMP16(curr, "zfar"))        { camera.zFar        = ParseFloat(curr); }
@@ -642,7 +738,7 @@ __private const char* ParseCameras(const char* curr, GLTFCamera*& cameras, GLTFS
 }
 
 __private const char* ParseScenes(const char* curr, GLTFScene*& scenes, 
-          GLTFStringAllocator& stringAllocator, FixedSizeGrowableAllocator<int>& intAllocator)
+                                  GLTFStringAllocator& stringAllocator, FixedSizeGrowableAllocator<int>& intAllocator)
 {
     curr = SkipUntill(curr, '[');
     curr++;
@@ -714,7 +810,6 @@ __private const char* ParseSamplers(const char* curr, GLTFSampler*& samplers)
     curr++;
     
     GLTFSampler sampler{};
-    GLTFDebugLog("samplers\n");
     
     // read each node
     while (true)
@@ -742,7 +837,7 @@ __private const char* ParseSamplers(const char* curr, GLTFSampler*& samplers)
 
 __private const char* ParseMaterialTexture(const char* curr, GLTFMaterial::Texture& texture)
 {
-    curr = SkipUntill(curr, '[');
+    curr = SkipUntill(curr, '{');
     curr++;
     while (true)
     {
@@ -878,7 +973,7 @@ __private const char* ParseMaterials(const char* curr, GLTFMaterial*& materials,
         if (texture != -1)
         {
             curr = ParseMaterialTexture(curr, material.textures[texture]);
-            if ((int)curr == GLTFError_UNKNOWN_MATERIAL_VAR) return curr;
+            if ((uint64_t)curr == GLTFError_UNKNOWN_MATERIAL_VAR) return curr;
         }
     }
     return curr;
@@ -893,6 +988,7 @@ __public ParsedGLTF ParseGLTF(const char* path)
     GLTFBufferView* bufferViews = nullptr;
     GLTFBuffer*     buffers     = nullptr;
     GLTFAccessor* accessors{};
+    GLTFAccessor accessor{};
 
     GLTFStringAllocator stringAllocator(2048);
     FixedSizeGrowableAllocator<int> intAllocator(512);
@@ -929,8 +1025,6 @@ __public ParsedGLTF ParseGLTF(const char* path)
         }
     }
 
-    GLTFAccessor accessor{};
-
     for (int m = 0, mlen = SBCount(result.meshes); m < mlen; ++m)
     {
         // get number of vertex, getting first attribute count because all of the others are same
@@ -960,7 +1054,7 @@ __public ParsedGLTF ParseGLTF(const char* path)
             int j = 0;
             while (attributes)
             {
-                accessor    = accessors[(uint64)primitive.vertexAttribs[j]];
+                accessor    = accessors[(uint64_t)primitive.vertexAttribs[j]];
                 view        = bufferViews[accessor.bufferView];
                 offset      = int64_t(accessor.byteOffset) + view.byteOffset;
                 primitive.vertexAttribs[j]  = (char*)buffers[view.buffer].uri + offset;
@@ -986,10 +1080,12 @@ __public ParsedGLTF ParseGLTF(const char* path)
 
     result.error = GLTFError_NONE;
     finish_parse:
-    SBFree(bufferViews);
-    SBFree(buffers);
-    SBFree(accessors);
-    free(source);
+    {
+        SBFree(bufferViews);
+        SBFree(buffers);
+        SBFree(accessors);
+        free(source);
+    }
     return result;
 }
 

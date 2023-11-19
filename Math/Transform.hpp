@@ -65,7 +65,7 @@ public:
 
 	Quaternion GetRotation() const { return rotation; }
 	Vector3f GetEulerDegree() const { return Quaternion::ToEulerAngles(rotation) * RadToDeg; }
-	Vector3f GetForward() const { return Vector3f(transform.m[2][0], transform.m[2][1], transform.m[2][2]); }
-	Vector3f GetUp()      const { return Vector3f(transform.m[1][0], transform.m[1][1], transform.m[1][2]); }
-	Vector3f GetRight()   const { return Vector3f(transform.m[0][0], transform.m[0][1], transform.m[0][2]); }
+	Vector3f GetForward() const { return MakeVec3(transform.m[2][0], transform.m[2][1], transform.m[2][2]); }
+	Vector3f GetUp()      const { return MakeVec3(transform.m[1][0], transform.m[1][1], transform.m[1][2]); }
+	Vector3f GetRight()   const { return MakeVec3(transform.m[0][0], transform.m[0][1], transform.m[0][2]); }
 };

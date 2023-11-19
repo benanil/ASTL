@@ -135,35 +135,28 @@ typedef struct GLTFScene_
 
 typedef struct ParsedGLTF_
 {
-
-    unsigned long long defaultSceneIndex;
+    short numMeshes;
+    short numNodes;
+    unsigned short numMaterials;
+    unsigned short numTextures;
+    short numImages;
+    short numSamplers;
+    short numCameras;
+    short numScenes;
+    short defaultSceneIndex;
+    
     GLTFErrorType error;
 
     void* stringAllocator;
     void* intAllocator;
 
-    unsigned long long numMeshes;
     GLTFMesh*     meshes;
-    
-    unsigned long long numNodes;
     GLTFNode*     nodes;
-    
-    unsigned long long numMaterials;
     GLTFMaterial* materials;
-    
-    unsigned long long numTextures;
     GLTFTexture*  textures;
-    
-    unsigned long long numImages;
     GLTFImage*    images;
-    
-    unsigned long long numSamplers;
     GLTFSampler*  samplers;
-    
-    unsigned long long numCameras;
     GLTFCamera*   cameras;
-
-    unsigned long long numScenes;
     GLTFScene*    scenes;
 } ParsedGLTF;
 
