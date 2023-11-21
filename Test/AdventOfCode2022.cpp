@@ -8,7 +8,6 @@
 #include "../Math/Vector.hpp"
 
 #include <stdio.h>
-#include "../Profiler.hpp"
 
 // #include <chrono>
 // #include <thread>
@@ -114,7 +113,7 @@ using DistanceAndPoint = APoint;
 
 static int Day12() // result should be 534
 {
-  FILE* file = fopen("Test/AOC12.txt", "r");
+    FILE* file = fopen("Test/AOC12.txt", "r");
 	TimeBlock("day12");
 	Vector2s startPos, targetPos;
 	short numRows = 0, numColumns = 0;
@@ -412,16 +411,11 @@ int Day22()
 
 AX_END_NAMESPACE
 
-void AdventOfCodeTests()
+void AdventOfCodeTests22()
 {
 	Day15();
-	
-    BeginProfile();
-
 	Day12();
 	Day17();
 	Day22();
-
-	EndAndPrintProfile();
 }
 

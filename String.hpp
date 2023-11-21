@@ -136,8 +136,6 @@ inline char *FindCharInString(const char *s, int c)
 
 #endif
 
-#include "Profiler.hpp"
-
 // small string optimization
 class String
 {

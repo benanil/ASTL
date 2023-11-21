@@ -396,7 +396,7 @@ also you can use BVH algorithm(Jacco Bikker's but optimized with SIMD) for Ray c
 it will return mesh index, hit position hit color etc. algorithm located in BVH folder<br>
 note: I haven't touched multi threading code for a while<br>
 <br>
-Overall this is an hidden game for C++ and awesome to use with games and performance required programs.<br> 
+Overall this is an hidden gem for C++ and awesome to use with games and performance required programs.<br> 
 
 # How to Use
 just include the headers to your project, currently project has some test data as well you can remove those<br>

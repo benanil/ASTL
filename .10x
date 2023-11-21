@@ -8,7 +8,7 @@
 		<ShowEmptyFolders>true</ShowEmptyFolders>
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
-		<BuildCommand>build.bat</BuildCommand>
+		<BuildCommand>TestBuild.bat</BuildCommand>
 		<RebuildCommand></RebuildCommand>
 		<BuildFileCommand></BuildFileCommand>
 		<CleanCommand></CleanCommand>

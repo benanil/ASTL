@@ -7,6 +7,7 @@
 
 void Day1()
 {
+    TimeBlock("Day1")
     char *text = ReadAllFile("Test/2021Day1.txt");
     const char *curr = text;
 
@@ -36,6 +37,7 @@ void Day1()
 
 void Day2()
 {
+    TimeBlock("Day2")
     char* text = ReadAllFile("Test/2021Day2.txt");
     const char *curr = text;
     
@@ -92,6 +94,7 @@ void Day2()
 
 void Day4()
 {
+    TimeBlock("Day4")
     char* text = ReadAllFile("Test/2021Day4.txt");
     const char* curr = text;
  
@@ -246,6 +249,7 @@ inline bool PointOnLine(Vector2s A, Vector2s B, Vector2s C)
 
 void Day5()
 {
+    TimeBlock("Day5")
     char* text = ReadAllFile("Test/2021Day5.txt");
     const char *curr = text; // "0,9 -> 5,9\n" "8,0 -> 0,8\n" "9,4 -> 3,4\n" "2,2 -> 2,1\n" "7,0 -> 7,4\n" "6,4 -> 2,0\n" "0,9 -> 2,9\n" "3,4 -> 1,4\n""0,0 -> 8,8\n""5,5 -> 8,2";
   
@@ -345,3 +349,11 @@ void Day5()
     printf("day 5 result: %i", numInt);
     free(text);
 } // 10787 low
+
+void AdventOfCodeTests21()
+{
+    Day1();
+    Day2();
+    Day4();
+    Day5();
+}
