@@ -15,6 +15,9 @@ struct Matrix3
 	const Vector3f& GetForward() const { return vec[2]; }
 	const Vector3f& GetUp()      const { return vec[1]; }
 	const Vector3f& GetRight()   const { return vec[0]; }
+	
+	float* GetPtr()              { return &m[0][0]; }
+	const float* GetPtr() const  { return &m[0][0]; }
 
 	__forceinline static Matrix3 Make(float x, float y, float z,
 	                                  float a, float b, float c,
@@ -120,6 +123,9 @@ struct alignas(16) Matrix4
 
 	Matrix4 VECTORCALL  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(M, *this); };
 	Matrix4& VECTORCALL operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(M, *this); return *this; };
+
+	float* GetPtr()              { return &m[0][0]; }
+	const float* GetPtr() const  { return &m[0][0]; }
 
 	__forceinline static Matrix4 Make(float x, float y, float z, float w,
 	                                  float a, float b, float c, float d,
@@ -577,6 +583,9 @@ struct Matrix4
 	Vector4f operator *  (const Vector4f& v) noexcept { return Vector4Transform(v, *this); };
     Matrix4  operator *  (const Matrix4& M)  noexcept { return Matrix4::Multiply(*this, M); };
 	Matrix4& operator *= (const Matrix4& M)  noexcept { *this = Matrix4::Multiply(*this, M); return *this; };
+
+	float* GetPtr()              { return &m[0][0]; }
+	const float* GetPtr() const  { return &m[0][0]; }
 
 	__forceinline static Matrix4 Make(float x, float y, float z, float w,
 	                                  float a, float b, float c, float d,

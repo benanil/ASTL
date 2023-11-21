@@ -15,12 +15,14 @@
 *                                                                *
 *****************************************************************/
 
+#include "GLTFParser.hpp"
+
 #include <memory.h>
 #include <stdint.h>
-#include "GLTFParser.hpp"
-#include "Memory.hpp"
-#include "IO.hpp"
-#include "Algorithms.hpp"
+
+#include "../Memory.hpp"
+#include "../IO.hpp"
+#include "../Algorithms.hpp"
 
 #define __private static
 #define __public 
