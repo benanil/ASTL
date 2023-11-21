@@ -1,4 +1,11 @@
 
+/***********************************************************
+*    Purpose:                                              * 
+*        1D, 2D, 3D Simplex and Perlin Noise Generation    *
+*    Author:                                               *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com    *
+***********************************************************/
+
 #include "Math/Vector.hpp"
 #include "Random.hpp"
 

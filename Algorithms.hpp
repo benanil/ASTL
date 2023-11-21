@@ -1,3 +1,9 @@
+
+/****************************************************************
+*    Purpose: Usefull General algorithms, parsing, sorting etc. *
+*    Author : Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com    *
+****************************************************************/
+
 #pragma once
 
 #ifdef AX_USE_NAMESPACE
@@ -199,16 +205,16 @@ inline float ParseFloat(const char*& text)
 
 inline unsigned int Log10Algo(unsigned int n)
 {                                                                        
-	if (n <= 9) return 1;    
-	if (n <= 99) return 2;
-	if (n <= 999) return 3;
-	if (n <= 9999) return 4;
-	if (n <= 99999) return 5;
-	if (n <= 999999) return 6;
-	if (n <= 9999999) return 7;
-	if (n <= 99999999) return 8;
-	if (n <= 999999999) return 9;
-	if (n <= 2147483647) return 10; // 2147483647 = int max
+	if (n <= 9) return 0;
+	if (n <= 99) return 1;
+	if (n <= 999) return 2;
+	if (n <= 9999) return 3;
+	if (n <= 99999) return 4;
+	if (n <= 999999) return 5;
+	if (n <= 9999999) return 6;
+	if (n <= 99999999) return 7;
+	if (n <= 999999999) return 8;
+	if (n <= 2147483647) return 9; // 2147483647 = int max
 	return 0;
 }                                                                                        
                                                                      

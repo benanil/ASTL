@@ -1,6 +1,14 @@
-// use this when you don't want to use hash functions 
-// and if you want sorted map you can use this otherwise use HashMap or hashset
-// this algorithm is from Introduction to algorithms book by Thomas H.Cormen and Ronald L.Rivest
+
+/********************************************************************************
+*    Purpose:                                                                   *
+*        Binary search tree data structure.                                     *
+*        Usefull when you don't want to use hash functions                      *
+*        Tree is sorted, can be usefull when order is important                 *
+*    Author:                                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com                         *
+*    Reference:                                                                 *
+*        Introduction to Algorithms book by Thomas H.Cormen and Ronald L.Rivest *
+********************************************************************************/
 
 #pragma once
 

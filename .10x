@@ -29,20 +29,17 @@
 			<Platform>Win32</Platform>
 		</Platforms>
 		<AdditionalIncludePaths>
-			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\ATLMFC\include</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\um</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\shared</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\winrt</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\cppwinrt</AdditionalIncludePath>
-			<AdditionalIncludePath>C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um</AdditionalIncludePath>
+			<AdditionalIncludePath>C:\MinGW\include\</AdditionalIncludePath>
+			<AdditionalIncludePath>C:\MinGW\lib\gcc\mingw32\6.3.0\include</AdditionalIncludePath>
 		</AdditionalIncludePaths>
 		<Defines>
 			<Define>AX_SUPPORT_SSE</Define>
 			<Define>AX_USE_WINDOW</Define>
 			<Define>_WIN32</Define>
+			<Define>__clang__</Define>
+			<Define>_M_X64</Define>
+			<Define>__SSE2__</Define>
+			<Define>__AVX2__</Define>
 		</Defines>
 		<ConfigProperties>
 			<ConfigAndPlatform>

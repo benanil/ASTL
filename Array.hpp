@@ -1,3 +1,10 @@
+/********************************************************************************
+*    Purpose:                                                                   *
+*        Simple Dynamic array data structure.                                   *
+*    Author:                                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com github @benanil         *
+********************************************************************************/
+
 #pragma once
 
 #include "Memory.hpp"

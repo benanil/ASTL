@@ -1,7 +1,23 @@
 #ifndef ASTL_COMMON
 #define ASTL_COMMON
 
-#include "IntFltTypesLimits.hpp"
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+#include <float.h>
+
+typedef unsigned char      uint8;
+typedef unsigned short     uint16;
+typedef unsigned int       uint32;
+typedef unsigned long long uint64;
+typedef char      int8;
+typedef short     int16;
+typedef int       int32;
+typedef long long int64;
+
+typedef uint8_t  uchar;
+typedef uint16_t ushort;
+typedef uint32_t uint;
+typedef uint64_t ulong;
 
 #if AX_SHARED
 #ifdef AX_EXPORT

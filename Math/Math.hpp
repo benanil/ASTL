@@ -448,20 +448,6 @@ template<typename T> __forceinline __constexpr T Max3(T a, T b, T c)
 	return res > c ? res : c;
 }
 
-template<typename T> __forceinline __constexpr T Min4(T a, T b, T c, T d)
-{
-	T res = a < b ? a : b;
-	res = res < c ? res : c;
-	return res < d ? res : d;
-}
-
-template<typename T> __forceinline __constexpr T Max4(T a, T b, T c, T d)
-{   
-	T res = a > b ? a : b;
-	res = res > c ? res : c;
-	return res > d ? res : d;
-}
-
 template<int numCol = 4> // number of columns of matrix, 3 or 4
 inline void QuaternionFromMatrix(float* Orientation, const float* m)
 {

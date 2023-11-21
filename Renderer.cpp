@@ -1,7 +1,10 @@
 
-//                                                                   //
-// simple graphics interface that runs in varius different platforms //
-//                                                                   //
+/********************************************************************************
+*    Purpose:                                                                   *
+*        Simple graphics interface that runs in varius different platforms.     *
+*    Author:                                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com github @benanil         *
+********************************************************************************/
 
 #ifdef __ANDROID__
     #include <game-activity/native_app_glue/android_native_app_glue.h>
@@ -306,13 +309,21 @@ extern int windowHeight_, windowWidth_;
 static Matrix4 modelViewProjection;
 static Matrix4 modelMatrix;
 
-void SetModelViewProjection(float* mvp) { SmallMemCpy(&modelViewProjection.m[0][0], mvp, 16 * sizeof(float)); }
-void SetModelMatrix(float* model)       { SmallMemCpy(&modelMatrix.m[0][0], model, 16 * sizeof(float)); }
+void SetModelViewProjection(float* mvp) 
+{
+    SmallMemCpy(&modelViewProjection.m[0][0], mvp, 16 * sizeof(float)); 
+}
+
+void SetModelMatrix(float* model)       
+{
+    SmallMemCpy(&modelMatrix.m[0][0], model, 16 * sizeof(float)); 
+}
 
 void RenderMesh(Mesh mesh)
 {
     glBindVertexArray(mesh.vertexLayoutHandle);
 
+    // Todo fix this, don't use uniform location like this
     GLint mvpLoc   = glGetUniformLocation(currentShader, "mvp");
     GLint modelLoc = glGetUniformLocation(currentShader, "model");
 

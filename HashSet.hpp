@@ -26,6 +26,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/*******************************************************************************
+*  Edited By: Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com github @benanil   *
+*******************************************************************************/
+
 #pragma once
 
 #include "Random.hpp"

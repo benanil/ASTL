@@ -1,7 +1,7 @@
 
 #pragma once
 
-////                Window               ////
+////////                Window               ////////
 
 void SetWindowSize(int width, int height);
 void SetWindowPosition(int x, int y);
@@ -20,23 +20,29 @@ bool EnterFullscreen(int fullscreenWidth, int fullscreenHeight);
 // Go back to full screen Mode
 bool ExitFullscreen(int windowX, int windowY, int windowedWidth, int windowedHeight);
 
+void SetVSync(bool active);
+
 void GetMonitorSize(int* width, int* height);
-void SetFocusChangedCallback(void(*callback)(bool));
+void SetFocusChangedCallback(void(*callback)(bool focused));
 
 void TerminateWindow();
 void HandleInput();
-////                Keyboard             ////
 
-// use KeyboardKey enum or asci char 'X'
+
+////////                Keyboard             ////////
+
+// use enum KeyboardKey or asci char 'X'
 bool GetKeyDown(char c);
-// use KeyboardKey enum or asci char 'X'
+
 bool GetKeyPressed(char c);
-// use KeyboardKey enum or asci char 'X'
+
 bool GetKeyReleased(char c);
 
 void SetKeyPressCallback(void(*callback)(wchar_t));
 
-////                Mouse                ////
+
+////////                Mouse                ////////
+
 
 enum MouseButton_
 {
@@ -56,9 +62,11 @@ void GetMouseWindowPos(float* x, float* y);
 void SetMouseWindowPos(float x, float y);
 void SetMouseMoveCallback(void(*callback)(float, float));
 
-////                TIME                 ////
 
-float GetDeltaTime();
+////////                TIME                 ////////
+
+
+double GetDeltaTime();
 
 extern struct android_app* g_android_app;
 

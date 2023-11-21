@@ -1,3 +1,11 @@
+
+/********************************************************************************
+*    Purpose:                                                                   *
+*        Stack data structure. First in Last Out                                *
+*    Author:                                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com                         *
+********************************************************************************/
+
 #pragma once
 
 #include "Memory.hpp"

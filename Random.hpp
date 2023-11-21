@@ -1,7 +1,11 @@
 
-// this header file contains random and hash functions
-// generate random numbers: PCG for 32 bit. and Xoroshiro128Plus for 64bit
-// Hash Chunk of Data     : WYHash::Hash or MurmurHash64
+/********************************************************************************************
+*    Purpose: Random Number Generation and Hash functions                                   *
+*             To generate random numbers use PCG for 32 bit. and Xoroshiro128Plus for 64bit *
+*             To hash Chunk of Data use WYHash::Hash or MurmurHash64                        *
+*    Author:                                                                                *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com                                     *
+********************************************************************************************/
 
 // uint     WangHash(uint x);
 // uint     WangHashInverse(uint x);

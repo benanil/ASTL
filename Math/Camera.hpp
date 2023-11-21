@@ -70,7 +70,7 @@ struct Camera
 		bool pressing = GetMouseDown(MouseButton_Right);
 		if (!pressing) { wasPressing = false; return; }
 	
-		float dt = GetDeltaTime() * 2.0f;
+		float dt = (float)GetDeltaTime() * 2.0f;
 		float speed = dt * (1.0f + GetKeyDown(Key_SHIFT) * 2.0f) * 2.0f;
 	
 		Vector2f mousePos;

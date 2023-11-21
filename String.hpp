@@ -1,4 +1,9 @@
-
+/********************************************************************************
+*    Purpose:                                                                   *
+*        Used for manipulating strings.                                         *
+*    Author:                                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com github @benanil         *
+********************************************************************************/
 #pragma once
 
 #include "Random.hpp"

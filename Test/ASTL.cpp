@@ -55,7 +55,7 @@ int AXStart()
     InitRenderer();
     androidRobotTexture = LoadTexture("Textures/forest.jpg", false);
     fullScreenShader = CreateFullScreenShader(fragmentShaderSource);
-    printf("parsing");
+    printf("parsing\n");
     gltf    = ParseGLTF("Meshes/Duck.gltf");
     if (gltf.error != GLTFError_NONE)
     {
@@ -126,8 +126,6 @@ void AXExit()
     DeleteShader(fullScreenShader);
     DestroyRenderer();
 }
-
-#define AX_USE_WINDOW
 
 #ifndef AX_USE_WINDOW
 

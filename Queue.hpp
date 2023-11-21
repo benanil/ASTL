@@ -1,3 +1,10 @@
+/********************************************************************************
+*    Purpose:                                                                   *
+*        Queue data structure. First in First Out                               *
+*    Author:                                                                    *
+*        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com github @benanil         *
+********************************************************************************/
+
 #pragma once
 
 #include "Memory.hpp"
@@ -5,8 +12,7 @@
 
 AX_NAMESPACE
 
-// I use power of two increasing to not use modulo operator
-// because and operator is faster
+// I use power of two increasing to not use modulo operator, because and operator is faster
 
 template<typename ValueT,
          typename AllocatorT = Allocator<ValueT>>
@@ -336,7 +342,7 @@ private:
 };
 
 
-/////   PriorityQueue /////
+////////////                PriorityQueue                /////////////
 
 
 enum PQCompare
@@ -346,6 +352,7 @@ enum PQCompare
 };
 
 // https://github.com/lemire/FastPriorityQueue.js/blob/master/FastPriorityQueue.js
+// Min Heap data structure
 
 template<typename T, 
 	PQCompare compare = PQCompare_Less,

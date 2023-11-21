@@ -1,4 +1,9 @@
 
+/****************************************************************
+*    Purpose: Creating Window, Keyboard and Mouse input         *
+*    Author : Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com    *
+****************************************************************/
+
 #ifdef __ANDROID__
     #include <game-activity/native_app_glue/android_native_app_glue.h>
     #include <EGL/egl.h>
@@ -19,6 +24,7 @@
 #include "Memory.hpp"
 #include "Renderer.hpp"
 #include "Window.hpp"
+#include "Algorithms.hpp" // IntToString
 #include <stdlib.h> // exit failure
 
 int windowWidth_   = 1240;
@@ -39,8 +45,6 @@ extern void AXLoop();
 extern void AXExit();
 
 void UpdateRenderArea();
-
-#define AX_USE_WINDOW
 
 #if defined(AX_USE_WINDOW) && defined(__ANDROID__) 
 static void InitWindow()
@@ -124,9 +128,11 @@ void SetWindowName(const char* name) { }
 
 #elif defined(AX_USE_WINDOW) && defined(_WIN32)
 
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN 
-#define VC_EXTRALEAN
+#ifndef NOMINMAX
+#  define NOMINMAX
+#  define WIN32_LEAN_AND_MEAN 
+#  define VC_EXTRALEAN
+#endif
 #include <Windows.h>
 
 #pragma comment (lib, "gdi32.lib")
@@ -193,7 +199,7 @@ bool EnterFullscreen(int fullscreenWidth, int fullscreenHeight)
     bool success = ChangeDisplaySettings(&fullscreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL;
     ASSERT(success && "unable to make full screen");
     ShowWindow(hwnd, SW_MAXIMIZE);
-    if (success && WindowResizeCallback) WindowResizeCallback(fullscreenWidth, fullscreenHeight);
+    if (success && WindowResizeCallback) WindowResizeCallback(fullscreenWidth, fullscreenHeight), UpdateRenderArea();
     return success;
 }
 
@@ -206,10 +212,12 @@ bool ExitFullscreen(int windowX, int windowY, int windowedWidth, int windowedHei
     windowWidth_ = windowedWidth; windowHeight_ = windowedHeight;
     SetWindowPos(hwnd, HWND_NOTOPMOST, windowX, windowY, windowedWidth, windowedHeight, SWP_SHOWWINDOW);
     ShowWindow(hwnd, SW_RESTORE);
-    if (success && WindowResizeCallback) WindowResizeCallback(windowedWidth, windowedHeight);
+    if (success && WindowResizeCallback) WindowResizeCallback(windowedWidth, windowedHeight), UpdateRenderArea();
     return success;
 }
-
+bool g_axVSyncActive = true;
+void SetVSync(bool active)
+{ g_axVSyncActive = active; }
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt for all values
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt for all values
 // See https://gist.github.com/nickrolfe/1127313ed1dbf80254b614a721b3ee9c
@@ -295,7 +303,7 @@ static HGLRC InitOpenGL(HDC real_dc)
         0x2023,          8,  // WGL_STENCIL_BITS_ARB
         0x20A9,          1,  // WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB <- SRGB support
         0x2041,          1,  // WGL_SAMPLE_BUFFERS_ARB           <- enable MSAA
-        0x2042,          8,  // WGL_SAMPLES_ARB                  <- 8x MSAA
+        0x2042,          4,  // WGL_SAMPLES_ARB                  <- 4x MSAA
         0
     };
     
@@ -474,11 +482,7 @@ static HWND WindowCreate(HINSTANCE inst)
     RECT rect{};
     rect.right  = windowWidth_;
     rect.bottom = windowHeight_;
-    const DWORD window_style = WS_OVERLAPPED     |
-                               WS_CAPTION        |
-                               WS_SYSMENU        |
-                               WS_MINIMIZEBOX    |
-                               WS_MAXIMIZEBOX;
+    const DWORD window_style = WS_OVERLAPPEDWINDOW;
 
     AdjustWindowRect(&rect, window_style, false);
     
@@ -493,8 +497,8 @@ static HWND WindowCreate(HINSTANCE inst)
     return window;
 }
 
-float g_axDeltaTime = 0.001f;
-float GetDeltaTime() { return g_axDeltaTime; }
+double g_axDeltaTime = 0.001;
+double GetDeltaTime() { return g_axDeltaTime; }
 
 int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
 {
@@ -519,27 +523,22 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&prevTime);
 
-    bool running = true;
-    while (running)
+    while (true)
     {   
         MSG msg;
         while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE))
         {
             if (msg.message == WM_QUIT) 
-            {
-              running = false;
-            }
-            else 
-            {
-                TranslateMessage(&msg);
-                DispatchMessageA(&msg);
-            }
+                goto end_infinite_loop;
+         
+            TranslateMessage(&msg);
+            DispatchMessageA(&msg);
         }
 
         SetPressedAndReleasedKeys();
         
         QueryPerformanceCounter(&currentTime);
-        g_axDeltaTime = (float)(currentTime.QuadPart - prevTime.QuadPart) / frequency.QuadPart;
+        g_axDeltaTime = (double)(currentTime.QuadPart - prevTime.QuadPart) / frequency.QuadPart;
         prevTime = currentTime;
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -547,19 +546,20 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd_line, int show)
         
         // Do OpenGL rendering here
         AXLoop();
-        SwitchToThread();
-        wglSwapIntervalEXT(1); // vsync on
+        wglSwapIntervalEXT(g_axVSyncActive); // vsync
         SwapBuffers(dc);
 
         RecordLastKeys();
     }
-
-    AXExit();
-    DestroyRenderer();
-    wglMakeCurrent(dc, 0);
-    ReleaseDC(hwnd, dc);
-    wglDeleteContext(rc);
-    DestroyWindow(hwnd);
+    end_infinite_loop:
+    {
+        AXExit();
+        DestroyRenderer();
+        wglMakeCurrent(dc, 0);
+        ReleaseDC(hwnd, dc);
+        wglDeleteContext(rc);
+        DestroyWindow(hwnd);
+    }
     return 0;
 }
 

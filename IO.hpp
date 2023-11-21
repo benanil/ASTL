@@ -1,3 +1,9 @@
+
+/********************************************************************************
+*    Purpose: Reading from files and Writing to files                           *
+*    Author : Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com github @benanil    *
+********************************************************************************/
+
 #pragma once
 
 // char*  GetFileExtension(path, size);
@@ -20,7 +26,6 @@
 #include <direct.h> // mkdir
 
 #include "Algorithms.hpp"
-#include "IntFltTypesLimits.hpp"
 
 #ifdef _WIN32
 constexpr char ASTL_FILE_SEPERATOR = '\\';
@@ -199,12 +204,13 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
     if (!bufferProvided) free(buffer);
 }
 
-typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, uint64_t fileSize);
+typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, unsigned long long fileSize);
 
 #if _WIN32
 
 // #define WIN32_LEAN_AND_MEAN 
 // #define NOMINMAX
+// #define VC_EXTRALEAN
 // #include <Windows.h>
 
 // if windows.h is not included forward declare the functions instead of including windows.h header
@@ -215,24 +221,24 @@ typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileNam
 #define FILE_ATTRIBUTE_DIRECTORY 0x00000010  
 
 typedef struct _FILETIME {
-    uint64_t dwLowDateTime;
-    uint64_t dwHighDateTime;
+    unsigned long long dwLowDateTime;
+    unsigned long long dwHighDateTime;
 } FILETIME;
 
 typedef struct _WIN32_FIND_DATAA {
-    uint64_t dwFileAttributes;
+    unsigned long long dwFileAttributes;
     FILETIME ftCreationTime;
     FILETIME ftLastAccessTime;
     FILETIME ftLastWriteTime;
-    uint64_t nFileSizeHigh;
-    uint64_t nFileSizeLow;
-    uint64_t dwReserved0;
-    uint64_t dwReserved1;
+    unsigned long long nFileSizeHigh;
+    unsigned long long nFileSizeLow;
+    unsigned long long dwReserved0;
+    unsigned long long dwReserved1;
     char     cFileName[MAX_PATH];
     char     cAlternateFileName[14];
-    uint64_t dwFileType; // Obsolete. Do not use.
-    uint64_t dwCreatorType; // Obsolete. Do not use
-    uint16_t wFinderFlags; // Obsolete. Do not use
+    unsigned long long dwFileType; // Obsolete. Do not use.
+    unsigned long long dwCreatorType; // Obsolete. Do not use
+    unsigned short wFinderFlags; // Obsolete. Do not use
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
 extern "C"
@@ -245,7 +251,7 @@ extern "C"
 
 #define GetCurrentDirectory(bufferLength, buffer) GetCurrentDirectoryA(bufferLength, buffer)
 #ifndef _PROCESSENV_
-    __declspec(dllimport) uint64_t GetCurrentDirectoryA(uint64_t nBufferLength, char* lpBuffer);
+    __declspec(dllimport) unsigned long long GetCurrentDirectoryA(unsigned long long nBufferLength, char* lpBuffer);
 #endif
 }
 #endif // windows.h included
@@ -284,7 +290,7 @@ inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
 
 #define MAX_PATH 260
 
-inline uint64_t GetCurrentDirectory(char* buffer, uint64_t bufferSize)
+inline unsigned long long GetCurrentDirectory(char* buffer, unsigned long long bufferSize)
 {
   ASSERT(getcwd(buffer, bufferSize));
   return StringLength(buffer);
