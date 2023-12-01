@@ -118,7 +118,7 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharact
     off_t size = AAsset_getLength(asset);
 
     // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = (char*)malloc(size + 1); // +1 for null terminat
+    if (buffer == nullptr) buffer = new char[size + 1]{}; // +1 for null terminat
     if (numCharacters) *numCharacters = size + 1;
 
     AAsset_read(asset, buffer, size);
@@ -127,25 +127,25 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharact
 #else
     // Open the file for reading
     FILE* file = fopen(fileName, "rb");
-
+    
     if (file == NULL) {
         perror("Error opening the file");
         return nullptr; // Return an error code
     }
-
+    
     // Determine the file size
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     rewind(file);
-
+    
     // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = (char*)calloc(file_size + 40, 1); // +1 for null terminator
-
+    if (buffer == nullptr) buffer = new char[file_size + 40] {}; // +1 for null terminator
+    
     if (buffer == NULL) {
         fclose(file);
         return nullptr; // Return an error code
     }
-
+    
     // Read the entire file into the buffer
     fread(buffer, 1, file_size, file);
     buffer[file_size] = '\0'; // Null-terminate the buffer
@@ -180,7 +180,7 @@ inline void WriteAllBytes(const char *filename, const char *bytes, unsigned long
 
 inline void FreeAllText(char* text)
 {
-    free(text);
+    delete[] text;
 }
 
 struct ScopedText

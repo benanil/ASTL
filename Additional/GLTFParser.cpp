@@ -54,12 +54,14 @@ static void* stb__sbgrowf(void* arr, int increment, int itemsize)
 {
     int dbl_cur = arr ? CalculateArrayGrowth(stb__sbm(arr)) : 0;
     int min_needed = SBCount(arr) + increment;
-    int m = Max3GLTF(min_needed, dbl_cur, 16);
+    int m = Max3GLTF(min_needed, dbl_cur, 32);
     int* p;
     int size = (itemsize * m) + (sizeof(int) * 2);
     if (!arr) p = (int*)malloc(size);
-    else      p = (int*)realloc(arr, size);
-    if (!arr) p[1] = 0; p[0] = m;
+    else      p = (int*)realloc((int*)arr-2, size);
+    
+    if (!arr) p[1] = 0;
+    p[0] = m;
     return p + 2;
 }
 
@@ -147,6 +149,12 @@ inline const char* SkipUntill(const char* curr, char character)
     return curr;
 }
 
+inline const char* SkipAfter(const char* curr, char character)
+{
+    AX_NO_UNROLL while (*curr++ != character);
+    return curr;
+}
+
 __private const char* CopyStringInQuotes(char*& str, const char* curr, GLTFStringAllocator& stringAllocator)
 {
     while (*curr != '"') curr++; // find quote
@@ -155,7 +163,7 @@ __private const char* CopyStringInQuotes(char*& str, const char* curr, GLTFStrin
     const char* quote = curr;
     while (*quote != '"') quote++;
     int len = quote - curr;
-    char* alloc = stringAllocator.AllocateUninitialized(len + 1);
+    char* alloc = stringAllocator.AllocateUninitialized(len + 16);
     str = alloc;
 
     while (*curr != '"')
@@ -456,6 +464,7 @@ __private const char* ParseAttributes(const char* curr, GLTFPrimitive* primitive
         else if (StrCMP16(curr, "TEXCOORD_0")) primitive->attributes |= GLTFAttribType_TEXCOORD_0;
         else if (StrCMP16(curr, "TANGENT"))    primitive->attributes |= GLTFAttribType_TANGENT;
         else if (StrCMP16(curr, "TEXCOORD_1")) primitive->attributes |= GLTFAttribType_TEXCOORD_1;
+        else if (StrCMP16(curr, "TEXCOORD_")) { curr = SkipAfter(curr, '"'); continue; }
         // todo add joints and weights
         else { ASSERT(0 && "attribute variable unknown!"); return (const char*)GLTFError_UNKNOWN_ATTRIB; }
 
@@ -1035,7 +1044,8 @@ __public ParsedGLTF ParseGLTF(const char* path)
         for (uint64_t p = 0; p < mesh.numPrimitives; p++)
         {
             GLTFPrimitive& primitive = mesh.primitives[p];
-            int numVertex = accessors[0].count; // get position attrib's count' because all attributes same
+            // get position attrib's count' because all attributes same
+            int numVertex = accessors[(uint64_t)primitive.vertexAttribs[0]].count; 
             primitive.numVertices = numVertex;
         
             // get number of index

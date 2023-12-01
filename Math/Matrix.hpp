@@ -384,13 +384,14 @@ struct alignas(16) Matrix4
 		return out;
 	}
 
-	__forceinline static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
+	__forceinline static Matrix4 PositionRotationScale(Vector3f position, Quaternion rotation, const Vector3f& scale)
 	{
-		Matrix4 result = Identity();
-		result *= FromPosition(position);
-		result *= FromQuaternion(rotation);
-		result *= CreateScale(position);
-		return result;
+		return CreateScale(position) * FromQuaternion(rotation) * FromPosition(position);
+	}
+	
+	__forceinline static Matrix4 PositionRotationScale(float* position, float* rotation, float* scale)
+	{
+		return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
 	}
 
 	__forceinline static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept

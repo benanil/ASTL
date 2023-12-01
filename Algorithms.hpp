@@ -233,7 +233,7 @@ inline int IntToString(char* ptr, int x, int afterPoint=0)
         ptr[size++] = '0';
     }
 
-	unsigned int const PowersOf10[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+	unsigned int const PowersOf10[10] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
 	numDigits = PowersOf10[numDigits];
 
     while (numDigits)

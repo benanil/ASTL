@@ -1,7 +1,7 @@
 
 #pragma once
 
-enum GLTFAttribType
+enum GLTFAttribType_
 {
     GLTFAttribType_POSITION   = 1 << 0,
     GLTFAttribType_TEXCOORD_0 = 1 << 1,
@@ -9,8 +9,9 @@ enum GLTFAttribType
     GLTFAttribType_TANGENT    = 1 << 3,
     GLTFAttribType_TEXCOORD_1 = 1 << 4
 };
+typedef int GLTFAttribType;
 
-enum GLTFErrorType
+enum GLTFErrorType_
 {
     GLTFError_NONE,
     GLTFError_UNKNOWN,
@@ -30,6 +31,15 @@ enum GLTFErrorType
     GLTFError_UNKNOWN_DESCRIPTOR,
     GLTFError_MAX
 };
+typedef int GLTFErrorType;
+
+enum TextureType_
+{
+    TextureType_Normal, 
+    TextureType_Occlusion, 
+    TextureType_Emissive
+};
+typedef int TextureIndex;
 
 typedef struct GLTFMaterial_
 {
