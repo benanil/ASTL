@@ -261,7 +261,7 @@ struct Allocator
     static const bool IsPod = false;
     // we don't want to use same initial size for all data types because we want 
     // more initial size for small data types such as byte, short, int but for bigger value types we want less initial size
-    static const int InitialSize = 384 / MIN((int)sizeof(T), 128);
+    static const int InitialSize = 512 / MIN((int)sizeof(T), 128);
 
     T* Allocate(int count) const {
         return new T[count]{};
@@ -292,7 +292,7 @@ template<typename T>
 struct MallocAllocator
 {
     static const bool IsPod = true;
-    static const int InitialSize = 384 / MIN((int)sizeof(T), 128);
+    static const int InitialSize = 512 / MIN((int)sizeof(T), 128);
 
     T* Allocate(int count) const 
     {

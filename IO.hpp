@@ -111,7 +111,7 @@ inline bool IsDirectory(const char* path)
 // don't forget to free
 // buffer is pre allocated memory if exist. otherwise null
 // note: if you define it you are responsible of deleting the buffer
-inline char* ReadAllFile(const char* fileName, char* buffer = 0, int* numCharacters = 0)
+inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharacters = 0)
 {
 #ifdef __ANDROID__
     AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, fileName, 0);
@@ -194,7 +194,7 @@ struct ScopedText
 // note: if you define it you are responsible of deleting the buffer
 inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
 {
-    int sourceSize = 0;
+    long sourceSize = 0;
     bool bufferProvided = buffer != 0;
     char* sourceFile = ReadAllFile(source, buffer, &sourceSize);
     FILE* dstFile = fopen(dst, "w");

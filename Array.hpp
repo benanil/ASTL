@@ -13,7 +13,7 @@
 AX_NAMESPACE
 
 template<typename ValueT,
-         typename AllocatorT = Allocator<ValueT>>
+         typename AllocatorT = MallocAllocator<ValueT>>
 class Array
 {
 public:
@@ -433,5 +433,42 @@ private:
 
 template<typename T, int size>
 using StackArray = Array<T, StackAllocator<T, size>>;
+
+template<typename T>
+using ObjArray = Array<T, Allocator<T>>;
+
+
+inline void SBFree(void* a) { if (a) FreeAligned(((int*)a)-2); }
+
+inline int SBCount(void* a) { if (!a) return 0; return *((int*)a - 1); }
+
+template<typename T>
+inline void SBPush(T*& b, const T& v)
+{
+	T* a = b;
+	constexpr int twoIntSize = sizeof(int) + sizeof(int);
+	if (a == nullptr)
+	{
+		a = (T*)AllocAligned(sizeof(T) * 16 + twoIntSize, alignof(T));
+		((int*)a)[0] = 16;
+		((int*)a)[1] = 0;
+		a = (T*)((int*)a+2);
+	}
+
+	int* arr = ((int*)a);
+	int size = arr[-1], capacity = arr[-2];
+	if (size + 1 >= capacity)
+	{
+		int* old = arr-2;
+		int newCapacity = CalculateArrayGrowth(capacity);
+		a = (T*)AllocAligned(newCapacity * sizeof(T) + twoIntSize, alignof(T));
+		MemCpy(a, old, capacity + twoIntSize);
+		FreeAligned(old);
+		a = (T*)((int*)a+2);
+	}
+	SmallMemCpy(a + size, &v, sizeof(T));
+	((int*)a)[-1] = size + 1;
+	b = a;
+}
 
 AX_END_NAMESPACE
