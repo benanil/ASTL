@@ -66,7 +66,7 @@ class HashSet
     static const uint8 initial_shifts = 64 - 3; // 2^(64-m_shift) number of buckets
 
     Array<KeyT, AllocatorT> m_keys{};
-    Array<Bucket, BucketAllocT> m_buckets {16u};
+    Array<Bucket, BucketAllocT> m_buckets{};
  
     uint32_t m_num_buckets         = 0;
     uint32_t m_max_bucket_capacity = 0;
