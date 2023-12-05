@@ -84,7 +84,7 @@ typedef uint64_t ulong;
 #endif
 
 // https://nullprogram.com/blog/2022/06/26/
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(Debug)
 #  if __GNUC__
 #    define ASSERT(c) if (!(c)) __builtin_trap()
 #  elif _MSC_VER
