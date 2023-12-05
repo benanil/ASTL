@@ -156,7 +156,7 @@ private:
     void ReallocateBuckets(uint32 numBuckets)
     {
         m_num_buckets = numBuckets;
-        m_buckets.Resize(m_num_buckets);
+        m_buckets.Reserve(m_num_buckets);
 
         if (AX_UNLIKELY(m_num_buckets == MaxSize())) {
             m_max_bucket_capacity = MaxSize();
@@ -620,7 +620,7 @@ public:
         return !(a == b);
     }
 
-#if 0
+#ifdef ASTL_STL_COMPATIBLE
     Iterator insert(const KeyT& key, const ValueT& val) {
         return DoTryInsert(key, val).first;
     }

@@ -74,25 +74,34 @@ __constexpr __forceinline uint64_t MurmurHashInverse(uint64_t x) {
 	return x ^ (x >> 30ULL ^ x >> 60ULL);
 }
 
-// todo find way of random seed generation
-#ifndef _MSCVER
+// todo: find way of random seed generation
+#if !defined(_MSCVER) && !defined(__ANDROID__)
 #include <immintrin.h> // intrin.h is included defaultly with msvc
+#else
+#include <time.h>
 #endif
 
 namespace Random
 {
-
 	// these random seeds slower than PCG and MTwister but good choice for random seed
 	// also seeds are cryptographic 
 	__forceinline uint Seed32() {
 		uint32 result;
+        #if !defined(__ANDROID__)
 		_rdseed32_step(&result); // or faster __rdtsc
+        #else
+		result = WangHash(time(nullptr));
+        #endif
 		return result;
 	}
 
 	__forceinline uint64_t Seed64() {
 		uint64_t result;
+		#if !defined(__ANDROID__)
 		_rdseed64_step(&result);// or faster __rdtsc
+        #else
+		result = MurmurHash(time(nullptr));
+        #endif
 		return result;
 	}
 
@@ -333,7 +342,7 @@ namespace WYHash
 
 	[[nodiscard]] __forceinline uint64_t Hash(void const* key, size_t len)
 	{
-        const size_t secret[4] = { 0xa0761d6478bd642full,
+        const uint64_t secret[4] = { 0xa0761d6478bd642full,
                                    0xe7037ed1a0b428dbull,
                                    0x8ebc6af09c88c6e3ull,
                                    0x589965cc75374cc3ull };

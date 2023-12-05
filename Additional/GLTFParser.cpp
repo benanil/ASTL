@@ -17,7 +17,6 @@
 
 #include "GLTFParser.hpp"
 
-#include <memory.h>
 #include "../Memory.hpp"
 #include "../IO.hpp"
 #include "../Algorithms.hpp"
@@ -893,7 +892,7 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
         if (curr < (const char*)AError_MAX) // is failed?
         {
             result->error = (AErrorType)(uint64_t)curr;
-            free(source);
+            FreeAllText(source);
             return;
         }
     }
@@ -1009,7 +1008,7 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
     result->numCameras   = cameras.Size();    result->cameras   = cameras.TakeOwnership();
     result->numScenes    = scenes.Size();     result->scenes    = scenes.TakeOwnership();
     result->error = AError_NONE;
-    free(source);
+    FreeAllText(source);
 }
 
 __public void FreeParsedScene(ParsedScene* gltf)

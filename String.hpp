@@ -125,12 +125,12 @@ inline int StringCompare(const char* a, const char* b)
     return !(*a == *b);// strings are equal
 }
 
-inline char *FindCharInString(const char *s, int c) 
+inline const char* FindCharInString(const char *s, int c)
 {
     int idx = 0;
     while (s[idx])
         if (s[idx++] == c)
-            return --idx;
+            return s + (--idx);
     return nullptr;
 }
 

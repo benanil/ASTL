@@ -20,12 +20,25 @@
 // void   GetCurrentDirectory(buffer, bufferSize);
 // void   AbsolutePath(path, outBuffer, bufferSize);
 
+#include "Algorithms.hpp"
 #include <stdio.h>
 #include <sys/stat.h>
 #include <memory.h> // malloc free
-#include <direct.h> // mkdir
 
-#include "Algorithms.hpp"
+#if defined __WIN32__ || defined _WIN32 || defined _Windows
+    #if !defined S_ISDIR
+            #define S_ISDIR(m) (((m) & _S_IFDIR) == _S_IFDIR)
+    #endif
+#endif
+
+#ifdef __ANDROID__
+#include <android/asset_manager.h>
+#include <game-activity/native_app_glue/android_native_app_glue.h>
+
+extern android_app* g_android_app;
+#else
+#include <direct.h> // mkdir
+#endif
 
 #ifdef _WIN32
 constexpr char ASTL_FILE_SEPERATOR = '\\';
@@ -105,25 +118,36 @@ inline bool CreateFolder(const char* folderName) {
 inline bool IsDirectory(const char* path)
 {
   struct stat file_info; 
-  return stat(path, &file_info) == 0 && (file_info.st_mode & _S_IFDIR);
+  return stat(path, &file_info) == 0 && (S_ISDIR(file_info.st_mode));
 }
 
-// don't forget to free
-// buffer is pre allocated memory if exist. otherwise null
+// don't forget to free using FreeAllText
+// fileName      : path of the file that we want to load
+// buffer        : is pre allocated memory if exist. otherwise null
+// numCharacters : if not null returns length of the imported string
+// startText     : if its not null will be added to start of the buffer
 // note: if you define it you are responsible of deleting the buffer
-inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharacters = 0)
+inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharacters = 0, const char* startText = 0)
 {
+    int startTextLen = 0;
+    if (startText) 
+        while (startText[startTextLen]) startTextLen++;
+
 #ifdef __ANDROID__
     AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, fileName, 0);
     off_t size = AAsset_getLength(asset);
+    if (size == 0) return nullptr;
 
     // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = new char[size + 1]{}; // +1 for null terminat
+    if (buffer == nullptr) buffer = new char[startTextLen + size + 2]{}; // +2 for null terminate
+    
+    if (startText) while (*startText) *buffer++ = *startText++;
+
     if (numCharacters) *numCharacters = size + 1;
 
     AAsset_read(asset, buffer, size);
     AAsset_close(asset);
-    return buffer;
+    return buffer - startTextLen;
 #else
     // Open the file for reading
     FILE* file = fopen(fileName, "rb");
@@ -139,7 +163,9 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharac
     rewind(file);
     
     // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = new char[file_size + 40] {}; // +1 for null terminator
+    if (buffer == nullptr) buffer = new char[file_size + 40 + startTextLen] {}; // +1 for null terminator
+    
+    if (startText) while (*startText) *buffer++ = *startText++;
     
     if (buffer == NULL) {
         fclose(file);
@@ -151,8 +177,13 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharac
     buffer[file_size] = '\0'; // Null-terminate the buffer
     fclose(file);
     if (numCharacters) *numCharacters = file_size + 1;
-    return buffer;
+    return buffer - startTextLen;
 #endif
+}
+
+inline void FreeAllText(char* text)
+{
+    delete[] text;
 }
 
 inline void WriteAllBytes(const char *filename, const char *bytes, unsigned long size) 
@@ -178,16 +209,11 @@ inline void WriteAllBytes(const char *filename, const char *bytes, unsigned long
     fclose(file);
 }
 
-inline void FreeAllText(char* text)
-{
-    delete[] text;
-}
-
 struct ScopedText
 {
     char* text;
     ScopedText(char* txt) : text(txt) {}
-   ~ScopedText() { free(text); }
+   ~ScopedText() { delete[] text; }
 };
 
 // buffer is pre allocated memory if exist. otherwise null. 
@@ -201,7 +227,7 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
     fwrite(sourceFile, 1, sourceSize, dstFile);
     fclose(dstFile);
 
-    if (!bufferProvided) free(buffer);
+    if (!bufferProvided) delete[] buffer;
 }
 
 typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, unsigned long long fileSize);
@@ -290,7 +316,7 @@ inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
 
 #define MAX_PATH 260
 
-inline unsigned long long GetCurrentDirectory(char* buffer, unsigned long long bufferSize)
+inline unsigned long long GetCurrentDirectory(unsigned long long bufferSize, char* buffer)
 {
   ASSERT(getcwd(buffer, bufferSize));
   return StringLength(buffer);

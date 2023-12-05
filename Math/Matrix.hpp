@@ -53,20 +53,19 @@ struct Matrix3
 		float3 vx = b.x * a.x.x;
 		float3 vy = b.y * a.x.y;
 		float3 vz = b.z * a.x.z;
-
-		vx += vz; vx += vy;
+		vx = vx + vy + vz;
 		result.x = vx;
 
 		vx = b.x * a.y.x;
 		vy = b.y * a.y.y;
 		vz = b.z * a.y.z;
-		vx += vz; vx += vy;
+		vx = vx + vy + vz;
 		result.y = vx;
 
 		vx = b.x * a.z.x;
 		vy = b.y * a.z.y;
 		vz = b.z * a.z.z;
-		vx += vz; vx += vy;
+		vx = vx + vy + vz;
 		result.z = vx;
 		return result;
 	}
@@ -386,7 +385,7 @@ struct alignas(16) Matrix4
 
 	__forceinline static Matrix4 PositionRotationScale(Vector3f position, Quaternion rotation, const Vector3f& scale)
 	{
-		return CreateScale(position) * FromQuaternion(rotation) * FromPosition(position);
+		return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
 	}
 	
 	__forceinline static Matrix4 PositionRotationScale(float* position, float* rotation, float* scale)
@@ -647,9 +646,9 @@ struct Matrix4
 		return m;
 	}
 
-	const Vector3f GetForward() const { return v[2].xyz(); }
-	const Vector3f GetUp()      const { return v[1].xyz(); }
-	const Vector3f GetRight()   const { return v[0].xyz(); }
+	const Vector3f GetForward() const { return r[2].xyz(); }
+	const Vector3f GetUp()      const { return r[1].xyz(); }
+	const Vector3f GetRight()   const { return r[0].xyz(); }
 
 	// please assign normalized vectors, returns view matrix
 	__forceinline static Matrix4 LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
@@ -782,35 +781,21 @@ struct Matrix4
 	inline Matrix4 static Multiply(const Matrix4 in1, const Matrix4& in2)
 	{
 		Matrix4 out;
-		out.r[0][0] = in1[0].x * in2[0].x + in1[0].x * in2[0].y + in1[0].x * in2[0].z + in1[0].x * in2[0].w;
-		out.r[0][1] = in1[1].y * in2[0].x + in1[1].y * in2[0].y + in1[1].y * in2[0].z + in1[1].y * in2[0].w;
-		out.r[0][2] = in1[2].z * in2[0].x + in1[2].z * in2[0].y + in1[2].z * in2[0].z + in1[2].z * in2[0].w;
-		out.r[0][3] = in1[3].w * in2[0].x + in1[3].w * in2[0].y + in1[3].w * in2[0].z + in1[3].w * in2[0].w;
-		
-		out.r[1][0] = in1[0].x * in2[1].x + in1[0].x * in2[1].y + in1[0].x * in2[1].z + in1[0].x * in2[1].w;
-		out.r[1][1] = in1[1].y * in2[1].x + in1[1].y * in2[1].y + in1[1].y * in2[1].z + in1[1].y * in2[1].w;
-		out.r[1][2] = in1[2].z * in2[1].x + in1[2].z * in2[1].y + in1[2].z * in2[1].z + in1[2].z * in2[1].w;
-		out.r[1][3] = in1[3].w * in2[1].x + in1[3].w * in2[1].y + in1[3].w * in2[1].z + in1[3].w * in2[1].w;
-		
-		out.r[2][0] = in1[0].x * in2[2].x + in1[0].x * in2[2].y + in1[0].x * in2[2].z + in1[0].x * in2[2].w;
-		out.r[2][1] = in1[1].y * in2[2].x + in1[1].y * in2[2].y + in1[1].y * in2[2].z + in1[1].y * in2[2].w;
-		out.r[2][2] = in1[2].z * in2[2].x + in1[2].z * in2[2].y + in1[2].z * in2[2].z + in1[2].z * in2[2].w;
-		out.r[2][3] = in1[3].w * in2[2].x + in1[3].w * in2[2].y + in1[3].w * in2[2].z + in1[3].w * in2[2].w;
-		
-		out.r[3][0] = in1[0].x * in2[3].x + in1[0].x * in2[3].y + in1[0].x * in2[3].z + in1[0].x * in2[3].w;
-		out.r[3][1] = in1[1].y * in2[3].x + in1[1].y * in2[3].y + in1[1].y * in2[3].z + in1[1].y * in2[3].w;
-		out.r[3][2] = in1[2].z * in2[3].x + in1[2].z * in2[3].y + in1[2].z * in2[3].z + in1[2].z * in2[3].w;
-		out.r[3][3] = in1[3].w * in2[3].x + in1[3].w * in2[3].y + in1[3].w * in2[3].z + in1[3].w * in2[3].w;
+		out.r[0] = in1.r[0] * in2.r[0][0] + in1.r[1] * in2.r[0][1] + in1.r[2] * in2.r[0][2] + in1.r[3] * in2.r[0][3];
+		out.r[1] = in1.r[0] * in2.r[1][0] + in1.r[1] * in2.r[1][1] + in1.r[2] * in2.r[1][2] + in1.r[3] * in2.r[1][3];
+		out.r[2] = in1.r[0] * in2.r[2][0] + in1.r[1] * in2.r[2][1] + in1.r[2] * in2.r[2][2] + in1.r[3] * in2.r[2][3];
+		out.r[3] = in1.r[0] * in2.r[3][0] + in1.r[1] * in2.r[3][1] + in1.r[2] * in2.r[3][2] + in1.r[3] * in2.r[3][3];
 		return out;
+	}
+
+	__forceinline static Matrix4 PositionRotationScale(const float* position, const float* rotation, const float* scale)
+	{
+		return CreateScale(scale[0], scale[1], scale[2]) * FromQuaternion(MakeQuat(rotation)) * FromPosition(position[0], position[1], position[2]);
 	}
 
 	__forceinline static Matrix4 PositionRotationScale(const Vector3f& position, const Quaternion& rotation, const Vector3f& scale)
 	{
-		Matrix4 result = Matrix4::Identity();
-		result *= FromPosition(position);
-		result *= FromQuaternion(rotation);
-		result *= CreateScale(position);
-		return result;
+		return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
 	}
 
 	__forceinline static Vector3f ExtractPosition(const Matrix4 matrix) noexcept
@@ -866,7 +851,7 @@ struct Matrix4
 	static Quaternion ExtractRotation(const Matrix4 M) noexcept
 	{
 		Quaternion res;
-		QuaternionFromMatrix(&res.x, M.m[0][0]);
+		QuaternionFromMatrix(&res.x, M.GetPtr());
 		return res;
 	}
 

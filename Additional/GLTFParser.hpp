@@ -1,7 +1,7 @@
 
 #pragma once
 
-typedef enum
+enum AAttribType_
 {
     AAttribType_POSITION   = 1 << 0,
     AAttribType_TEXCOORD_0 = 1 << 1,
@@ -11,7 +11,7 @@ typedef enum
 };
 typedef int AAttribType;
 
-typedef enum 
+enum AErrorType_
 {
     AError_NONE,
     AError_UNKNOWN,

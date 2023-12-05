@@ -137,11 +137,10 @@ struct Bitset256
 #define _ROR(a, b) _mm256_or_si256 (a, b)
 #define _XOR(a, b) _mm256_xor_si256(a, b)
 
-#if 0
 struct Bitset512
 {
 	union {
-		unsigned long bits[8];
+		unsigned long bits[8] = { 0 };
 		__m256i sse[2];
 	};
 
@@ -191,7 +190,7 @@ struct Bitset512
 struct Bitset1024
 {
 	union {
-		unsigned long bits[16];
+		unsigned long bits[16] = { 0 };
 		struct { Bitset512 b1, b2; };
 		struct { __m256i v[4]; };
 	};
@@ -289,7 +288,7 @@ struct Bitset2048
 struct Bitset4096
 {
 	union {
-		unsigned long bits[64];
+		unsigned long bits[64] = { 0 };
 		struct { Bitset2048 b1, b2; };
 		struct { __m256i v[16]; };
 	};
@@ -329,6 +328,5 @@ struct Bitset4096
 #undef _AND
 #undef _ROR
 #undef _XOR
-#endif
 
 AX_END_NAMESPACE

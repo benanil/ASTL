@@ -18,10 +18,10 @@ template<> struct Hasher<Vector2i>
 {
     static __forceinline uint64_t Hash(Vector2i vec)
     {
-        // uint64_t x = (uint64(vec.y) << 32) | vec.x;
-        // x *= 0xbf58476d1ce4e5b9ULL;
-        // x ^= x >> 30ULL;
-        return MurmurHash(uint64(vec.y) << 32 | vec.x);
+        uint64_t x = (uint64(vec.y) << 32) | vec.x;
+        x *= 0xbf58476d1ce4e5b9ULL;
+        x ^= x >> 30ULL;
+        return x;
     }
 };
 

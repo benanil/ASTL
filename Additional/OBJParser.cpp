@@ -24,7 +24,7 @@ inline void ChangeExtension(char* path, const char* newExt, size_t len)
     path[len - 1] = newExt[2]; path[len - 2] = newExt[1]; path[len - 3] = newExt[0];
 }
 
-__private const char* ParseFloat16(const char*& curr, short& flt)
+static const char* ParseFloat16(const char*& curr, short& flt)
 {
     flt = (short)(ParseFloat(curr) * 1000.0f);
     return curr;
@@ -43,13 +43,13 @@ void ParseObj(const char* path, ParsedScene* scene)
     char* pathDup = stringAllocator.Allocate(pathLen + 8);
     SmallMemCpy(pathDup, path, pathLen);
 
-    const uint64_t sz = FileSize(path);
+    const uint64 sz = FileSize(path);
     char* objText = ReadAllFile(path);
     
 #if defined(DEBUG) || defined(_DEBUG)
     // ascii utf8 support check
     if (IsUTF8ASCII(objText, sz) != 1)  { scene->error = AError_NON_UTF8; return result; } 
-#else
+#endif
     ChangeExtension(pathDup, "mtl", pathLen);
     char* mtlPath = pathDup; // for readibility
     uint msz = FileExist(mtlPath) ? (uint)FileSize(mtlPath) : 0u;
@@ -74,7 +74,7 @@ void ParseObj(const char* path, ParsedScene* scene)
     char* curr = mtlText, *currEnd = curr + msz;
     Array<AMaterial> materials;
     Array<AImage> images; // index to start of mtltext
-
+#if 0
     while (curr && *curr && curr < currEnd)
     {
         if (*curr == '#')  while (*curr++ != '\n'); // skip line
@@ -248,4 +248,5 @@ void ParseObj(const char* path, ParsedScene* scene)
     scene->numMeshes    = meshes.Size();     scene->meshes    = Meshes.TakeOwnership();   
     scene->numMaterials = materials.Size();  scene->materials = Materials.TakeOwnership();
     scene->numImages    = images.Size();     scene->images    = Images.TakeOwnership();   
+#endif
 }

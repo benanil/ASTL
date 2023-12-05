@@ -445,7 +445,7 @@ __forceinline Quaternion MakeQuat(float _x, float _y, float _z, float _w)
 	return v; 
 }
 
-__forceinline Quaternion MakeQuat(float* _x)
+__forceinline Quaternion MakeQuat(const float* _x)
 {
 	Quaternion v{ _x[0], _x[1], _x[2], _x[3] };
 	return v;

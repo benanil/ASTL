@@ -303,6 +303,7 @@ public:
 		{
 			GrowIfNecessary(_size);
 		}
+		m_count = _size;
 	}
 
 	void Resize(int _size)
