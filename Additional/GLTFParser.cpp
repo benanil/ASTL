@@ -75,7 +75,7 @@ inline int StrCmp16(const char* a, const char* b, int cmpMask)
 {
     bool equal = true;
     while (*b)
-    equal &= *a++ == *b++;
+        equal &= *a++ == *b++;
     return equal;
 }
 #endif
