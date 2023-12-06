@@ -664,10 +664,10 @@ struct Matrix4
 		float d2 = Vector3f::Dot(eyeDir, negEyePosition);
 		
 		Matrix4 M;
-		M.m[0][0] = r0.x; M.m[0][1] = r0.y; M.m[0][2] = r0.z; M.m[0][3] = d0;
-		M.m[1][0] = r1.x; M.m[2][1] = r1.y; M.m[2][2] = r1.z; M.m[2][3] = d1;
+		M.m[0][0] = r0.x;     M.m[0][1] = r0.y;     M.m[0][2] = r0.z;     M.m[0][3] = d0;
+		M.m[1][0] = r1.x;     M.m[2][1] = r1.y;     M.m[2][2] = r1.z;     M.m[2][3] = d1;
 		M.m[2][0] = eyeDir.x; M.m[2][1] = eyeDir.y; M.m[2][2] = eyeDir.z; M.m[2][3] = d2;
-		M.m[3][0] = 0.0f; M.m[3][1] = 0.0f; M.m[3][2] = 0.0f; M.m[3][3] = 1.0f;
+		M.m[3][0] = 0.0f;     M.m[3][1] = 0.0f;     M.m[3][2] = 0.0f;     M.m[3][3] = 1.0f;
 		return Matrix4::Transpose(M);
 	}
 

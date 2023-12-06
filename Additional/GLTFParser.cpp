@@ -916,17 +916,11 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
             int bufferViewIndex = accessors[primitive.indiceIndex].bufferView;
             totalIndexSize += bufferViews[bufferViewIndex].byteLength;
 
-            int j = 0, numFloats = 0, attributes = primitive.attributes;
-            // even though attrib definition in gltf is not ordered, this code will order it, 
-            // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
-            while (attributes)
+            int numFloats = 0, attributes = primitive.attributes;
+            
+            for (int j = 0; attributes > 0; j += NextSetBit(&attributes))
             {
                 numFloats += attribIndexToNumComp[j];
-                // traverse set bits instead of traversing each bit
-                attributes &= ~1;
-                int tz = TrailingZeroCount(attributes);
-                attributes >>= tz;
-                j += tz;
             }    
             int numVertices = accessors[primitive.vertexAttribs[0]].count;
             totalVertexSize += numFloats * numVertices;
@@ -972,10 +966,10 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
             for (int i = 0; i < numVertex; ++i)
             {
                 int attributes = primitive.attributes;
-                // even though attrib definition in gltf is not ordered, this code will order it, 
+                
+                // even though attrib definition in gltf is not ordered, this code will order it, because we traversing set bits
                 // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
-                int j = 0;
-                while (attributes)
+                for (int j = 0; attributes > 0; j += NextSetBit(&attributes))
                 {
                     accessor     = accessors[primitive.vertexAttribs[j]];
                     view         = bufferViews[accessor.bufferView];
@@ -985,12 +979,6 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
                     char* buffer = (char*)buffers[view.buffer].uri + offset + (i * attribSize);
                     SmallMemCpy(currVertices, buffer, attribSize);
                     currVertices += attribIndexToNumComp[j];
-                    
-                    // traverse set bits instead of traversing each bit
-                    attributes &= ~1;
-                    int tz = TrailingZeroCount(attributes);
-                    attributes >>= tz;
-                    j += tz;
                 }    
             }
         }

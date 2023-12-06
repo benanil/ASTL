@@ -339,6 +339,14 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 #endif
 }
 
+__forceinline __constexpr int NextSetBit(int* bits)
+{
+    *bits &= ~1;
+    int tz = TrailingZeroCount(*bits);
+    *bits >>= tz;
+    return tz;
+}
+
 template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) 
 {
