@@ -479,6 +479,8 @@ template<typename T> __forceinline Vector4<T> MakeVec4(const Vector3<T>& a, T f)
 	using Vector4d = Vector4<double>;
 #endif // !AX_SUPPORT_SSE
 
+typedef Vector4f float4;
+
 struct Ray
 {
 	Vector3f origin;

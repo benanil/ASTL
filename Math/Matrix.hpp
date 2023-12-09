@@ -53,20 +53,17 @@ struct Matrix3
 		float3 vx = b.x * a.x.x;
 		float3 vy = b.y * a.x.y;
 		float3 vz = b.z * a.x.z;
-		vx = vx + vy + vz;
-		result.x = vx;
+		result.x = vx + vy + vz;
 
 		vx = b.x * a.y.x;
 		vy = b.y * a.y.y;
 		vz = b.z * a.y.z;
-		vx = vx + vy + vz;
-		result.y = vx;
+		result.y = vx + vy + vz;
 
 		vx = b.x * a.z.x;
 		vy = b.y * a.z.y;
 		vz = b.z * a.z.z;
-		vx = vx + vy + vz;
-		result.z = vx;
+		result.z = vx + vy + vz;
 		return result;
 	}
 
@@ -206,22 +203,18 @@ struct alignas(16) Matrix4
 	// please assign normalized vectors, returns view matrix
 	__forceinline static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
 	{
-		__m128 NegEyePosition;
-		__m128 D0, D1, D2;
-		__m128 R0, R1;
-
 		__m128 EyePosition  = _mm_loadu_ps(&eye.x);
 		__m128 EyeDirection = _mm_sub_ps(_mm_setzero_ps(), _mm_loadu_ps(&center.x));
 		__m128 UpDirection  = _mm_loadu_ps(&up.x);
 
-		R0 = SSEVectorNormalize(SSEVector3Cross(UpDirection, EyeDirection));
-		R1 = SSEVectorNormalize(SSEVector3Cross(EyeDirection, R0));
+		__m128 R0 = SSEVectorNormalize(SSEVector3Cross(UpDirection, EyeDirection));
+		__m128 R1 = SSEVectorNormalize(SSEVector3Cross(EyeDirection, R0));
 
-		NegEyePosition = _mm_sub_ps(_mm_setzero_ps(), EyePosition);
+		__m128 NegEyePosition = _mm_sub_ps(_mm_setzero_ps(), EyePosition);
 
-		D0 = SSEVector3Dot(R0, NegEyePosition);
-		D1 = SSEVector3Dot(R1, NegEyePosition);
-		D2 = SSEVector3Dot(EyeDirection, NegEyePosition);
+		__m128 D0 = SSEVector3Dot(R0, NegEyePosition);
+		__m128 D1 = SSEVector3Dot(R1, NegEyePosition);
+		__m128 D2 = SSEVector3Dot(EyeDirection, NegEyePosition);
 		Matrix4 M;
 		M.r[0] = SSESelect(D0, R0, g_XSelect1110); // no need select ?
 		M.r[1] = SSESelect(D1, R1, g_XSelect1110);
@@ -570,10 +563,14 @@ __forceinline void VECTORCALL InitializeMatrix4(Matrix4& r, __m128 x, __m128 y, 
 
 struct Matrix4
 {
-	struct
+	union
 	{
 		float    m[4][4];
 		Vector4f r[4];
+		struct
+		{
+			Vector4f x, y, z, w;
+		};
 	};
 
 	const Vector4f& operator [] (int index) const { return r[index]; }
@@ -612,7 +609,10 @@ struct Matrix4
 	{
 		Matrix4 M;
 		MemsetZero(&M, sizeof(Matrix4));
-		M.m[3][0] = x; M.m[3][1] = y; M.m[3][2] = z; M.m[3][3] = 1.0f; 
+		// set identity
+		M.m[0][0] = M.m[1][1] = M.m[2][2] = M.m[3][3] = 1.0f;
+		// set position
+		M.m[3][0] = x; M.m[3][1] = y; M.m[3][2] = z;
 		return M;
 	}
 
@@ -653,9 +653,9 @@ struct Matrix4
 	// please assign normalized vectors, returns view matrix
 	__forceinline static Matrix4 LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
 	{
-		Vector3f eyeDir = -eye;
+		Vector3f eyeDir = -center;
 		Vector3f r0 = Vector3f::Normalize(Vector3f::Cross(up, eyeDir));
-		Vector3f r1 = Vector3f::Normalize(Vector3f::Cross(eye, r0));
+		Vector3f r1 = Vector3f::Normalize(Vector3f::Cross(eyeDir, r0));
 		
 		Vector3f negEyePosition = -eye;
 		
@@ -665,7 +665,7 @@ struct Matrix4
 		
 		Matrix4 M;
 		M.m[0][0] = r0.x;     M.m[0][1] = r0.y;     M.m[0][2] = r0.z;     M.m[0][3] = d0;
-		M.m[1][0] = r1.x;     M.m[2][1] = r1.y;     M.m[2][2] = r1.z;     M.m[2][3] = d1;
+		M.m[1][0] = r1.x;     M.m[1][1] = r1.y;     M.m[1][2] = r1.z;     M.m[1][3] = d1;
 		M.m[2][0] = eyeDir.x; M.m[2][1] = eyeDir.y; M.m[2][2] = eyeDir.z; M.m[2][3] = d2;
 		M.m[3][0] = 0.0f;     M.m[3][1] = 0.0f;     M.m[3][2] = 0.0f;     M.m[3][3] = 1.0f;
 		return Matrix4::Transpose(M);
@@ -778,14 +778,14 @@ struct Matrix4
 		);
 	}
 
-	inline Matrix4 static Multiply(const Matrix4 in1, const Matrix4& in2)
+	inline Matrix4 static Multiply(const Matrix4 a, const Matrix4& b)
 	{
-		Matrix4 out;
-		out.r[0] = in1.r[0] * in2.r[0][0] + in1.r[1] * in2.r[0][1] + in1.r[2] * in2.r[0][2] + in1.r[3] * in2.r[0][3];
-		out.r[1] = in1.r[0] * in2.r[1][0] + in1.r[1] * in2.r[1][1] + in1.r[2] * in2.r[1][2] + in1.r[3] * in2.r[1][3];
-		out.r[2] = in1.r[0] * in2.r[2][0] + in1.r[1] * in2.r[2][1] + in1.r[2] * in2.r[2][2] + in1.r[3] * in2.r[2][3];
-		out.r[3] = in1.r[0] * in2.r[3][0] + in1.r[1] * in2.r[3][1] + in1.r[2] * in2.r[3][2] + in1.r[3] * in2.r[3][3];
-		return out;
+		Matrix4 result;
+		result.x = b.x * a.x.x + b.y * a.x.y + b.z * a.x.z + b.w * a.x.w;
+		result.y = b.x * a.y.x + b.y * a.y.y + b.z * a.y.z + b.w * a.y.w;
+		result.z = b.x * a.z.x + b.y * a.z.y + b.z * a.z.z + b.w * a.z.w;
+		result.w = b.x * a.w.x + b.y * a.w.y + b.z * a.w.z + b.w * a.w.w;
+		return result;
 	}
 
 	__forceinline static Matrix4 PositionRotationScale(const float* position, const float* rotation, const float* scale)
@@ -875,7 +875,7 @@ struct Matrix4
 		P.m[1][0] = M.m[0][1]; P.m[1][1] = M.m[1][1]; P.m[1][2] = M.m[2][1]; P.m[1][3] = M.m[3][1];
 		P.m[2][0] = M.m[0][2]; P.m[2][1] = M.m[1][2]; P.m[2][2] = M.m[2][2]; P.m[2][3] = M.m[3][2];
 		P.m[3][0] = M.m[0][3]; P.m[3][1] = M.m[1][3]; P.m[3][2] = M.m[2][3]; P.m[3][3] = M.m[3][3];
-		return M;
+		return P;
 	}
 
 	__forceinline static Vector3f Vector3Transform(const Vector3f v, const Matrix4& m) noexcept
