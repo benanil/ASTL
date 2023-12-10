@@ -140,7 +140,7 @@ struct Bitset256
 struct Bitset512
 {
 	union {
-		unsigned long bits[8] = { 0 };
+		unsigned long bits[8];
 		__m256i sse[2];
 	};
 
@@ -186,11 +186,11 @@ struct Bitset512
 		return hsum_256_epi64(_mm256_add_epi64(popcnt256si(sse[0]), popcnt256si(sse[1])));
 	}
 };
-
+#if 0
 struct Bitset1024
 {
 	union {
-		unsigned long bits[16] = { 0 };
+		unsigned long bits[16];
 		struct { Bitset512 b1, b2; };
 		struct { __m256i v[4]; };
 	};
@@ -288,7 +288,7 @@ struct Bitset2048
 struct Bitset4096
 {
 	union {
-		unsigned long bits[64] = { 0 };
+		unsigned long bits[64] ;
 		struct { Bitset2048 b1, b2; };
 		struct { __m256i v[16]; };
 	};
@@ -330,3 +330,4 @@ struct Bitset4096
 #undef _XOR
 
 AX_END_NAMESPACE
+#endif
