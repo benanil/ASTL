@@ -301,7 +301,6 @@ static int Day17() // result should be 3157
 }
 
 
-
 int Day22()
 {
 	FILE* file = fopen("Test/AOC22.txt", "r");

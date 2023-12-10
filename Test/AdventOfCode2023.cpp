@@ -157,7 +157,8 @@ void AOC2023Day3()
             gearTotal += find[0] * find[1];
     }
     
-    printf("day 3 result: a=%ld, b=%ld \n", total, gearTotal);
+    printf("day 3 result: a=%ld, b=%ld \n", total, gearTotal); // a=553825, b=93994191 
+    ASSERT(total == 553825 && gearTotal == 93994191l);
 }
             
 void AOC2023Day4Part1()
@@ -181,7 +182,7 @@ void AOC2023Day4Part1()
             numWin += winingNumbers[ParsePositiveNumber(curr)];
                 
         // const int map[25] = {0, 1, 2, 4, 8, 16, ...};
-        totalPoint += (1l << (numWin-1l)) * (numWin>0l); // //map[numWin]
+        totalPoint += (1l << numWin) >> 1; // //map[numWin]
     }
-    printf("day4 result: %ld", totalPoint);
+    printf("day4 result: %ld", totalPoint); // 25004
 }
