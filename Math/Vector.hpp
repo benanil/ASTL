@@ -3,7 +3,7 @@
 #include "Math.hpp"
 #include "SIMDCommon.hpp"
 
-AX_NAMESPACE 
+AX_NAMESPACE
 
 template<typename T>
 struct Vector2
@@ -13,7 +13,7 @@ struct Vector2
 		struct { T x, y; };
 		T arr[2];
 	};
-	
+
 	static const int NumElements = 2;
 	static const uint64 ElementSize = sizeof(T);
 	using ElemType = T;
@@ -71,7 +71,7 @@ struct Vector2
 	Vector2 operator * (T other) const { return {x * other, y * other}; }
 	Vector2 operator / (T other) const { return {x / other, y / other}; }
 	Vector2 operator - (T other) const { return {x - other, y - other}; }
-	
+
 	Vector2 operator += (Vector2 o) { x += o.x; y += o.y; return *this; }
 	Vector2 operator *= (Vector2 o) { x *= o.x; y *= o.y; return *this; }
 	Vector2 operator /= (Vector2 o) { x /= o.x; y /= o.y; return *this; }
@@ -86,12 +86,12 @@ struct Vector2
 	bool operator != (Vector2 b) const { return x != b.x || y != b.y; }
 	bool operator <  (Vector2 b) const { return x < b.x && y < b.y; }
 
-	static __constexpr Vector2 Zero()     { return {T( 0), T( 0)}; } 
-	static __constexpr Vector2 One()      { return {T( 1), T( 1)}; } 
-	static __constexpr Vector2 Up()       { return {T( 0), T( 1)}; } 
-	static __constexpr Vector2 Left()     { return {T(-1), T( 0)}; } 
-	static __constexpr Vector2 Down()     { return {T( 0), T(-1)}; } 
-	static __constexpr Vector2 Right()    { return {T( 1), T( 0)}; } 
+	static __constexpr Vector2 Zero()     { return {T( 0), T( 0)}; }
+	static __constexpr Vector2 One()      { return {T( 1), T( 1)}; }
+	static __constexpr Vector2 Up()       { return {T( 0), T( 1)}; }
+	static __constexpr Vector2 Left()     { return {T(-1), T( 0)}; }
+	static __constexpr Vector2 Down()     { return {T( 0), T(-1)}; }
+	static __constexpr Vector2 Right()    { return {T( 1), T( 0)}; }
 };
 
 template<typename T> __forceinline Vector2<T> MakeVec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
@@ -164,7 +164,7 @@ struct Vector3
 	static Vector3 Normalize(const Vector3& a) {
 		return a / Sqrt(Vector3::Dot(a, a));
 	}
-	
+
 	static Vector3 NormalizeEst(const Vector3& a) {
 		return a * RSqrt(Vector3::Dot(a, a));
 	}
@@ -208,8 +208,8 @@ struct Vector3
 	static const Vector3 Backward(){ return { 0.0,  0.0, -1.0}; }
 };
 
-template<typename T> __forceinline Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; } 
-template<typename T> __forceinline Vector3<T> MakeVec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; } 
+template<typename T> __forceinline Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; }
+template<typename T> __forceinline Vector3<T> MakeVec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; }
 template<typename T> __forceinline Vector3<T> MakeVec3(T a, T b, T c) { Vector3<T> v; v.x = a; v.y = b; v.z = c; return v; }
 template<typename T> __forceinline Vector3<T> MakeVec3(T* p) { Vector3<T> v; v.x = p[0]; v.y = p[1]; v.z = p[2]; return v; }
 
@@ -241,14 +241,14 @@ __forceinline float3 ConvertToFloat3(const half* h) {
 }
 
 __forceinline half2 ConvertToHalf2(const float* h) {
-	half2 res; 
+	half2 res;
 	res.x = ConvertFloatToHalf(*h++);
 	res.y = ConvertFloatToHalf(*h);
 	return res;
 }
 
 __forceinline half3 ConvertToHalf3(const float* h) {
-	half3 res; 
+	half3 res;
 	res.x = ConvertFloatToHalf(*h++);
 	res.y = ConvertFloatToHalf(*h++);
 	res.z = ConvertFloatToHalf(*h);
@@ -467,16 +467,16 @@ struct Vector4
 	Vector4 operator /= (T o) { x /= o; y /= o; z /= o; w /= o; return *this; }
 	Vector4 operator -= (T o) { x -= o; y -= o; z -= o; w -= o; return *this; }
 };
-	
+
 template<typename T> __forceinline Vector4<T> MakeVec4(T scale = 0)              { Vector4<T> v; v.x = v.y = v.z = v.w = scale;              return v;}
 template<typename T> __forceinline Vector4<T> MakeVec4(T _x, T _y, T _z, T _w)   { Vector4<T> v; v.x = _x; v.y = _y; v.z = _z; v.w = _w;     return v;}
 template<typename T> __forceinline Vector4<T> MakeVec4(const Vector3<T>& a, T f) { Vector4<T> v; v.x = a.x; v.y = a.y; v.z = a.z; v.w = a.w; return v; }
 
 #ifndef AX_SUPPORT_SSE
-	using Vector4f = Vector4<float>;
+using Vector4f = Vector4<float>;
 #endif
 #ifndef AX_SUPPORT_AVX2
-	using Vector4d = Vector4<double>;
+using Vector4d = Vector4<double>;
 #endif // !AX_SUPPORT_SSE
 
 typedef Vector4f float4;

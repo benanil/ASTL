@@ -561,16 +561,20 @@ __forceinline void VECTORCALL InitializeMatrix4(Matrix4& r, __m128 x, __m128 y, 
 
 #else // sse is not supported
 
-struct Matrix4
+struct
+#if defined(__ARM_NEON__)
+alignas(sizeof(float32x4_t))
+#endif
+Matrix4
 {
 	union
 	{
 		float    m[4][4];
 		Vector4f r[4];
-		struct
-		{
-			Vector4f x, y, z, w;
-		};
+		struct { Vector4f x, y, z, w; };
+#if defined(__ARM_NEON__)
+		float32x4_t v[4];
+#endif
 	};
 
 	const Vector4f& operator [] (int index) const { return r[index]; }
@@ -675,7 +679,7 @@ struct Matrix4
 	{
 		const float rad = fov;
 		const float h = Cos(0.5f * rad) / Sin(0.5f * rad);
-		const float w = h * height / width; /// max(width , Height) / min(width , Height)?
+		const float w = h * height / width;
 		Matrix4 M = Identity();
 		M.m[0][0] = w;
 		M.m[1][1] = h;
@@ -780,11 +784,41 @@ struct Matrix4
 
 	inline Matrix4 static Multiply(const Matrix4 a, const Matrix4& b)
 	{
-		Matrix4 result;
+        Matrix4 result;
+#if !defined(__ARM_NEON__)
 		result.x = b.x * a.x.x + b.y * a.x.y + b.z * a.x.z + b.w * a.x.w;
 		result.y = b.x * a.y.x + b.y * a.y.y + b.z * a.y.z + b.w * a.y.w;
 		result.z = b.x * a.z.x + b.y * a.z.y + b.z * a.z.z + b.w * a.z.w;
 		result.w = b.x * a.w.x + b.y * a.w.y + b.z * a.w.z + b.w * a.w.w;
+#else
+		float32x4_t row_a = a.v[0];
+		float32x4_t result_row = vaddq_f32(
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[1], vget_low_f32(row_a), 1), b.v[0], vget_low_f32(row_a), 0),
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[3], vget_high_f32(row_a), 1), b.v[2], vget_high_f32(row_a), 0)
+		);
+		result.v[0] = result_row;
+        
+		row_a = a.v[1];
+		result_row = vaddq_f32(
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[1], vget_low_f32(row_a), 1), b.v[0], vget_low_f32(row_a), 0),
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[3], vget_high_f32(row_a), 1), b.v[2], vget_high_f32(row_a), 0)
+		);
+		result.v[1] = result_row;		
+
+		row_a = a.v[2];
+		result_row = vaddq_f32(
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[1], vget_low_f32(row_a), 1), b.v[0], vget_low_f32(row_a), 0),
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[3], vget_high_f32(row_a), 1), b.v[2], vget_high_f32(row_a), 0)
+		);
+		result.v[2] = result_row;		
+
+		row_a = a.v[3];
+		result_row = vaddq_f32(
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[1], vget_low_f32(row_a), 1), b.v[0], vget_low_f32(row_a), 0),
+			vmlaq_lane_f32(vmulq_lane_f32(b.v[3], vget_high_f32(row_a), 1), b.v[2], vget_high_f32(row_a), 0)
+		);
+		result.v[3] = result_row;		
+#endif
 		return result;
 	}
 

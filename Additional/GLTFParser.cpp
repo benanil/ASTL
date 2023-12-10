@@ -8,8 +8,6 @@
 *        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com          *
 *    Restrictions:                                               *
 *        No animation and extension support yet.                 *
-*    Warning:                                                    *
-*        Complex scenes will couse crash work in progress.       *
 *    License:                                                    *
 *        No License whatsoever do Whatever you want.             *
 *                                                                *

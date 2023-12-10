@@ -86,6 +86,8 @@ __forceinline float RSqrt(float x)
   //       vrsqrtss        xmm0, xmm0, xmm0
   //       ret
 	return _mm_cvtss_f32(_mm_rsqrt_ps(_mm_set_ps1(x)));
+#elif defined(__ARM_NEON__)
+	return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
 #else
 	float f = x;
 	uint32_t i = BitCast<uint32_t>(f);

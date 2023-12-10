@@ -150,6 +150,9 @@ typedef uint64_t ulong;
 /* Architecture Detection */
 // detection code from mini audio
 // you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
+#ifdef __ARM_NEON__
+    #include <arm_neon.h>
+#endif
 
 #if defined(__x86_64__) || defined(_M_X64)
 #   define AX_X64
