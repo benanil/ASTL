@@ -158,17 +158,17 @@ __private const char* ParseAccessors(const char* curr, Array<GLTFAccessor>& acce
         }
         ASSERT(*curr != '\0' && "parsing accessors failed probably you forget to close brackets!");
         curr++;
-        if      (StrCMP16(curr, "bufferView"))    accessor.bufferView = ParsePositiveNumber(curr); 
+        if (StrCMP16(curr, "bufferView"))    accessor.bufferView = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "byteOffset"))    accessor.byteOffset = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "componentType")) accessor.componentType = ParsePositiveNumber(curr) - 0x1400; // GL_BYTE 
-        else if (StrCMP16(curr, "count"))         accessor.count = ParsePositiveNumber(curr); 
-        else if (StrCMP16(curr, "name")) 
+        else if (StrCMP16(curr, "count"))         accessor.count = ParsePositiveNumber(curr);
+        else if (StrCMP16(curr, "name"))
         {
             curr += 6; // skip name":     because we don't need accessor's name
             int numQuotes = 0;
             // skip two quotes
             while (numQuotes < 2)
-            numQuotes += *curr++ == '"';
+                numQuotes += *curr++ == '"';
         }
         else if (StrCMP16(curr, "type"))
         {
@@ -182,8 +182,12 @@ __private const char* ParseAccessors(const char* curr, Array<GLTFAccessor>& acce
         }
         else if (StrCMP16(curr, "min")) curr = SkipToNextNode(curr, '[', ']'); // skip min and max
         else if (StrCMP16(curr, "max")) curr = SkipToNextNode(curr, '[', ']');
-        else 
-        return (const char*)AError_UNKNOWN_ACCESSOR_VAR;
+        else if (StrCMP16(curr, "normalized")) curr = SkipAfter(curr, '"');
+        else
+        {
+            ASSERT(0 && "unknown accessor var");
+            return (const char*)AError_UNKNOWN_ACCESSOR_VAR;
+        }
     }
 }
 
@@ -279,11 +283,14 @@ __private const char* ParseBuffers(const char* curr, const char* path, Array<GLT
 }
 
 // write paths to path buffer, buffer is seperated by null terminators
-__private const char* ParseImages(const char* curr, Array<AImage>& images, AStringAllocator& stringAllocator)
+__private const char* ParseImages(const char* curr, const char* path, Array<AImage>& images, AStringAllocator& stringAllocator)
 {
     curr = SkipUntill(curr, '[');
     curr++;
     
+    int pathLen = StringLength(path);
+    while (path[pathLen-1] != '/') pathLen--;
+
     AImage image{};
     // read each buffer
     while (true)
@@ -297,7 +304,19 @@ __private const char* ParseImages(const char* curr, Array<AImage>& images, AStri
 
         curr++;
         ASSERT(StrCMP16(curr, "uri") && "Unknown image value uri is the only val!");
-        curr = CopyStringInQuotes(image.path, curr + 4, stringAllocator);
+        curr = SkipAfter(curr, '"');
+        curr = SkipAfter(curr, '"');
+
+        int uriSize = 0;
+        while (curr[uriSize] != '"') 
+            uriSize++;
+        
+        image.path = stringAllocator.Allocate(uriSize + pathLen + 1);
+        SmallMemCpy(image.path, path, pathLen);
+        SmallMemCpy(image.path + pathLen, curr, uriSize);
+        image.path[uriSize + pathLen] = '\0';
+        
+        curr += uriSize + 1;
         images.Add(image);
     }
     return nullptr;
@@ -611,7 +630,7 @@ __private const char* ParseScenes(const char* curr, Array<AScene>& scenes,
     while (true)
     {
         // search for name
-        while (*curr != '"')
+        while (*curr && *curr != '"')
         {
             if (*curr == '}')
             {
@@ -841,7 +860,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
     return curr;
 }
 
-__public void ParseGLTF(const char* path, ParsedScene* result)
+__public void ParseGLTF(const char* path, ParsedGLTF* result)
 {
     ASSERT(result && path);
     long sourceSize = 0;
@@ -876,7 +895,7 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
         else if (StrCMP16(curr, "scene"))        result->defaultSceneIndex = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "bufferViews"))  curr = ParseBufferViews(curr, bufferViews);
         else if (StrCMP16(curr, "buffers"))      curr = ParseBuffers(curr, path, buffers);     
-        else if (StrCMP16(curr, "images"))       curr = ParseImages(curr, images, stringAllocator);       
+        else if (StrCMP16(curr, "images"))       curr = ParseImages(curr, path, images, stringAllocator);       
         else if (StrCMP16(curr, "textures"))     curr = ParseTextures(curr, textures, stringAllocator);   
         else if (StrCMP16(curr, "meshes"))       curr = ParseMeshes(curr, meshes, stringAllocator);
         else if (StrCMP16(curr, "materials"))    curr = ParseMaterials(curr, materials, stringAllocator);
@@ -997,7 +1016,7 @@ __public void ParseGLTF(const char* path, ParsedScene* result)
     FreeAllText(source);
 }
 
-__public void FreeParsedScene(ParsedScene* gltf)
+__public void FreeParsedGLTF(ParsedGLTF* gltf)
 {
     struct CharFragment { 
         CharFragment* next; char* ptr; int64_t   size;
@@ -1038,15 +1057,15 @@ __public void FreeParsedScene(ParsedScene* gltf)
     for (int i = 0; i < gltf->numMeshes; i++)
         SBFree(gltf->meshes[i].primitives);
 
-    if (gltf->meshes)    delete gltf->meshes;
-    if (gltf->nodes)     delete gltf->nodes;
-    if (gltf->materials) delete gltf->materials;
-    if (gltf->textures)  delete gltf->textures;
-    if (gltf->images)    delete gltf->images;
-    if (gltf->samplers)  delete gltf->samplers;
-    if (gltf->cameras)   delete gltf->cameras;
-    if (gltf->scenes)    delete gltf->scenes;
-    if (gltf->allVertices) delete gltf->allVertices;
+    if (gltf->meshes)    delete[] gltf->meshes;
+    if (gltf->nodes)     delete[] gltf->nodes;
+    if (gltf->materials) delete[] gltf->materials;
+    if (gltf->textures)  delete[] gltf->textures;
+    if (gltf->images)    delete[] gltf->images;
+    if (gltf->samplers)  delete[] gltf->samplers;
+    if (gltf->cameras)   delete[] gltf->cameras;
+    if (gltf->scenes)    delete[] gltf->scenes;
+    if (gltf->allVertices) delete[] gltf->allVertices;
     if (gltf->allIndices)  FreeAligned(gltf->allIndices);
 }
 

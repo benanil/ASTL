@@ -23,7 +23,6 @@
 #include "Algorithms.hpp"
 #include <stdio.h>
 #include <sys/stat.h>
-#include <memory.h> // malloc free
 
 #if defined __WIN32__ || defined _WIN32 || defined _Windows
     #if !defined S_ISDIR
@@ -88,18 +87,40 @@ inline char* PathGoBackwards(char* path, int end, bool skipSeparator)
     return path + end + 1; // Return the new starting point of the path.
 }
 
+struct ScopedFILE
+{
+    FILE* file;
+    ScopedFILE(FILE* _file) : file(_file) {}
+    ~ScopedFILE()
+    {
+        fclose(file); 
+    }
+};
+
+#ifdef WIN32
+#include <io.h>
+#define F_OK 0
+#define access _access
+#else 
+#include <unistd.h>
+#endif
+
 // these functions works fine with file and folders
 inline bool FileExist(const char* file)
 {
-    struct stat sb;
-    return stat(file, &sb) != 0;
+    return access(file, F_OK) == 0;
 }
 
 inline uint64_t FileSize(const char* file)
 {
+#ifndef _WIN32
     struct stat sb;
     if (stat(file, &sb) == 0) return 0;
     return sb.st_size;
+#else
+    ScopedFILE f = fopen(file, "rb");
+    return _filelengthi64(fileno(f.file));
+#endif
 }
 
 inline bool RenameFile(const char* oldFile, const char* newFile)
@@ -158,10 +179,12 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharac
     }
     
     // Determine the file size
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    rewind(file);
-    
+#ifdef _WIN32
+    long file_size = _filelengthi64(fileno(file));
+#else
+    struct stat sb; stat(file, &sb);
+    longfile_size = sb.st_size;
+#endif    
     // Allocate memory to store the entire file
     if (buffer == nullptr) buffer = new char[file_size + 40 + startTextLen] {}; // +1 for null terminator
     

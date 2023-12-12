@@ -140,6 +140,16 @@ public:
 		return arr[index];
 	}
 
+	ValueT& GetUnchecked(int index)
+	{
+		return arr[index];
+	}
+	
+	const ValueT& GetUnchecked(int index) const
+	{
+		return arr[index];
+	}
+
 	const ValueT& operator[](int index) const
 	{
 		ASSERT(index >= 0 && index < m_count);

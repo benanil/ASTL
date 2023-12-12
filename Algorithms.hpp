@@ -333,8 +333,9 @@ template<typename T> inline void ClearN(T* src, int n)
 
 template<typename T> inline void ConstructN(T* src, int n)
 {
+    T def{};
     for (int i = 0; i < n; ++i) 
-        new (src + i) T();
+        src[i] = def;
 }
 
 #ifdef AX_USE_NAMESPACE

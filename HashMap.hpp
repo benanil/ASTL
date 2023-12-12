@@ -87,8 +87,8 @@ private:
         return Bucket::DistInc | (hash & Bucket::FingerprintMask);
     }
 
-    Bucket& BucketAt(uint32 index) { return m_buckets[index]; }
-    const Bucket& BucketAt(uint32 index) const { return m_buckets[index]; }
+    Bucket& BucketAt(uint32 index) { return m_buckets.GetUnchecked(index); }
+    const Bucket& BucketAt(uint32 index) const { return m_buckets.GetUnchecked(index); }
 
     uint32 BucketIdxFromHash(uint64_t hash) const { return uint32(hash >> m_shifts); }
     
@@ -125,6 +125,7 @@ private:
 
     uint32 CalcNumBuckets(uint8 shifts) const
     {
+        ASSERT(64u - shifts < 32);
         return MIN(MaxSize(), 1u << (64u - shifts));
     }
 
@@ -156,7 +157,7 @@ private:
     void ReallocateBuckets(uint32 numBuckets)
     {
         m_num_buckets = numBuckets;
-        m_buckets.Reserve(m_num_buckets);
+        m_buckets.Resize(m_num_buckets);
 
         if (AX_UNLIKELY(m_num_buckets == MaxSize())) {
             m_max_bucket_capacity = MaxSize();

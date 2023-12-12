@@ -462,4 +462,20 @@ template<typename T> struct  Hasher
 	}
 };
 
+// usefull when you want to do hashing yourself
+// integer hashmap lookup can be optimized with this
+template<typename T> struct NoHasher
+{ 
+};
+
+template<> struct NoHasher<uint64_t>
+{
+	static __forceinline uint64_t Hash(uint64_t x) { return x; }
+};
+
+template<> struct NoHasher<uint32_t>
+{
+	static __forceinline uint64_t Hash(uint32_t x) { return (uint64_t)x * 0x9ddfea08eb382d69ull; }
+};
+
 AX_END_NAMESPACE 

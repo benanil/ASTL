@@ -436,8 +436,9 @@ struct FixedSizeGrowableAllocator
         CheckFixGrow(count);
         T* ptr = current->ptr + current->size;
         current->size += count;
+        T def{};
         for (int i = 0; i < count; i++)
-            new (ptr + i) T();
+            ptr[i] = def;
         return ptr;
     }
 

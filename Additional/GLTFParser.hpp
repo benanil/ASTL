@@ -146,7 +146,7 @@ typedef struct AScene_
     int*  nodes;
 } AScene;
 
-typedef struct ParsedScene
+typedef struct ParsedGLTF_
 {
     short numMeshes;
     short numNodes;
@@ -173,16 +173,37 @@ typedef struct ParsedScene
     ASampler*  samplers;
     ACamera*   cameras;
     AScene*    scenes;
-} ParsedScene;
+} ParsedGLTF;
+
+typedef struct ParsedObj_
+{
+    short numMeshes;
+    short numMaterials;
+    short numImages;
+    
+    AErrorType error;
+
+    void* allVertices;
+    void* allIndices;
+
+    char* materialText; // we hold material names in this.
+
+    AMesh*     meshes;
+    AMaterial* materials;
+    AImage*    images;
+} ParsedObj;
 
 // if there is an error error will be minus GLTFErrorType
 // out scene should not be null
-void ParseGLTF(const char* path, ParsedScene* scene);
-void ParseObj(const char* path, ParsedScene* scene);
+void ParseGLTF(const char* path, ParsedGLTF* scene);
+
+void ParseObj(const char* path, ParsedObj* scene);
 
 // loads the scene that is GLTF, OBJ, or FBX
-ParsedScene LoadSceneExternal();
+ParsedGLTF LoadSceneExternal();
 
-void FreeParsedScene(ParsedScene* gltf);
+void FreeParsedGLTF(ParsedGLTF* gltf);
+
+void FreeParsedObj(ParsedObj* obj);
 
 const char* ParsedSceneGetError(AErrorType error);

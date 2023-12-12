@@ -16,24 +16,64 @@
 #include "../Common.hpp"
 #include "../IO.hpp"
 #include "../String.hpp"
-#include "../Random.hpp"
-#include "../Array.hpp"
+#include "../Random.hpp" // WYHash, MurmurHash
+#include "../HashMap.hpp"
+#include "../HashSet.hpp"
 
 inline void ChangeExtension(char* path, const char* newExt, size_t len)
 {
     path[len - 1] = newExt[2]; path[len - 2] = newExt[1]; path[len - 3] = newExt[0];
 }
 
-static const char* ParseFloat16(const char*& curr, short& flt)
+inline float ParseFloat2(char*& text)
 {
-    flt = (short)(ParseFloat(curr) * 1000.0f);
-    return curr;
+    char* ptr = text;
+    while (!IsNumber(*ptr) && *ptr != '-') ptr++;
+
+    double sign = 1.0;
+    if (*ptr == '-') sign = -1.0, ptr++;
+
+    double num = 0.0;
+
+    while (IsNumber(*ptr))
+        num = 10.0 * num + (double)(*ptr++ - '0');
+
+    if (*ptr == '.') ptr++;
+
+    double fra = 0.0, div = 1.0;
+
+    while (IsNumber(*ptr) && div < 1e8) // 1e8 is 1 and 8 zero 100000000
+        fra = 10.0f * fra + (double)(*ptr++ - '0'), div *= 10.0f;
+
+    while (IsNumber(*ptr)) ptr++;
+
+    num += fra / div;
+    text = ptr;
+    return (float)(sign * num);
 }
 
-void ParseObj(const char* path, ParsedScene* scene)
+static void ParseFloat162(char*& curr, short& flt)
+{
+    flt = (short)(ParseFloat2(curr) * 400.0f);
+}
+
+struct OBJVertex { float pos[3]; float texCoord[2]; float normal[3]; };
+
+
+inline uint64_t HashVertex(int pos, int tex, int norm)
+{
+    const uint64_t secret[4] = { 0xa0761d6478bd642full, 0xe7037ed1a0b428dbull, 0x8ebc6af09c88c6e3ull, 0x589965cc75374cc3ull };
+    uint64_t a = (uint64_t)pos | (uint64_t(tex) << 22) | (uint64_t(norm) << 39);
+    return WYHash::mix(a ^ secret[a & 3], MurmurHash(a));
+    // uint64_t a = (uint64_t(pos) << 32U) | uint64_t(tex);
+    // uint64_t b = (uint64_t(norm) << 32U) | uint64_t(pos + tex * norm);
+    // return WYHash::mix(secret[1], WYHash::mix(a ^ secret[1], b ^ tex));
+}   
+
+void ParseObj(const char* path, ParsedObj* scene)
 {
     if (!FileExist(path)) {
-        scene->error = AError_BUFFER_PARSE_FAIL;
+        scene->error = AError_FILE_NOT_FOUND;
         return;
     }
 
@@ -44,12 +84,8 @@ void ParseObj(const char* path, ParsedScene* scene)
     SmallMemCpy(pathDup, path, pathLen);
 
     const uint64 sz = FileSize(path);
-    char* objText = ReadAllFile(path);
+    ScopedText objText = ReadAllFile(path); 
     
-#if defined(DEBUG) || defined(_DEBUG)
-    // ascii utf8 support check
-    if (IsUTF8ASCII(objText, sz) != 1)  { scene->error = AError_NON_UTF8; return result; } 
-#endif
     ChangeExtension(pathDup, "mtl", pathLen);
     char* mtlPath = pathDup; // for readibility
     uint msz = FileExist(mtlPath) ? (uint)FileSize(mtlPath) : 0u;
@@ -57,24 +93,21 @@ void ParseObj(const char* path, ParsedScene* scene)
     char* mtlText = nullptr;
     // read if material path exist 
     if (msz) {
-        char* buffer = stringAllocator.Allocate(msz + 8);
-        mtlText = ReadAllFile(mtlPath, buffer);
-#if defined(DEBUG) || defined(_DEBUG)
-        if (IsUTF8ASCII(mtlText, msz) != 1) { scene->error = AError_NON_UTF8; return result; }
-#else
+        mtlText = ReadAllFile(mtlPath); // todo memory leak
+        scene->materialText = mtlText;
     }
 
-    Array<float> positions, indices, texCoords, normals; 
+    Array<float> positions, texCoords, normals; 
     Array<AMesh> meshes;
 
     // hashMap for material indices, materialMap[materialNameHash & 255] = material Index 
-    unsigned char materialMap[512] = {0};
+    StackHashMap<uint32_t, int, 128, NoHasher<uint32_t>> materialMap;
 	
     // import materials
     char* curr = mtlText, *currEnd = curr + msz;
     Array<AMaterial> materials;
     Array<AImage> images; // index to start of mtltext
-#if 0
+    
     while (curr && *curr && curr < currEnd)
     {
         if (*curr == '#')  while (*curr++ != '\n'); // skip line
@@ -87,38 +120,39 @@ void ParseObj(const char* path, ParsedScene* scene)
             MemsetZero(&materials.Back(), sizeof(AMaterial));
 
             // set default properties
-            materials.Back().specularColor = ~0u, currMaterial->diffuseColor = ~0u; // white
-            materials.Back().specularFactor = 2.2f * 400.0f;
-            materials.Back().roughness = 0.6f * 400.0f;
-            materials.Back().name = PointerDistance(mtlText, curr);
+            materials.Back().specularColor   = ~0u, materials.Back().diffuseColor = ~0u; // white
+            materials.Back().specularFactor  = 2.2f * 400.0f;
+            materials.Back().roughnessFactor = 0.6f * 400.0f;
+            materials.Back().name = mtlText + PointerDistance(mtlText, curr);
             
-            unsigned hash = WangHash(uint(curr[0]) | uint(curr[1] << 8) | uint(curr[2] << 16));
+            uint32_t hash = WangHash(uint(curr[0]) | uint(curr[1] << 8) | uint(curr[2] << 16));
             while(*curr != '\n' && !IsWhitespace(*curr))
                 hash = *curr++ + (hash << 6) + (hash << 16) - hash; 
             *curr++ = '\0'; // null terminator
-            if (materialMap[hash & 511])
+        
+            if (materialMap.Contains(hash))
             { scene->error = AError_HASH_COLISSION; return;}
 
-            materialMap[hash & 511] = scene->numMaterials++;
+            materialMap[hash] = scene->numMaterials++;
         }
         else if (curr[0] == 'N' && curr[1] == 's') 
         {
             // shininess
-            curr = ParseFloat16(curr, materials.Back().specularFactor); 
+            ParseFloat162(curr, materials.Back().specularFactor);
         }
         else if (curr[0] == 'd') 
         {
             // roughness
-            curr = ParseFloat16(curr, materials.Back().roughnessFactor);
+            ParseFloat162(curr, materials.Back().roughnessFactor);
         }
         else if (curr[0] == 'K' && curr[1] == 'd') 
         { 
             // diffuse color
-            float colorf[3] = {ParseFloat(curr), ParseFloat(curr), ParseFloat(curr)};
+            float colorf[3] = { ParseFloat2(curr), ParseFloat2(curr), ParseFloat2(curr)};
             materials.Back().baseColorFactor = PackColorRGBU32(colorf);
         }
         else if (curr[0] == 'K' && curr[1] == 's') { // specular color
-            float colorf[3] = {ParseFloat(curr), ParseFloat(curr), ParseFloat(curr)};
+            float colorf[3] = { ParseFloat2(curr), ParseFloat2(curr), ParseFloat2(curr)};
             materials.Back().specularColor = PackColorRGBU32(colorf);
         }
         else if (curr[0] == 'm') // map_bla
@@ -126,7 +160,7 @@ void ParseObj(const char* path, ParsedScene* scene)
             if (curr[4] == 'K' && curr[5] == 'd') {
                 // set this pointer as texture path data
                 materials.Back().baseColorTexture.index = images.Size();
-                AImage image{ mtlText + PointerDistance(mtlText, (curr += 7)};
+                AImage image{ mtlText + PointerDistance(mtlText, (curr += 7))};
                 images.Add(image);
                 // find end point of path
                 while (*curr != '\n' && *curr != '\r') curr++;
@@ -134,7 +168,7 @@ void ParseObj(const char* path, ParsedScene* scene)
             }
             else if (curr[4] == 'K' && curr[5] == 's') {
                 materials.Back().specularTexture.index = images.Size();
-                AImage image{ mtlText + PointerDistance(mtlText, (curr += 7)};
+                AImage image{ mtlText + PointerDistance(mtlText, (curr += 7))};
                 images.Add(image);
 
                 while (*curr != '\n' && *curr != '\r') curr++; // find end point of path
@@ -145,41 +179,59 @@ void ParseObj(const char* path, ParsedScene* scene)
         else while (*curr != '\n' && *curr) curr++;
     }
 
-    curr = objText, currEnd = curr + sz;
+    curr = objText.text, currEnd = curr + sz;
     unsigned currentMaterial = 0;
-
-    struct Vertex { float pos[3]; float texCoord[2]; float normal[3]; };
-    Array<Vertex> vertices;
-
+    
+    HashMap<uint64_t, uint32_t, NoHasher<uint64_t>> uniqueVertices;
+    Array<uint32_t> indices(256);
+    Array<OBJVertex> vertices;
+    
+    int attributes = 0; // pos, tex, normal bits.
+    
     while (curr && *curr && curr < currEnd)
     {
-        if (*curr == '#')  while (*curr++ != '\n');
-        while (*curr == '\n' || IsWhitespace(*curr)) curr++;
+        if (*curr == 'x')
+            printf("break");
+
+        while (*curr && *curr == '\n' || IsWhitespace(*curr)) 
+            curr++;
+
+        // skip comment lines
+        if (*curr == '#') 
+            while (*curr && *curr != '\n')
+                curr++;
 
         if (*curr == 'v')
         {
-            while (curr[1] == ' ') { // vertex=position 
+            attributes |= AAttribType_POSITION;
+
+            while (*curr != '#' && curr[1] == ' ') { // vertex=position 
                 curr += 2; 
-                positions.Add(ParseFloat(curr)); 
-                positions.Add(ParseFloat(curr)); 
-                positions.Add(ParseFloat(curr));
+                positions.Add(ParseFloat2(curr));
+                positions.Add(ParseFloat2(curr));
+                positions.Add(ParseFloat2(curr));
                 // skip line&whiteSpace
                 while (*curr == '\n' || IsWhitespace(*curr)) curr++;
             }
 
             while (curr[1] == 't') {
+                attributes |= AAttribType_TEXCOORD_0;
+
                 curr += 2;
-                texCoords.Add(ParseFloat(curr)); 
-                texCoords.Add(ParseFloat(curr)); 
+                texCoords.Add(ParseFloat2(curr));
+                texCoords.Add(ParseFloat2(curr));
+                // if it has 3 component for texcoord skip the third
+                if (IsNumber(curr[1])) ParseFloat2(curr);
                 // skip line&whiteSpace
                 while (*curr == '\n' || IsWhitespace(*curr)) curr++;
             }
 
             while (curr[1] == 'n') {
+                attributes |= AAttribType_NORMAL;
                 curr += 2; 
-                normals.Add(ParseFloat(curr));
-                normals.Add(ParseFloat(curr)); 
-                normals.Add(ParseFloat(curr)); 
+                normals.Add(ParseFloat2(curr));
+                normals.Add(ParseFloat2(curr));
+                normals.Add(ParseFloat2(curr));
                 // skip line&whiteSpace
                 while (*curr == '\n' || IsWhitespace(*curr)) curr++;
             }
@@ -193,60 +245,111 @@ void ParseObj(const char* path, ParsedScene* scene)
             while(*curr != '\n' && !IsWhitespace(*curr)) // create texture path hash 
                 hash = *curr++ + (hash << 6) + (hash << 16) - hash;
             while (*curr == '\n' || IsWhitespace(*curr)) curr++;
-            materialIndex = materialMap[hash & 511]; // use material index for this group of triangles
+            materialIndex = materialMap[hash]; // use material index for this group of triangles
         }
         
-        int vertexStart = vertices.Size();
+        int vertexStart  = vertices.Size();
+        int indiceStart  = indices.Size();
+        int currentIndex = indiceStart;
+
         while (curr[0] == 'f')
         {
             curr += 2;
       
+            // iterate over vaces
             for(int i = 0; i < 3; ++i) // compiler please unroll :D
             {
                 int positionIdx = 0, textureIdx = 0, normalIdx = 0;
                 // since we know indices are not negative values we are parsing like this
                 while (IsNumber(*curr)) positionIdx = 10 * positionIdx + (*curr++ - '0'); curr++; // last ptr++ for jump '/'
-                while (IsNumber(*curr)) textureIdx = 10 * textureIdx + (*curr++ - '0'); curr++;
+                
+                if (*curr != '/') // texture coord might not exist
+                    while (IsNumber(*curr)) textureIdx = 10 * textureIdx + (*curr++ - '0');
+                
+                curr++;
+                
                 while (IsNumber(*curr)) normalIdx = 10 * normalIdx + (*curr++ - '0'); curr++;
+               
+                positionIdx--, textureIdx--, normalIdx--;// obj index always starts from 1
+
+                uint64_t hash = HashVertex(positionIdx, textureIdx, normalIdx);
+                KeyValuePair<uint64_t, uint32_t>* find = uniqueVertices.Find(hash);
+
+                if (find != uniqueVertices.end())
+                {
+                    indices.Add(find->value);
+                    continue;
+                }
+                
+                indices.Add(currentIndex);
+                uniqueVertices.Insert(hash, currentIndex++);
                 vertices.AddUninitialized(1);
-                Vertex& vertex = vertices.Back();
-                SmallMemCpy(vertex.pos     , positions.Data() + (3 * positionsIdx), sizeof(float) * 3);
-                SmallMemCpy(vertex.texCoord, texCoords.Data() + (2 * textureIdx)  , sizeof(float) * 2);
-                SmallMemCpy(vertex.normal  , normals.Data()   + (3 * positionsIdx), sizeof(float) * 3);
+
+                OBJVertex& vertex = vertices.Back();
+                SmallMemCpy(vertex.pos, positions.Data() + (3 * positionIdx), sizeof(float) * 3);
+                
+                if (textureIdx != -1) // texture coord might not exist
+                    SmallMemCpy(vertex.texCoord, texCoords.Data() + (2 * textureIdx) , sizeof(float) * 2);
+                
+                SmallMemCpy(vertex.normal, normals.Data() + (3 * normalIdx), sizeof(float) * 3);
             }
 
+            if (IsNumber(*curr)) // is face has more than 3 element (for example color)
+                while (*curr && !IsWhitespace(*curr) || *curr != '\n') curr++;
+
+
             // skip line&whiteSpace
-            while (IsWhitespace(*curr) || *curr == '\n') curr++;
+            while (*curr && IsWhitespace(*curr) || *curr == '\n') curr++;
         }
-        meshes.AddUninitialized(1);
+        
+        // any vertex parsed?
+        if (vertexStart != vertices.Size())
+        {
+            meshes.AddUninitialized(1);
+        
+            APrimitive primitive{};
+            primitive.indices     = indices.Data() + indiceStart; // indicate linear indices
+            primitive.vertices    = vertices.Data() + vertexStart; // we will point this vertex to vertices buffer
+            primitive.attributes  = attributes; // pos, tex, normal bits.
+            primitive.indexType   = 0x1405 - 0x1400; // GL_UNSIGNED_INT - GL_BYTE to get index so result is GraphicType_UnsignedInt
+            primitive.numIndices  = indices.Size() - indiceStart;
+            primitive.numVertices = vertices.Size() - vertexStart;
+            primitive.material    = 0; //materialIndex;
+            
+            meshes.Back().numPrimitives = 1;
+            meshes.Back().primitives = nullptr;
 
-        APrimitive primitive{};
-        primitive.indices     = (void*)0XDEADBEAF; // indicate linear indices
-        primitive.vertices    = (void*)vertexStart; // we will point this vertex to vertices buffer
-        primitive.attributes  = 1 | 2 | 4; // pos, tex, normal bits.
-        primitive.indexType   = 0x1405 - 0x1400; // GL_UNSIGNED_INT - GL_BYTE to get index
-        primitive.numIndices  = vertices.Size() - vertexStart;
-        primitive.numVertices = primitive.numIndices;
-        primitive.material    = materialIndex;
+            SBPush(meshes.Back().primitives, primitive);
+        }
 
-        SBPush(meshes.Back().primitives, primitive);
-
-        if (*curr == 'o' || *curr == 'm' || *curr == 's')  while (*curr++ != '\n'); // skip line, header is unknown|unused
+        // 'o' is name, 'm' mtllib
+        if (*curr == 'o' || *curr == 'm' || *curr == 's' || *curr == 'g')
+        {
+            while (*curr && *curr++ != '\n'); // skip line, header is unknown|unused
+        }
     }
 
-    scene->numNodes = meshes.Size();
-    scene->nodes = new ANode[meshes.Size()];
-    MemsetZero(scene->nodes, sizeof(ANode) * scene->numNodes);
+    scene->allVertices  = vertices.TakeOwnership();
+    scene->allIndices   = indices.TakeOwnership();
 
-    for (int i = 0; i < scene->numNodes; i++)
-    {
-        scene->nodes[i].rotation[3] = 1.0;
-        scene->nodes[i].scale[0] = scene->nodes[i].scale[1] = scene->nodes[i].scale[2] = 1.0;
-        scene->nodes[i].index = i;
-    }
+    scene->numMeshes    = meshes.Size();     scene->meshes    = meshes.TakeOwnership();   
+    scene->numMaterials = materials.Size();  scene->materials = materials.TakeOwnership();
+    scene->numImages    = images.Size();     scene->images    = images.TakeOwnership();   
+    
+    scene->error = AError_NONE;
+}
 
-    scene->numMeshes    = meshes.Size();     scene->meshes    = Meshes.TakeOwnership();   
-    scene->numMaterials = materials.Size();  scene->materials = Materials.TakeOwnership();
-    scene->numImages    = images.Size();     scene->images    = Images.TakeOwnership();   
-#endif
+void FreeParsedObj(ParsedObj* obj)
+{
+    // also controls if arrays null or not
+    for (int i = 0; i < obj->numMeshes; i++)
+        SBFree(obj->meshes[i].primitives);
+
+    if (obj->meshes)      delete[] obj->meshes;
+    if (obj->materials)   delete[] obj->materials;
+    if (obj->images)      delete[] obj->images;
+    if (obj->allVertices) delete[] obj->allVertices;
+    if (obj->allIndices)  delete[] obj->allIndices;
+
+    if (obj->materialText) FreeAllText(obj->materialText);
 }
