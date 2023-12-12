@@ -87,11 +87,10 @@ typedef struct ANode_
     int*  children;
 } ANode;
 
-
 typedef struct APrimitive_
 {
     // pointers to binary file to lookup position, texture, normal..
-    void* indices; // -> 0XDEADBEAF means, 0 to numVertices. usualy first time we import .obj mesh
+    void* indices; 
     void* vertices;
     
     int   attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
@@ -110,7 +109,7 @@ typedef struct AMesh_
 {
     char* name;  
     APrimitive* primitives;
-    unsigned long long numPrimitives;
+    int numPrimitives;
 } AMesh;
 
 typedef struct ATexture_
@@ -138,6 +137,8 @@ typedef struct ASampler_
     char wrapS; // 0 GL_REPEAT, 1 GL_CLAMP_TO_EDGE, 2 GL_CLAMP_TO_BORDER, 3 GL_MIRRORED_REPEAT
     char wrapT; //       10497               33071                 33069                 33648
 } ASampler;
+
+static_assert(sizeof(ASampler) == sizeof(int), "size must be 4");
 
 typedef struct AScene_
 {
@@ -205,5 +206,9 @@ ParsedGLTF LoadSceneExternal();
 void FreeParsedGLTF(ParsedGLTF* gltf);
 
 void FreeParsedObj(ParsedObj* obj);
+
+void SaveGLTFBinary(ParsedGLTF* gltf, const char* path);
+
+void LoadGLTFBinary(ParsedGLTF* gltf, const char* path);
 
 const char* ParsedSceneGetError(AErrorType error);

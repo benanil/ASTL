@@ -679,7 +679,7 @@ Matrix4
 	{
 		const float rad = fov;
 		const float h = Cos(0.5f * rad) / Sin(0.5f * rad);
-		const float w = h * height / width;
+		const float w = height / width;
 		Matrix4 M = Identity();
 		M.m[0][0] = w;
 		M.m[1][1] = h;

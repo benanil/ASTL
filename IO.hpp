@@ -142,6 +142,74 @@ inline bool IsDirectory(const char* path)
   return stat(path, &file_info) == 0 && (S_ISDIR(file_info.st_mode));
 }
 
+enum AOpenFlag_
+{
+    AOpenFlag_Read, 
+    AOpenFlag_Write
+};
+typedef int AOpenFlag;
+
+#ifdef __ANDROID__
+struct AFile
+{
+    AAsset* asset;
+};
+
+inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
+{
+    return { AAssetManager_open(g_android_app->activity->assetManager, fileName, 0) };
+}
+
+inline void AFileRead(void* dst, uint64_t size, AFile file)
+{
+    AAsset_read(file.asset, dst, size);
+}
+
+inline void AFileWrite(const void* src, uint64_t size, AFile file)
+{ }
+
+inline void AFileClose(AFile file)
+{
+    AAsset_close(file.asset);
+}
+inline bool AFileExist(AFile file)
+{
+    return file.asset != nullptr;
+}
+#else
+
+struct AFile
+{
+    FILE* file;
+};
+
+inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
+{
+    const char* modes[2] = { "rb", "wb" };
+    return { fopen(fileName, modes[flag]) };
+}
+
+inline void AFileRead(void* dst, uint64_t size, AFile file)
+{
+    fread(dst, 1, size, file.file);
+}
+
+inline void AFileWrite(const void* src, uint64_t size, AFile file)
+{ 
+    fwrite(src, 1, size, file.file);
+}
+
+inline void AFileClose(AFile file)
+{
+    fclose(file.file);
+}
+
+inline bool AFileExist(AFile file)
+{ 
+    return file.file != nullptr;
+}
+#endif
+
 // don't forget to free using FreeAllText
 // fileName      : path of the file that we want to load
 // buffer        : is pre allocated memory if exist. otherwise null
@@ -358,18 +426,20 @@ inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn)
 
     while ((entry = readdir(directory)) != NULL) 
     {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (*entry->d_name == '.') {
             continue; // Skip "." and ".." entries.
         }
 
         // Build the full path to the file or folder.
-        char filePath[pathLen + strlen(entry->d_name) + 2]; // +2 for '/' and '\0'
+        char filePath[256]; // +2 for '/' and '\0'
         snprintf(filePath, sizeof(filePath), "%s/%s", path, entry->d_name);
 
         if (stat(filePath, &fileStat) == 0) {
             bool isFolder = S_ISDIR(fileStat.st_mode);
             off_t fileSize = fileStat.st_size;
-            visitFn(filePath, strlen(filePath), entry->d_name, isFolder, fileSize);
+            int pathLen=0;
+            while (filePath[pathLen]) pathLen++;
+            visitFn(filePath, pathLen, entry->d_name, isFolder, fileSize);
         } else {
             perror("Error getting file stat");
         }

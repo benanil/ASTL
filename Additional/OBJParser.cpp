@@ -348,8 +348,8 @@ void FreeParsedObj(ParsedObj* obj)
     if (obj->meshes)      delete[] obj->meshes;
     if (obj->materials)   delete[] obj->materials;
     if (obj->images)      delete[] obj->images;
-    if (obj->allVertices) delete[] obj->allVertices;
-    if (obj->allIndices)  delete[] obj->allIndices;
+    if (obj->allVertices) delete[] (OBJVertex*)obj->allVertices;
+    if (obj->allIndices)  delete[] (uint32_t*)obj->allIndices;
 
     if (obj->materialText) FreeAllText(obj->materialText);
 }
