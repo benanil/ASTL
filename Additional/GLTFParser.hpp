@@ -66,6 +66,9 @@ typedef struct AMaterial_
     const Texture& GetNormalTexture()    const { return textures[0]; }
     const Texture& GetOcclusionTexture() const { return textures[1]; }
     const Texture& GetEmissiveTexture()  const { return textures[2]; }
+    Texture& GetNormalTexture()    { return textures[0]; }
+    Texture& GetOcclusionTexture() { return textures[1]; }
+    Texture& GetEmissiveTexture()  { return textures[2]; }
 #endif
 
 } AMaterial;
@@ -77,12 +80,14 @@ typedef struct AImage_
 
 typedef struct ANode_
 {
-    int   type;  // 0 mesh or 1 camera
-    int   index; // index of mesh or camera
-    char* name;
+    // Warning! order is important, we copy memory in assetmanager.cpp from fbx transform
     float translation[3];
     float rotation[4];
     float scale[3];
+
+    int   type;  // 0 mesh or 1 camera
+    int   index; // index of mesh or camera
+    char* name;
     int   numChildren;
     int*  children;
 } ANode;
@@ -196,19 +201,23 @@ typedef struct ParsedObj_
 
 // if there is an error error will be minus GLTFErrorType
 // out scene should not be null
-void ParseGLTF(const char* path, ParsedGLTF* scene);
+int ParseGLTF(const char* path, ParsedGLTF* scene);
 
-void ParseObj(const char* path, ParsedObj* scene);
+int ParseObj(const char* path, ParsedObj* scene);
 
-// loads the scene that is GLTF, OBJ, or FBX
-ParsedGLTF LoadSceneExternal();
+bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf);
+
+bool LoadOBJBinary(const char* path, ParsedObj* obj);
+
+bool SaveGLTFBinary(ParsedGLTF* gltf, const char* path);
+
+bool SaveOBJBinary(ParsedObj* obj, const char* path);
+
+
+// Free
 
 void FreeParsedGLTF(ParsedGLTF* gltf);
 
 void FreeParsedObj(ParsedObj* obj);
-
-void SaveGLTFBinary(ParsedGLTF* gltf, const char* path);
-
-void LoadGLTFBinary(ParsedGLTF* gltf, const char* path);
 
 const char* ParsedSceneGetError(AErrorType error);

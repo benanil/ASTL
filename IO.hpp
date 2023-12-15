@@ -172,10 +172,17 @@ inline void AFileClose(AFile file)
 {
     AAsset_close(file.asset);
 }
+
 inline bool AFileExist(AFile file)
 {
     return file.asset != nullptr;
 }
+
+inline uint64_t AFileSize(AFile file)
+{
+    return AAsset_getLength(file.asset);
+}
+
 #else
 
 struct AFile
@@ -208,6 +215,17 @@ inline bool AFileExist(AFile file)
 { 
     return file.file != nullptr;
 }
+
+inline uint64_t AFileSize(AFile file)
+{
+#ifdef _WIN32
+    return _filelengthi64(fileno(file.file));
+#else
+    struct stat sb; stat(file.file, &sb);
+    return sb.st_size;
+#endif  
+}
+
 #endif
 
 // don't forget to free using FreeAllText
@@ -222,54 +240,34 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharac
     if (startText) 
         while (startText[startTextLen]) startTextLen++;
 
-#ifdef __ANDROID__
-    AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, fileName, 0);
-    off_t size = AAsset_getLength(asset);
-    if (size == 0) return nullptr;
-
-    // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = new char[startTextLen + size + 2]{}; // +2 for null terminate
+    AFile file = AFileOpen(fileName, AOpenFlag_Read);
     
-    if (startText) while (*startText) *buffer++ = *startText++;
-
-    if (numCharacters) *numCharacters = size + 1;
-
-    AAsset_read(asset, buffer, size);
-    AAsset_close(asset);
-    return buffer - startTextLen;
-#else
-    // Open the file for reading
-    FILE* file = fopen(fileName, "rb");
-    
-    if (file == NULL) {
+    if (!AFileExist(file)) {
         perror("Error opening the file");
         return nullptr; // Return an error code
     }
     
     // Determine the file size
-#ifdef _WIN32
-    long file_size = _filelengthi64(fileno(file));
-#else
-    struct stat sb; stat(file, &sb);
-    longfile_size = sb.st_size;
-#endif    
+    size_t file_size = AFileSize(file);
+
     // Allocate memory to store the entire file
-    if (buffer == nullptr) buffer = new char[file_size + 40 + startTextLen] {}; // +1 for null terminator
+    if (buffer == nullptr) 
+        buffer = new char[file_size + 40 + startTextLen] {}; // +1 for null terminator
     
-    if (startText) while (*startText) *buffer++ = *startText++;
+    if (startText) 
+        while (*startText) *buffer++ = *startText++;
     
     if (buffer == NULL) {
-        fclose(file);
+        AFileClose(file);
         return nullptr; // Return an error code
     }
     
     // Read the entire file into the buffer
-    fread(buffer, 1, file_size, file);
+    AFileRead(buffer, file_size, file);
     buffer[file_size] = '\0'; // Null-terminate the buffer
-    fclose(file);
+    AFileClose(file);
     if (numCharacters) *numCharacters = file_size + 1;
     return buffer - startTextLen;
-#endif
 }
 
 inline void FreeAllText(char* text)
@@ -280,24 +278,16 @@ inline void FreeAllText(char* text)
 inline void WriteAllBytes(const char *filename, const char *bytes, unsigned long size) 
 {
     // Open the file for writing in binary mode
-    FILE *file = fopen(filename, "wb");
-    if (file == NULL) 
+    AFile file = AFileOpen(filename, AOpenFlag_Write);
+    if (!AFileExist(file)) 
     {
         perror("Failed to open file for writing");
         return;
     }
 
-    // Write the bytes to the file
-    size_t bytesWritten = fwrite(bytes, sizeof(char), size, file);
-    if (bytesWritten != size) 
-    {
-        perror("Error writing to file");
-        fclose(file);
-        return;
-    }
+    AFileWrite(bytes, size, file);
 
-    // Close the file
-    fclose(file);
+    AFileClose(file);
 }
 
 struct ScopedText
@@ -449,6 +439,8 @@ inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn)
 }
 #endif // 
 
+// input: ../Textures/Tree.png
+// output: C:/Source/Repos/Textures/Tree.png
 inline void AbsolutePath(const char* path, char* outBuffer, int bufferSize)
 {
     GetCurrentDirectory(bufferSize, outBuffer);

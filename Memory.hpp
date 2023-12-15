@@ -348,7 +348,7 @@ struct FixedSizeGrowableAllocator
         base = new Fragment;
         current = base;
         base->next = nullptr;
-        base->ptr = new T[InitialSize()];
+        base->ptr = new T[initialSize];
         base->size = 0;
     }
 

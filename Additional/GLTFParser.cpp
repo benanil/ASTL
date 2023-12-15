@@ -771,6 +771,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
             {
                 materials.Add(material);
                 MemsetZero(&material, sizeof(AMaterial));
+                material.baseColorTexture.index = -1;
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
@@ -860,12 +861,12 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
     return curr;
 }
 
-__public void ParseGLTF(const char* path, ParsedGLTF* result)
+__public int ParseGLTF(const char* path, ParsedGLTF* result)
 {
     ASSERT(result && path);
     long sourceSize = 0;
     char* source = ReadAllFile(path, nullptr, &sourceSize);
-    if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; return; }
+    if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; return 0; }
 
 #if defined(DEBUG) || defined(_DEBUG)
     // ascii utf8 support check
@@ -910,7 +911,7 @@ __public void ParseGLTF(const char* path, ParsedGLTF* result)
         {
             result->error = (AErrorType)(uint64_t)curr;
             FreeAllText(source);
-            return;
+            return 0;
         }
     }
     
@@ -1014,6 +1015,7 @@ __public void ParseGLTF(const char* path, ParsedGLTF* result)
     result->numScenes    = scenes.Size();     result->scenes    = scenes.TakeOwnership();
     result->error = AError_NONE;
     FreeAllText(source);
+    return 1;
 }
 
 __public void FreeParsedGLTF(ParsedGLTF* gltf)
@@ -1097,7 +1099,7 @@ const char* ParsedSceneGetError(AErrorType error)
 /*                            Binary Save                                   */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-__private int GetVertexSize(int attributes)
+__public int GetVertexSize(int attributes)
 {
     const int attribIndexToNumComp[6] = { 3, 2, 3, 3, 2 };     
     int stride = 0;
@@ -1106,7 +1108,7 @@ __private int GetVertexSize(int attributes)
     return stride;
 }
 
-__private void WriteAMaterialTexture(AMaterial::Texture texture, AFile file)
+__public void WriteAMaterialTexture(AMaterial::Texture texture, AFile file)
 {
     uint64_t data = texture.scale; data <<= sizeof(short) * 8;
     data |= texture.strength;      data <<= sizeof(short) * 8;
@@ -1116,20 +1118,20 @@ __private void WriteAMaterialTexture(AMaterial::Texture texture, AFile file)
     AFileWrite(&data, sizeof(uint64_t), file);
 }
 
-__private void WriteGLTFString(const char* str, AFile file)
+__public void WriteGLTFString(const char* str, AFile file)
 {
     int nameLen = str ? StringLength(str) : 0;
     AFileWrite(&nameLen,  sizeof(int), file);
     if (str) AFileWrite(str, nameLen + 1, file);
 }
 
-__public void SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
+__public bool SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
 {
     AFile file = AFileOpen(path, AOpenFlag_Write);
     if (!AFileExist(file))
     {
         perror("Failed to open file for writing");
-        return;
+        return false;
     }
 
     int version = 0;
@@ -1242,13 +1244,7 @@ __public void SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
     AFileWrite(&gltf->numSamplers, sizeof(short), file);
     for (int i = 0; i < gltf->numSamplers; i++)
     {
-        ASampler sampler = gltf->samplers[i];
-        uint32_t data = sampler.magFilter; data <<= 8;
-        data |= sampler.minFilter; data <<= 8;
-        data |= sampler.wrapS; data <<= 8;
-        data |= sampler.wrapT; 
-
-        AFileWrite(&data, sizeof(int), file);
+        AFileWrite(&gltf->samplers[i], sizeof(ASampler ), file);
     }
 
     AFileWrite(&gltf->numCameras, sizeof(short), file);
@@ -1272,13 +1268,14 @@ __public void SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
     }
     AFileWrite(&gltf->defaultSceneIndex,  sizeof(short), file);
     AFileClose(file);
+    return true;
 }
 
 /*//////////////////////////////////////////////////////////////////////////*/
 /*                            Binary Read                                   */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-__private void ReadAMaterialTexture(AMaterial::Texture texture, AFile file)
+__public void ReadAMaterialTexture(AMaterial::Texture texture, AFile file)
 {
     uint64_t data;
     AFileRead(&data, sizeof(uint64_t), file);    
@@ -1289,7 +1286,7 @@ __private void ReadAMaterialTexture(AMaterial::Texture texture, AFile file)
     texture.scale    = data & 0xFFFF;
 }
 
-__private void ReadGLTFString(char*& str, AFile file, AStringAllocator& stringAllocator)
+__public void ReadGLTFString(char*& str, AFile file, AStringAllocator& stringAllocator)
 {
     int nameLen = 0;
     AFileRead(&nameLen, sizeof(int), file);
@@ -1301,13 +1298,13 @@ __private void ReadGLTFString(char*& str, AFile file, AStringAllocator& stringAl
     }
 }
 
-__public void LoadGLTFBinary(ParsedGLTF* gltf, const char* path)
+__public bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf)
 {
     AFile file = AFileOpen(path, AOpenFlag_Read);
     if (!AFileExist(file))
     {
         perror("Failed to open file for writing");
-        return;
+        return false;
     }
 
     AStringAllocator stringAllocator(1024);
@@ -1441,13 +1438,7 @@ __public void LoadGLTFBinary(ParsedGLTF* gltf, const char* path)
     if (gltf->numSamplers > 0) gltf->samplers = new ASampler[gltf->numSamplers]{};
     for (int i = 0; i < gltf->numSamplers; i++)
     {
-        ASampler sampler = gltf->samplers[i];
-        uint32_t data;
-        AFileRead(&data, sizeof(int), file);
-        sampler.wrapT     = data & 255; data <<= 8;
-        sampler.wrapS     = data & 255; data <<= 8;
-        sampler.minFilter = data & 255; data <<= 8;
-        sampler.magFilter = data & 255; 
+        AFileRead(&gltf->samplers[i], sizeof(ASampler), file);
     }
 
     AFileRead(&gltf->numCameras, sizeof(short), file);
@@ -1477,4 +1468,5 @@ __public void LoadGLTFBinary(ParsedGLTF* gltf, const char* path)
 
     gltf->stringAllocator = stringAllocator.TakeOwnership();
     gltf->intAllocator    = intAllocator.TakeOwnership();
+    return true;
 }

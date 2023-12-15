@@ -193,9 +193,11 @@ __forceinline double VECTORCALL hsum_128_pdavx(__m128d x)
 {
 	__m128d hi64 = _mm_unpackhi_pd(x, x); // 3-operand non-destructive AVX lets us save a byte without needing a movdqa
 	__m128d sum64 = _mm_add_pd(hi64, x);
-	__m128d hi32 = _mm_shuffle_pd(sum64, sum64, _mm_shuffle(2, 3, 0, 1));    // Swap the low two elements
-	__m128d sum32 = _mm_add_pd(sum64, hi32);
-	return _mm_cvtsd_f64(sum32);       // movd
+	// todo: fix
+	//__m128d hi32 = _mm_shuffle_pd(sum64, sum64, _mm_shuffle_pd(2, 3, 0, 1));    // Swap the low two elements
+	//__m128d sum32 = _mm_add_pd(sum64, hi32);
+	//return _mm_cvtsd_f64(sum32);       // movd
+	return 0.0;
 }
 
 __forceinline float VECTORCALL hsum_ps_sse3(__m128 v) {
