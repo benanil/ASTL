@@ -60,6 +60,7 @@ typedef struct AMaterial_
     float16 emissiveFactor[3]; 
     float16 specularFactor;
     unsigned diffuseColor, specularColor, baseColorFactor;
+    float alphaCutoff;
     bool doubleSided;
     
 #ifdef __cplusplus
@@ -201,7 +202,7 @@ typedef struct ParsedObj_
 
 // if there is an error error will be minus GLTFErrorType
 // out scene should not be null
-int ParseGLTF(const char* path, ParsedGLTF* scene);
+int ParseGLTF(const char* path, ParsedGLTF* scene, float scale);
 
 int ParseObj(const char* path, ParsedObj* scene);
 

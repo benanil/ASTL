@@ -303,7 +303,7 @@ __private const char* ParseImages(const char* curr, const char* path, Array<AIma
         ASSERT(*curr != '\0' && "parse images failed probably you forgot to close brackets");
 
         curr++;
-        ASSERT(StrCMP16(curr, "uri") && "Unknown image value uri is the only val!");
+        bool isUri = StrCMP16(curr, "uri");
         curr = SkipAfter(curr, '"');
         curr = SkipAfter(curr, '"');
 
@@ -311,10 +311,14 @@ __private const char* ParseImages(const char* curr, const char* path, Array<AIma
         while (curr[uriSize] != '"') 
             uriSize++;
         
-        image.path = stringAllocator.Allocate(uriSize + pathLen + 1);
-        SmallMemCpy(image.path, path, pathLen);
-        SmallMemCpy(image.path + pathLen, curr, uriSize);
-        image.path[uriSize + pathLen] = '\0';
+        // mimeType and name is not supported
+        if (isUri)
+        {
+            image.path = stringAllocator.Allocate(uriSize + pathLen + 1);
+            SmallMemCpy(image.path, path, pathLen);
+            SmallMemCpy(image.path + pathLen, curr, uriSize);
+            image.path[uriSize + pathLen] = '\0';
+        }
         
         curr += uriSize + 1;
         images.Add(image);
@@ -452,13 +456,13 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
 __private const char* ParseNodes(const char* curr,
                                  Array<ANode>& nodes,
                                  AStringAllocator& stringAllocator,
-                                 FixedSizeGrowableAllocator<int>& intAllocator)
+                                 FixedSizeGrowableAllocator<int>& intAllocator, float scale)
 {
     curr = SkipUntill(curr, '[');
     curr++;
     ANode node{};
     node.rotation[3] = 1.0f;
-    node.scale[0] = node.scale[1] = node.scale[2] = 1.0f; 
+    node.scale[0] = node.scale[1] = node.scale[2] = scale; 
     // read each node
     while (true)
     {
@@ -470,7 +474,7 @@ __private const char* ParseNodes(const char* curr,
                 nodes.Add(node);
                 MemsetZero(&node, sizeof(ANode));
                 node.rotation[3] = 1.0f;
-                node.scale[0] = node.scale[1] = node.scale[2] = 1.0f;
+                node.scale[0] = node.scale[1] = node.scale[2] = scale;
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
@@ -518,9 +522,9 @@ __private const char* ParseNodes(const char* curr,
             QuaternionFromMatrix(node.rotation, matrix);
 #ifdef AX_SUPPORT_SSE
             __m128 v;
-            v = _mm_load_ps(matrix + 0); node.scale[0] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71)));
-            v = _mm_load_ps(matrix + 4); node.scale[1] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71)));
-            v = _mm_load_ps(matrix + 8); node.scale[2] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71)));
+            v = _mm_load_ps(matrix + 0); node.scale[0] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71))) * scale;
+            v = _mm_load_ps(matrix + 4); node.scale[1] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71))) * scale;
+            v = _mm_load_ps(matrix + 8); node.scale[2] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71))) * scale;
 #else
             node.scale[0] = Sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1] + matrix[2] * matrix[2]);
             node.scale[1] = Sqrt(matrix[4] * matrix[4] + matrix[5] * matrix[5] + matrix[6] * matrix[6]);
@@ -542,9 +546,9 @@ __private const char* ParseNodes(const char* curr,
         }
         else if (StrCMP16(curr, "scale"))
         {
-            node.scale[0] = ParseFloat(curr);
-            node.scale[1] = ParseFloat(curr);
-            node.scale[2] = ParseFloat(curr);
+            node.scale[0] = ParseFloat(curr) * scale;
+            node.scale[1] = ParseFloat(curr) * scale;
+            node.scale[2] = ParseFloat(curr) * scale;
         }
         else if (StrCMP16(curr, "name"))
         {
@@ -847,6 +851,10 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         {
             curr = SkipUntill(curr, ','); // skip alpha mode
         }
+        else if (StrCMP16(curr, "alphaCutoff"))
+        {
+            material.alphaCutoff = ParseFloat(curr);
+        }
         else {
             ASSERT(0 && "undefined material variable!");
             return (const char*)AError_UNKNOWN_MATERIAL_VAR;
@@ -861,7 +869,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
     return curr;
 }
 
-__public int ParseGLTF(const char* path, ParsedGLTF* result)
+__public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
 {
     ASSERT(result && path);
     long sourceSize = 0;
@@ -900,7 +908,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result)
         else if (StrCMP16(curr, "textures"))     curr = ParseTextures(curr, textures, stringAllocator);   
         else if (StrCMP16(curr, "meshes"))       curr = ParseMeshes(curr, meshes, stringAllocator);
         else if (StrCMP16(curr, "materials"))    curr = ParseMaterials(curr, materials, stringAllocator);
-        else if (StrCMP16(curr, "nodes"))        curr = ParseNodes(curr, nodes, stringAllocator, intAllocator);
+        else if (StrCMP16(curr, "nodes"))        curr = ParseNodes(curr, nodes, stringAllocator, intAllocator, scale);
         else if (StrCMP16(curr, "samplers"))     curr = ParseSamplers(curr, samplers);    
         else if (StrCMP16(curr, "cameras"))      curr = ParseCameras(curr, cameras, stringAllocator); // todo cameras
         else if (StrCMP16(curr, "asset"))        curr = SkipToNextNode(curr, '{', '}'); // it just has text data that doesn't have anything to do with meshes, (author etc..) if you want you can add this feature :)
@@ -915,8 +923,8 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result)
         }
     }
     
-    long totalVertexSize = 0;
-    long totalIndexSize = 0;
+    uint32_t totalVertexSize = 0;
+    uint64_t totalIndexSize = 0;
     // Position 3, TexCoord 2, Normal 3, Tangent 3, TexCoord2 2
     const int attribIndexToNumComp[6] = { 3, 2, 3, 3, 2 }; 
     // BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT, FLOAT           
@@ -1213,17 +1221,19 @@ __public bool SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
         WriteAMaterialTexture(material.metallicRoughnessTexture, file);
 
         uint64_t data = material.emissiveFactor[0]; data <<= sizeof(short) * 8;
-        data |= material.emissiveFactor[1]; data <<= sizeof(short) * 8;
-        data |= material.emissiveFactor[2]; data <<= sizeof(short) * 8;
+        data |= material.emissiveFactor[1];         data <<= sizeof(short) * 8;
+        data |= material.emissiveFactor[2];         data <<= sizeof(short) * 8;
         data |= material.specularFactor;
         AFileWrite(&data, sizeof(uint64_t), file);
 
-        data = (uint64_t(material.diffuseColor) << 32) | material.diffuseColor;
+        data = (uint64_t(material.diffuseColor) << 32) | material.specularColor;
         AFileWrite(&data, sizeof(uint64_t), file);
         
         data = (uint64_t(material.baseColorFactor) << 32) | material.doubleSided;
         AFileWrite(&data, sizeof(uint64_t), file);
      
+        AFileWrite(&material.alphaCutoff, sizeof(float), file);
+        
         WriteGLTFString(material.name, file);
     }
 
@@ -1275,14 +1285,14 @@ __public bool SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
 /*                            Binary Read                                   */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-__public void ReadAMaterialTexture(AMaterial::Texture texture, AFile file)
+__public void ReadAMaterialTexture(AMaterial::Texture& texture, AFile file)
 {
     uint64_t data;
     AFileRead(&data, sizeof(uint64_t), file);    
 
-    texture.texCoord = data & 0xFFFF; data >>= sizeof(short);
-    texture.index    = data & 0xFFFF; data >>= sizeof(short);
-    texture.strength = data & 0xFFFF; data >>= sizeof(short);
+    texture.texCoord = data & 0xFFFF; data >>= sizeof(short) * 8;
+    texture.index    = data & 0xFFFF; data >>= sizeof(short) * 8;
+    texture.strength = data & 0xFFFF; data >>= sizeof(short) * 8;
     texture.scale    = data & 0xFFFF;
 }
 
@@ -1320,7 +1330,7 @@ __public bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf)
         uint64_t allVertexSize, allIndexSize;
         AFileRead(&allVertexSize, sizeof(uint64_t), file);
         AFileRead(&allIndexSize, sizeof(uint64_t), file);
-        gltf->allVertices = new float[allVertexSize >> 2]; // / 4 to get number of floats
+        gltf->allVertices = new float[allVertexSize >> 2]; // divide / 4 to get number of floats
         gltf->allIndices = AllocAligned(allIndexSize, alignof(uint32_t));
     }
     
@@ -1358,8 +1368,9 @@ __public bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf)
             primitive.vertices = currVertices;
             AFileRead(primitive.vertices, vertexSize, file);
             currVertices += vertexSize;
-            int material = primitive.material;
+            int material;
             AFileRead(&material, sizeof(int), file);
+            primitive.material = material;
         }
     }
 
@@ -1408,13 +1419,15 @@ __public bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf)
         material.emissiveFactor[0] = data & 0xFFFF; 
 
         AFileRead(&data, sizeof(uint64_t), file);
-        material.diffuseColor = (data >> 32);
-        material.diffuseColor = data & (sizeof(int) * 8 - 1);
+        material.diffuseColor  = (data >> 32);
+        material.specularColor = data & 0xFFFFFFFF;
         
         AFileRead(&data, sizeof(uint64_t), file);
         material.baseColorFactor = (data >> 32);
-        material.doubleSided     = data & (sizeof(int) * 8 - 1);
-     
+        material.doubleSided     = data & 0x1;
+        
+        AFileRead(&material.alphaCutoff, sizeof(float), file);
+
         ReadGLTFString(material.name, file, stringAllocator);
     }
 

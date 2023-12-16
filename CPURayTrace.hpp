@@ -3,7 +3,7 @@
 
 AX_NAMESPACE
 
-#ifdef AX_SUPPORT_SSE
+#if defined(AX_SUPPORT_SSE) && defined(AX_RAY_TRACE) 
 
 struct HitRecord
 {

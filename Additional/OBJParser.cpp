@@ -359,7 +359,7 @@ void FreeParsedObj(ParsedObj* obj)
 // these extern functions are inside of GLTFParser.cpp
 extern int GetVertexSize(int attributes);
 extern void WriteAMaterialTexture(AMaterial::Texture texture, AFile file);
-extern void ReadAMaterialTexture(AMaterial::Texture texture, AFile file);
+extern void ReadAMaterialTexture(AMaterial::Texture& texture, AFile file);
 extern void WriteGLTFString(const char* str, AFile file);
 
 static void WriteOBJString(const char* str, AFile file, const char* mtlText)
