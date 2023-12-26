@@ -9,7 +9,7 @@
 
 void AOC2023Day1Part1()
 {
-    ScopedText text(ReadAllFile("Test/2023Day1.txt"));
+    ScopedText text(ReadAllText("Test/2023Day1.txt"));
     const char *curr = text.text;
     int total = 0;
     while (*curr)
@@ -37,7 +37,7 @@ inline int StrCmp(const char* a, const char* b)
 
 void AOC2023Day1Part2()
 {
-    ScopedText text(ReadAllFile("Test/2023Day1.txt"));
+    ScopedText text(ReadAllText("Test/2023Day1.txt"));
     const char* curr = text.text;
 
     int total = 0, firstDigit = -1, lastDigit = -1, findedNumber = -1;
@@ -88,7 +88,7 @@ void AOC2023Day1Part2()
 
 void AOC2023Day3()
 {
-    ScopedText text(ReadAllFile("Test/2023Day3.txt"));
+    ScopedText text(ReadAllText("Test/2023Day3.txt"));
     const char* curr = text.text;
 
     HashMap<Vector2i, long> map(64u);
@@ -163,7 +163,7 @@ void AOC2023Day3()
             
 void AOC2023Day4Part1()
 {
-    ScopedText text(ReadAllFile("Test/2023Day4.txt"));
+    ScopedText text(ReadAllText("Test/2023Day4.txt"));
     const char* curr = text.text;
 
     bool winingNumbers[100]{};

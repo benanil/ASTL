@@ -165,7 +165,7 @@ typedef uint64_t ulong;
 // write AX_NO_SSE2 or AX_NO_AVX2 to disable vector instructions
 
 /* Intrinsics Support */
-#if defined(AX_X64) || defined(AX_X86)
+#if (defined(AX_X64) || defined(AX_X86)) && !defined(AX_ARM)
     #if defined(_MSC_VER) && !defined(__clang__)
         #if _MSC_VER >= 1400 && !defined(AX_NO_SSE2)   /* 2005 */
             #define AX_SUPPORT_SSE
@@ -361,15 +361,17 @@ __forceinline __constexpr To BitCast(const From& _Val)
 #endif
 }
 
-#if AX_CPP_VERSION >= AX_CPP17
-template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? a : b; }
-template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
-#else
-// using macro if less than 17 because we want this to be constexpr
-#   ifndef MIN
-#       define MIN(a, b) ((a) < (b) ? (a) : (b))
-#       define MAX(a, b) ((a) > (b) ? (a) : (b))
-#   endif
+#ifndef MIN
+    #if AX_CPP_VERSION >= AX_CPP17
+    template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? a : b; }
+    template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
+    #else
+    // using macro if less than 17 because we want this to be constexpr
+    #   ifndef MIN
+    #       define MIN(a, b) ((a) < (b) ? (a) : (b))
+    #       define MAX(a, b) ((a) > (b) ? (a) : (b))
+    #   endif
+    #endif
 #endif
 
 template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return MAX(a, MIN(b, x)); }

@@ -206,19 +206,9 @@ int ParseGLTF(const char* path, ParsedGLTF* scene, float scale);
 
 int ParseObj(const char* path, ParsedObj* scene);
 
-bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf);
-
-bool LoadOBJBinary(const char* path, ParsedObj* obj);
-
-bool SaveGLTFBinary(ParsedGLTF* gltf, const char* path);
-
-bool SaveOBJBinary(ParsedObj* obj, const char* path);
-
 
 // Free
 
 void FreeParsedGLTF(ParsedGLTF* gltf);
-
-void FreeParsedObj(ParsedObj* obj);
 
 const char* ParsedSceneGetError(AErrorType error);

@@ -266,7 +266,7 @@ __private const char* ParseBuffers(const char* curr, const char* path, Array<GLT
             curr += 5; // skip uri": 
             while (*curr != '"') curr++;
             curr = GetStringInQuotes(endOfWorkDir, curr);
-            buffer.uri = ReadAllFile(binFilePath);
+            buffer.uri = ReadAllText(binFilePath);
             ASSERT(buffer.uri && "uri is not exist");
             if (!buffer.uri) return (const char*)AError_BIN_NOT_EXIST;
         }
@@ -304,24 +304,22 @@ __private const char* ParseImages(const char* curr, const char* path, Array<AIma
 
         curr++;
         bool isUri = StrCMP16(curr, "uri");
-        curr = SkipAfter(curr, '"');
-        curr = SkipAfter(curr, '"');
 
-        int uriSize = 0;
-        while (curr[uriSize] != '"') 
-            uriSize++;
-        
         // mimeType and name is not supported
         if (isUri)
         {
-            image.path = stringAllocator.Allocate(uriSize + pathLen + 1);
+            curr += 4;
+            curr = SkipAfter(curr, '"');
+            int uriSize = 0;
+            while (curr[uriSize] != '"') uriSize++;
+
+            image.path = stringAllocator.Allocate(uriSize + pathLen + 16);
             SmallMemCpy(image.path, path, pathLen);
             SmallMemCpy(image.path + pathLen, curr, uriSize);
             image.path[uriSize + pathLen] = '\0';
+            curr += uriSize;
+            images.PushBack(image);
         }
-        
-        curr += uriSize + 1;
-        images.Add(image);
     }
     return nullptr;
 }
@@ -873,8 +871,8 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
 {
     ASSERT(result && path);
     long sourceSize = 0;
-    char* source = ReadAllFile(path, nullptr, &sourceSize);
-    if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; return 0; }
+    char* source = ReadAllText(path, nullptr, &sourceSize);
+    if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; ASSERT(0); return 0; }
 
 #if defined(DEBUG) || defined(_DEBUG)
     // ascii utf8 support check
@@ -1101,385 +1099,4 @@ const char* ParsedSceneGetError(AErrorType error)
                                           "NON_UTF8",
                                           "MAX" };
     return SceneParseErrorToStr[error];
-}
-
-/*//////////////////////////////////////////////////////////////////////////*/
-/*                            Binary Save                                   */
-/*//////////////////////////////////////////////////////////////////////////*/
-
-__public int GetVertexSize(int attributes)
-{
-    const int attribIndexToNumComp[6] = { 3, 2, 3, 3, 2 };     
-    int stride = 0;
-    for (int i = 0; attributes > 0; i += NextSetBit(&attributes))
-        stride += sizeof(float) * attribIndexToNumComp[i];
-    return stride;
-}
-
-__public void WriteAMaterialTexture(AMaterial::Texture texture, AFile file)
-{
-    uint64_t data = texture.scale; data <<= sizeof(short) * 8;
-    data |= texture.strength;      data <<= sizeof(short) * 8;
-    data |= texture.index;         data <<= sizeof(short) * 8;
-    data |= texture.texCoord; 
-
-    AFileWrite(&data, sizeof(uint64_t), file);
-}
-
-__public void WriteGLTFString(const char* str, AFile file)
-{
-    int nameLen = str ? StringLength(str) : 0;
-    AFileWrite(&nameLen,  sizeof(int), file);
-    if (str) AFileWrite(str, nameLen + 1, file);
-}
-
-__public bool SaveGLTFBinary(ParsedGLTF* gltf, const char* path)
-{
-    AFile file = AFileOpen(path, AOpenFlag_Write);
-    if (!AFileExist(file))
-    {
-        perror("Failed to open file for writing");
-        return false;
-    }
-
-    int version = 0;
-    AFileWrite(&version, sizeof(int), file);
-    
-    uint64_t reserved[4]{};
-    AFileWrite(&reserved, sizeof(uint64_t) * 4, file);
-    
-    uint64_t allVertexSize = 0, allIndexSize = 0;
-    for (int i = 0; i < gltf->numMeshes; i++)
-    {
-        AMesh mesh = gltf->meshes[i];
-        for (int j = 0; j < mesh.numPrimitives; j++)
-        {
-            APrimitive& primitive = mesh.primitives[j];
-            const int TypeToSize[8] = { 1, 1, 2, 2, 4, 4, 4 };
-            allVertexSize += uint64_t(primitive.numVertices) * GetVertexSize(primitive.attributes);
-            allIndexSize += uint64_t(primitive.numIndices) * TypeToSize[primitive.indexType];
-        }
-    }
-
-    AFileWrite(&allVertexSize, sizeof(uint64_t), file);
-    AFileWrite(&allIndexSize, sizeof(uint64_t), file);
-
-    AFileWrite(&gltf->numMeshes, sizeof(short), file);
-    for (int i = 0; i < gltf->numMeshes; i++)
-    {
-        AMesh mesh = gltf->meshes[i];
-        WriteGLTFString(mesh.name, file);
-        
-        AFileWrite(&mesh.numPrimitives, sizeof(int), file);
-        
-        for (int j = 0; j < mesh.numPrimitives; j++)
-        {
-            APrimitive& primitive = mesh.primitives[j];
-            AFileWrite(&primitive.attributes , sizeof(int), file);
-            AFileWrite(&primitive.indexType  , sizeof(int), file);
-            AFileWrite(&primitive.numIndices , sizeof(int), file);
-            AFileWrite(&primitive.numVertices, sizeof(int), file);
-            
-            const int TypeToSize[8] = { 1, 1, 2, 2, 4, 4, 4 };
-            AFileWrite(primitive.indices, TypeToSize[primitive.indexType] * primitive.numIndices, file);
-            
-            int stride = GetVertexSize(primitive.attributes);
-            AFileWrite(primitive.vertices, uint64_t(primitive.numVertices) * stride, file);
-            int material = primitive.material;
-            AFileWrite(&material, sizeof(int), file);
-        }
-    }
-
-    AFileWrite(&gltf->numNodes, sizeof(short), file);
-    for (int i = 0; i < gltf->numNodes; i++)
-    {
-        ANode& node = gltf->nodes[i];
-        AFileWrite(&node.type       , sizeof(int), file);
-        AFileWrite(&node.index      , sizeof(int), file);
-        AFileWrite(&node.translation, sizeof(float) * 3, file);
-        AFileWrite(&node.rotation   , sizeof(float) * 4, file);
-        AFileWrite(&node.scale      , sizeof(float) * 3, file);
-        AFileWrite(&node.numChildren, sizeof(int), file);
-        
-        if (node.numChildren)
-            AFileWrite(node.children, sizeof(int) * node.numChildren, file);
-        
-        WriteGLTFString(node.name, file);
-    }
-
-    AFileWrite(&gltf->numMaterials,  sizeof(short), file);
-    for (int i = 0; i < gltf->numMaterials; i++)
-    {
-        AMaterial& material = gltf->materials[i];
-        for (int j = 0; j < 3; j++)
-        {
-            WriteAMaterialTexture(material.textures[j], file);
-        }
-        
-        WriteAMaterialTexture(material.baseColorTexture, file);
-        WriteAMaterialTexture(material.specularTexture, file);
-        WriteAMaterialTexture(material.metallicRoughnessTexture, file);
-
-        uint64_t data = material.emissiveFactor[0]; data <<= sizeof(short) * 8;
-        data |= material.emissiveFactor[1];         data <<= sizeof(short) * 8;
-        data |= material.emissiveFactor[2];         data <<= sizeof(short) * 8;
-        data |= material.specularFactor;
-        AFileWrite(&data, sizeof(uint64_t), file);
-
-        data = (uint64_t(material.diffuseColor) << 32) | material.specularColor;
-        AFileWrite(&data, sizeof(uint64_t), file);
-        
-        data = (uint64_t(material.baseColorFactor) << 32) | material.doubleSided;
-        AFileWrite(&data, sizeof(uint64_t), file);
-     
-        AFileWrite(&material.alphaCutoff, sizeof(float), file);
-        
-        WriteGLTFString(material.name, file);
-    }
-
-    AFileWrite(&gltf->numTextures, sizeof(short), file);
-    for (int i = 0; i < gltf->numTextures; i++)
-    {
-        ATexture texture = gltf->textures[i];
-        AFileWrite(&texture.sampler, sizeof(int), file);
-        AFileWrite(&texture.source, sizeof(int), file);
-        WriteGLTFString(texture.name , file);
-    }
-    AFileWrite(&gltf->numImages, sizeof(short), file);
-    for (int i = 0; i < gltf->numImages; i++)
-    {
-        WriteGLTFString(gltf->images[i].path, file);
-    }
-
-    AFileWrite(&gltf->numSamplers, sizeof(short), file);
-    for (int i = 0; i < gltf->numSamplers; i++)
-    {
-        AFileWrite(&gltf->samplers[i], sizeof(ASampler ), file);
-    }
-
-    AFileWrite(&gltf->numCameras, sizeof(short), file);
-    for (int i = 0; i < gltf->numCameras; i++)
-    {
-        ACamera camera = gltf->cameras[i];
-        AFileWrite(&camera.aspectRatio, sizeof(float), file);
-        AFileWrite(&camera.yFov, sizeof(float), file);
-        AFileWrite(&camera.zFar, sizeof(float), file);
-        AFileWrite(&camera.zNear, sizeof(float), file);
-        AFileWrite(&camera.type, sizeof(int), file);
-        WriteGLTFString(camera.name , file);
-    }
-    AFileWrite(&gltf->numScenes, sizeof(short), file);
-    for (int i = 0; i < gltf->numScenes; i++)
-    {
-        AScene scene = gltf->scenes[i];
-        WriteGLTFString(scene.name, file);
-        AFileWrite(&scene.numNodes, sizeof(int), file);
-        AFileWrite(scene.nodes, sizeof(int) * scene.numNodes, file);
-    }
-    AFileWrite(&gltf->defaultSceneIndex,  sizeof(short), file);
-    AFileClose(file);
-    return true;
-}
-
-/*//////////////////////////////////////////////////////////////////////////*/
-/*                            Binary Read                                   */
-/*//////////////////////////////////////////////////////////////////////////*/
-
-__public void ReadAMaterialTexture(AMaterial::Texture& texture, AFile file)
-{
-    uint64_t data;
-    AFileRead(&data, sizeof(uint64_t), file);    
-
-    texture.texCoord = data & 0xFFFF; data >>= sizeof(short) * 8;
-    texture.index    = data & 0xFFFF; data >>= sizeof(short) * 8;
-    texture.strength = data & 0xFFFF; data >>= sizeof(short) * 8;
-    texture.scale    = data & 0xFFFF;
-}
-
-__public void ReadGLTFString(char*& str, AFile file, AStringAllocator& stringAllocator)
-{
-    int nameLen = 0;
-    AFileRead(&nameLen, sizeof(int), file);
-    if (nameLen)    
-    {
-        str = stringAllocator.AllocateUninitialized(nameLen + 1);
-        AFileRead(str, nameLen + 1, file);    
-        str[nameLen + 1] = 0;
-    }
-}
-
-__public bool LoadGLTFBinary(const char* path, ParsedGLTF* gltf)
-{
-    AFile file = AFileOpen(path, AOpenFlag_Read);
-    if (!AFileExist(file))
-    {
-        perror("Failed to open file for writing");
-        return false;
-    }
-
-    AStringAllocator stringAllocator(1024);
-    FixedSizeGrowableAllocator<int> intAllocator;
-
-    int version;
-    AFileRead(&version, sizeof(int), file);
-    
-    uint64_t reserved[4];
-    AFileRead(&reserved, sizeof(uint64_t) * 4, file);
-
-    {
-        uint64_t allVertexSize, allIndexSize;
-        AFileRead(&allVertexSize, sizeof(uint64_t), file);
-        AFileRead(&allIndexSize, sizeof(uint64_t), file);
-        gltf->allVertices = new float[allVertexSize >> 2]; // divide / 4 to get number of floats
-        gltf->allIndices = AllocAligned(allIndexSize, alignof(uint32_t));
-    }
-    
-    char* currVertices = (char*)gltf->allVertices;
-    char* currIndices = (char*)gltf->allIndices;
-
-    AFileRead(&gltf->numMeshes, sizeof(short), file);
-    if (gltf->numMeshes > 0) gltf->meshes = new AMesh[gltf->numMeshes]{};
-    for (int i = 0; i < gltf->numMeshes; i++)
-    {
-        AMesh& mesh = gltf->meshes[i];
-        ReadGLTFString(mesh.name, file, stringAllocator);
-        
-        AFileRead(&mesh.numPrimitives, sizeof(int), file);
-
-        mesh.primitives = nullptr;
-
-        for (int j = 0; j < mesh.numPrimitives; j++)
-        {
-            SBPush(mesh.primitives, {});
-            APrimitive& primitive = mesh.primitives[j];
-            AFileRead(&primitive.attributes , sizeof(int), file);
-            AFileRead(&primitive.indexType  , sizeof(int), file);
-            AFileRead(&primitive.numIndices , sizeof(int), file);
-            AFileRead(&primitive.numVertices, sizeof(int), file);
-
-            const int TypeToSize[8] = { 1, 1, 2, 2, 4, 4, 4 };
-            uint64_t indexSize = uint64_t(TypeToSize[primitive.indexType]) * primitive.numIndices;
-            primitive.indices = (void*)currIndices;
-            AFileRead(primitive.indices, indexSize, file);
-            currIndices += indexSize;
-            
-            int stride = GetVertexSize(primitive.attributes);
-            uint64_t vertexSize = uint64_t(primitive.numVertices) * stride;
-            primitive.vertices = currVertices;
-            AFileRead(primitive.vertices, vertexSize, file);
-            currVertices += vertexSize;
-            int material;
-            AFileRead(&material, sizeof(int), file);
-            primitive.material = material;
-        }
-    }
-
-    AFileRead(&gltf->numNodes, sizeof(short), file);
-    if (gltf->numNodes > 0) gltf->nodes = new ANode[gltf->numNodes]{};
-
-    for (int i = 0; i < gltf->numNodes; i++)
-    {
-        ANode& node = gltf->nodes[i];
-        AFileRead(&node.type       , sizeof(int), file);
-        AFileRead(&node.index      , sizeof(int), file);
-        AFileRead(&node.translation, sizeof(float) * 3, file);
-        AFileRead(&node.rotation   , sizeof(float) * 4, file);
-        AFileRead(&node.scale      , sizeof(float) * 3, file);
-        AFileRead(&node.numChildren, sizeof(int), file);
-
-        if (node.numChildren)
-        {
-            node.children = intAllocator.Allocate(node.numChildren+1);
-            AFileRead(node.children, sizeof(int) * node.numChildren, file);
-        }
-        
-        ReadGLTFString(node.name, file, stringAllocator);
-    }
-
-    AFileRead(&gltf->numMaterials, sizeof(short), file);
-    if (gltf->numMaterials > 0) gltf->materials = new AMaterial[gltf->numMaterials]{};
-    for (int i = 0; i < gltf->numMaterials; i++)
-    {
-        AMaterial& material = gltf->materials[i];
-        for (int j = 0; j < 3; j++)
-        {
-            ReadAMaterialTexture(material.textures[j], file);
-        }
-
-        ReadAMaterialTexture(material.baseColorTexture, file);
-        ReadAMaterialTexture(material.specularTexture, file);
-        ReadAMaterialTexture(material.metallicRoughnessTexture, file);
-
-        uint64_t data;
-        AFileRead(&data, sizeof(uint64_t), file);
-        
-        material.specularFactor    = data & 0xFFFF; data >>= sizeof(short) * 8;
-        material.emissiveFactor[2] = data & 0xFFFF; data >>= sizeof(short) * 8;
-        material.emissiveFactor[1] = data & 0xFFFF; data >>= sizeof(short) * 8;
-        material.emissiveFactor[0] = data & 0xFFFF; 
-
-        AFileRead(&data, sizeof(uint64_t), file);
-        material.diffuseColor  = (data >> 32);
-        material.specularColor = data & 0xFFFFFFFF;
-        
-        AFileRead(&data, sizeof(uint64_t), file);
-        material.baseColorFactor = (data >> 32);
-        material.doubleSided     = data & 0x1;
-        
-        AFileRead(&material.alphaCutoff, sizeof(float), file);
-
-        ReadGLTFString(material.name, file, stringAllocator);
-    }
-
-    AFileRead(&gltf->numTextures, sizeof(short), file);
-    if (gltf->numTextures > 0) gltf->textures = new ATexture[gltf->numTextures]{};
-    for (int i = 0; i < gltf->numTextures; i++)
-    {
-        ATexture texture = gltf->textures[i];
-        AFileRead(&texture.sampler, sizeof(int), file);
-        AFileRead(&texture.source, sizeof(int), file);
-        ReadGLTFString(texture.name, file, stringAllocator);
-    }
-    AFileRead(&gltf->numImages, sizeof(short), file);
-    if (gltf->numImages > 0) gltf->images = new AImage[gltf->numImages]{};
-    for (int i = 0; i < gltf->numImages; i++)
-    {
-        ReadGLTFString(gltf->images[i].path, file, stringAllocator);
-    }
-
-    AFileRead(&gltf->numSamplers, sizeof(short), file);
-    if (gltf->numSamplers > 0) gltf->samplers = new ASampler[gltf->numSamplers]{};
-    for (int i = 0; i < gltf->numSamplers; i++)
-    {
-        AFileRead(&gltf->samplers[i], sizeof(ASampler), file);
-    }
-
-    AFileRead(&gltf->numCameras, sizeof(short), file);
-    if (gltf->numCameras > 0) gltf->cameras = new ACamera[gltf->numCameras]{};
-    for (int i = 0; i < gltf->numCameras; i++)
-    {
-        ACamera camera = gltf->cameras[i];
-        AFileRead(&camera.aspectRatio, sizeof(float), file);
-        AFileRead(&camera.yFov, sizeof(float), file);
-        AFileRead(&camera.zFar, sizeof(float), file);
-        AFileRead(&camera.zNear, sizeof(float), file);
-        AFileRead(&camera.type, sizeof(int), file);
-        ReadGLTFString(camera.name, file, stringAllocator);
-    }
-    AFileRead(&gltf->numScenes, sizeof(short), file);
-    if (gltf->numScenes > 0) gltf->scenes = new AScene[gltf->numScenes]{};
-    for (int i = 0; i < gltf->numScenes; i++)
-    {
-        AScene scene = gltf->scenes[i];
-        ReadGLTFString(scene.name, file, stringAllocator);
-        AFileRead(&scene.numNodes, sizeof(int), file);
-        scene.nodes = intAllocator.Allocate(scene.numNodes);
-        AFileRead(scene.nodes, sizeof(int) * scene.numNodes, file);
-    }
-    AFileRead(&gltf->defaultSceneIndex, sizeof(short), file);
-    AFileClose(file);
-
-    gltf->stringAllocator = stringAllocator.TakeOwnership();
-    gltf->intAllocator    = intAllocator.TakeOwnership();
-    return true;
 }

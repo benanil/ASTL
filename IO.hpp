@@ -108,12 +108,27 @@ struct ScopedFILE
 // these functions works fine with file and folders
 inline bool FileExist(const char* file)
 {
+#ifdef __ANDROID__
+    AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, file, 0);
+    AAsset_close(asset);
+    return asset != nullptr;
+#else
     return access(file, F_OK) == 0;
+#endif
 }
 
 inline uint64_t FileSize(const char* file)
 {
-#ifndef _WIN32
+#ifdef __ANDROID__
+    AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, file, 0);
+    if (asset != nullptr)
+    {
+        off64_t sz = AAsset_getLength64(asset);
+        AAsset_close(asset);
+        return sz;
+    }
+    return 0;
+#elif defined(_WIN32)
     struct stat sb;
     if (stat(file, &sb) == 0) return 0;
     return sb.st_size;
@@ -220,6 +235,8 @@ inline uint64_t AFileSize(AFile file)
 {
 #ifdef _WIN32
     return _filelengthi64(fileno(file.file));
+#elif defined(__ANDROID__)
+    return AAsset_getLength(file.asset);
 #else
     struct stat sb; stat(file.file, &sb);
     return sb.st_size;
@@ -228,13 +245,24 @@ inline uint64_t AFileSize(AFile file)
 
 #endif
 
+inline char* ReadAllFile(const char* fileName, char* buffer = 0)
+{
+    AFile file = AFileOpen(fileName, AOpenFlag_Read);
+    int fileSize = AFileSize(file);
+    if (buffer == nullptr) 
+        buffer = new char[fileSize]{}; // +1 for null terminator
+    AFileRead(buffer, fileSize, file);
+    AFileClose(file);
+    return buffer;
+}
+
 // don't forget to free using FreeAllText
 // fileName      : path of the file that we want to load
 // buffer        : is pre allocated memory if exist. otherwise null
 // numCharacters : if not null returns length of the imported string
 // startText     : if its not null will be added to start of the buffer
 // note: if you define it you are responsible of deleting the buffer
-inline char* ReadAllFile(const char* fileName, char* buffer = 0, long* numCharacters = 0, const char* startText = 0)
+inline char* ReadAllText(const char* fileName, char* buffer = 0, long* numCharacters = 0, const char* startText = 0)
 {
     int startTextLen = 0;
     if (startText) 
@@ -303,7 +331,7 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
 {
     long sourceSize = 0;
     bool bufferProvided = buffer != 0;
-    char* sourceFile = ReadAllFile(source, buffer, &sourceSize);
+    char* sourceFile = ReadAllText(source, buffer, &sourceSize);
     FILE* dstFile = fopen(dst, "w");
     fwrite(sourceFile, 1, sourceSize, dstFile);
     fclose(dstFile);

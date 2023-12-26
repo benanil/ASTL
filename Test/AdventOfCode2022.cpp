@@ -195,7 +195,7 @@ static int Day12() // result should be 534
 
 static int Day17() // result should be 3157
 {
-    char* pattern = ReadAllFile("Test/AOC17.txt");
+    char* pattern = ReadAllText("Test/AOC17.txt");
 	TimeBlock("Day17")
 
 	const Vector2s shapes[5][5] = {

@@ -14,20 +14,18 @@ AX_NAMESPACE
 
 template<typename ValueT,
          typename AllocatorT = MallocAllocator<ValueT>>
-class Array
+struct Array
 {
-public:
     using Iterator = ValueT*;
     using ConstIterator = const ValueT*;
 	static const int InitialSize = AllocatorT::InitialSize;
-                                                                       
-private:                                                               
-	ValueT* arr = nullptr;                                             
-	int m_count = 0;
-	int m_capacity = 0;
+       
+	// don't change this variables if you don't know what are you doing
+	ValueT* arr    = nullptr;                                             
+	int m_count    = 0;       
+	int m_capacity = 0;       
 	AllocatorT allocator{};
 
-public:
 	Array() : arr(nullptr), m_count(0), m_capacity(0), allocator()
 	{ }
 
@@ -341,10 +339,11 @@ public:
 	const ValueT& Back()     const { return arr[m_count - 1]; }
 	ValueT&       Back()           { return arr[m_count - 1]; }
 	void          PopBack()        { arr[--m_count].~ValueT(); }
+	void          PushBack(const ValueT& val) { Add(val); }
 
 	const ValueT& Front()    const { return arr[0]; }
-	ValueT& Front()                { return arr[0]; }
-	void          PopFront() { RemoveAt(0); }
+	      ValueT& Front()          { return arr[0]; }
+	void          PopFront()       { RemoveAt(0); }
 
 	int           Size()     const { return m_count; }
 	int           Capacity() const { return m_capacity; }
@@ -381,8 +380,6 @@ public:
 	void resize(int _size) { Resize(_size); }
 	void shrink_to_fit() { ShrinkToFit(); }
 #endif
-
-private:
 
 	void GrowIfNecessary(int _size)
 	{
