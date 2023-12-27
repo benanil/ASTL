@@ -360,7 +360,7 @@ __forceinline half ConvertFloatToHalf(float Value)
 {
 #if defined(AX_SUPPORT_SSE) && defined(__MSC_VER)
 	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);// idk why this does not work for gcc
-#elif defined(AX_SUPPORT_SSE) && (defined(__GNUC__) || defined(__clang__))
+#elif defined(__ARM_NEON__)
 	return _cvtss_sh(Value, 0);
 #else
 	// taken from XNA math
