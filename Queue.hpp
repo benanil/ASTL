@@ -31,10 +31,10 @@ public:
 		Iterator  operator ++(int) { Iterator tmp = *this; ++(*this); return tmp; }
 		
 		friend bool operator == (const Iterator& a, const Iterator& b)
-        { return (a.m_rear == b.m_rear) & a.m_ptr == b.m_ptr; };
+        { return (a.m_rear == b.m_rear) && a.m_ptr == b.m_ptr; };
 		
 		friend bool operator != (const Iterator& a, const Iterator& b)
-        { return (a.m_rear != b.m_rear) | (a.m_ptr == b.m_ptr); };  
+        { return (a.m_rear != b.m_rear) || (a.m_ptr == b.m_ptr); };
 
 	private:
 		ValueT* m_ptr;

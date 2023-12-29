@@ -98,13 +98,37 @@ __forceinline float RSqrt(float x)
 }
 
 __forceinline __constexpr float Fract(float a) { a = Abs(a); return a - int(a); }
-									
-__forceinline __constexpr double Exp(double a)
+
+// https://github.com/id-Software/DOOM-3/blob/master/neo/idlib/math/Math.h
+__forceinline float Exp(float f)
 {
-	union { double d; long long x; } u{}, v{};
-	u.x = (long long)(3248660424278399LL * a + 0x3fdf127e83d16f12LL);
-	v.x = (long long)(0x3fdf127e83d16f12LL - 3248660424278399LL * a);
-	return u.d / v.d;
+    const int IEEE_FLT_MANTISSA_BITS  =	23;
+    const int IEEE_FLT_EXPONENT_BITS  =	8;
+    const int IEEE_FLT_EXPONENT_BIAS  =	127;
+    const int IEEE_FLT_SIGN_BIT       =	31;
+	int i, s, e, m, exponent;
+	float x, x2, y, p, q;
+
+	x = f * 1.44269504088896340f;		// multiply with ( 1 / log( 2 ) )
+
+	i = *((int*)&x);
+	s = ( i >> IEEE_FLT_SIGN_BIT );
+	e = ( ( i >> IEEE_FLT_MANTISSA_BITS ) & ( ( 1 << IEEE_FLT_EXPONENT_BITS ) - 1 ) ) - IEEE_FLT_EXPONENT_BIAS;
+	m = ( i & ( ( 1 << IEEE_FLT_MANTISSA_BITS ) - 1 ) ) | ( 1 << IEEE_FLT_MANTISSA_BITS );
+	i = ( ( m >> ( IEEE_FLT_MANTISSA_BITS - e ) ) & ~( e >> 31 ) ) ^ s;
+
+	exponent = ( i + IEEE_FLT_EXPONENT_BIAS ) << IEEE_FLT_MANTISSA_BITS;
+	y = *((float*)&exponent);
+	x -= (float) i;
+	if ( x >= 0.5f ) {
+		x -= 0.5f;
+		y *= 1.4142135623730950488f;	// multiply with sqrt( 2 )
+	}
+	x2 = x * x;
+	p = x * ( 7.2152891511493f + x2 * 0.0576900723731f );
+	q = 20.8189237930062f + x2;
+	x = y * ( q + p ) / ( q - p );
+	return x;
 }
 
 // https://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/

@@ -34,13 +34,13 @@ ThreadPool::~ThreadPool() {
 }
 
 ThreadPool::ThreadPool()
-: m_NumThreads(Clamp(std::thread::hardware_concurrency(), 1u, MaxThreads))
+: m_NumThreads(Clamp(std::thread::hardware_concurrency(), 1u, 16u))
 {
 	Initialize();
 }
 
 ThreadPool::ThreadPool(uint32 threadCount)
-: m_NumThreads(Clamp(threadCount, 1u, MaxThreads))
+: m_NumThreads(Clamp(threadCount, 1u, 16u))
 {
 	Initialize();
 }
