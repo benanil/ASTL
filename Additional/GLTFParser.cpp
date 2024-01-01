@@ -43,12 +43,6 @@ struct GLTFBufferView
     int byteStride;
 };
 
-struct GLTFBuffer
-{
-    void* uri;
-    int byteLength;
-};
-
 typedef FixedSizeGrowableAllocator<char> AStringAllocator;
 
 
@@ -389,7 +383,7 @@ __private const char* ParseAttributes(const char* curr, APrimitive* primitive)
         curr = SkipUntill(curr, '"'); curr++;// skip quote because attribute in double quotes
         // using bitmask will help us to order attributes correctly(sort) Position, Normal, TexCoord
         int newIndex = TrailingZeroCount(maskBefore ^ primitive->attributes);
-        primitive->vertexAttribs[newIndex] = (unsigned short)ParsePositiveNumber(curr);    
+        primitive->vertexAttribs[newIndex] = (void*)ParsePositiveNumber(curr);    
     }
 }
 
@@ -872,6 +866,8 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
     ASSERT(result && path);
     long sourceSize = 0;
     char* source = ReadAllText(path, nullptr, &sourceSize);
+    MemsetZero(result, sizeof(ParsedGLTF));
+
     if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; ASSERT(0); return 0; }
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -920,42 +916,6 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
             return 0;
         }
     }
-    
-    uint32_t totalVertexSize = 0;
-    uint64_t totalIndexSize = 0;
-    // Position 3, TexCoord 2, Normal 3, Tangent 3, TexCoord2 2
-    const int attribIndexToNumComp[6] = { 3, 2, 3, 3, 2 }; 
-    // BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT, FLOAT           
-    const int TypeToSize[8] = { 1, 1, 2, 2, 4, 4, 4 };
-
-    // Calculate total vertices, and indices
-    for (int m = 0; m < meshes.Size(); ++m)
-    {
-        // get number of vertex, getting first attribute count because all of the others are same
-        AMesh mesh = meshes[m];
-        for (uint64_t p = 0; p < SBCount(mesh.primitives); p++)
-        {
-            APrimitive& primitive = mesh.primitives[p];
-            // get position attrib's count' because all attributes same
-            int bufferViewIndex = accessors[primitive.indiceIndex].bufferView;
-            totalIndexSize += bufferViews[bufferViewIndex].byteLength;
-
-            int numFloats = 0, attributes = primitive.attributes;
-            
-            for (int j = 0; attributes > 0; j += NextSetBit(&attributes))
-            {
-                numFloats += attribIndexToNumComp[j];
-            }    
-            int numVertices = accessors[primitive.vertexAttribs[0]].count;
-            totalVertexSize += numFloats * numVertices;
-        }
-    }
-
-    // pre allocate all vertices and indices 
-    result->allVertices = new float[totalVertexSize];
-    result->allIndices  = AllocAligned(totalIndexSize + 16, alignof(uint32)); // 16->give little bit of space for memcpy
-    float* currVertices = (float*)result->allVertices;
-    char* currIndices = (char*)result->allIndices;
 
     for (int m = 0; m < meshes.Size(); ++m)
     {
@@ -966,45 +926,35 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
         {
             APrimitive& primitive = mesh.primitives[p];
             // get position attrib's count' because all attributes same
-            int numVertex = accessors[primitive.vertexAttribs[0]].count; 
+            int numVertex = accessors[(size_t)primitive.vertexAttribs[0]].count; 
             primitive.numVertices = numVertex;
         
             // get number of index
             GLTFAccessor accessor = accessors[primitive.indiceIndex];
-            int numIndex = accessor.count;
-            primitive.numIndices = numIndex;
+            primitive.numIndices = accessor.count;
         
             accessor = accessors[primitive.indiceIndex];
             GLTFBufferView view = bufferViews[accessor.bufferView];
             int64_t offset = (int64_t)accessor.byteOffset + view.byteOffset;
             // copy indices
-            primitive.indices = currIndices;
+            primitive.indices = ((char*)buffers[view.buffer].uri) + offset;
             primitive.indexType = accessor.componentType;
-            ASSERT(view.byteLength); // must be greater than zero
-            MemCpy<alignof(uint32)>(primitive.indices, ((char*)buffers[view.buffer].uri) + offset, view.byteLength);
-            currIndices += view.byteLength;
-            primitive.vertices = currVertices;
             
             // position, normal, texcoord are different buffers, 
             // we are unifying all attributes to Vertex* buffer here
-            for (int i = 0; i < numVertex; ++i)
+            int attributes = primitive.attributes;
+            
+            // even though attrib definition in gltf is not ordered, this code will order it, because we traversing set bits
+            // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
+            const int supportedAttributes = 6;
+            for (int j = 0; attributes > 0 && j < supportedAttributes; j += NextSetBit(&attributes))
             {
-                int attributes = primitive.attributes;
+                accessor     = accessors[(size_t)primitive.vertexAttribs[j]];
+                view         = bufferViews[accessor.bufferView];
+                offset       = int64_t(accessor.byteOffset) + view.byteOffset;
                 
-                // even though attrib definition in gltf is not ordered, this code will order it, because we traversing set bits
-                // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
-                for (int j = 0; attributes > 0; j += NextSetBit(&attributes))
-                {
-                    accessor     = accessors[primitive.vertexAttribs[j]];
-                    view         = bufferViews[accessor.bufferView];
-                    offset       = int64_t(accessor.byteOffset) + view.byteOffset;
-                    
-                    uint64_t attribSize = attribIndexToNumComp[j] * sizeof(float);
-                    char* buffer = (char*)buffers[view.buffer].uri + offset + (i * attribSize);
-                    SmallMemCpy(currVertices, buffer, attribSize);
-                    currVertices += attribIndexToNumComp[j];
-                }    
-            }
+                primitive.vertexAttribs[j] = (char*)buffers[view.buffer].uri + offset;
+            }    
         }
     }
 
@@ -1019,6 +969,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
     result->numSamplers  = samplers.Size();   result->samplers  = samplers.TakeOwnership();
     result->numCameras   = cameras.Size();    result->cameras   = cameras.TakeOwnership();
     result->numScenes    = scenes.Size();     result->scenes    = scenes.TakeOwnership();
+    result->numBuffers   = buffers.Size();    result->buffers   =  buffers.TakeOwnership(); 
     result->error = AError_NONE;
     FreeAllText(source);
     return 1;
@@ -1033,6 +984,11 @@ __public void FreeParsedGLTF(ParsedGLTF* gltf)
     struct IntFragment { 
         IntFragment* next; int* ptr; int64_t   size;
     };
+
+    for (int i = 0; i < gltf->numBuffers; i++)
+    {
+        FreeAllText((char*)gltf->buffers[i].uri);
+    }
 
     if (gltf->stringAllocator)
     {

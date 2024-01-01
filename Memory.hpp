@@ -161,16 +161,10 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t  sizeInBytes)
 
 // use size for struct/class types such as Vector3 and Matrix4, 
 // leave as zero size constant for big arrays or unknown size arrays
-template<int alignment = 0, int size = 0>
+template<int alignment = 0>
 inline void MemSet(void* dst, unsigned char val, uint64_t  sizeInBytes)
 {
-    if_constexpr (size)
-    #ifdef _MSC_VER
-        __stosb((unsigned char*)dst, val, size);
-    #else
-        __builtin_memset(dst, val, sizeInBytes);
-    #endif
-    else if (alignment == 8)
+    if (alignment == 8)
         MemSetAligned64(dst, val, sizeInBytes);
     else if (alignment == 4)
         MemSetAligned32(dst, val, sizeInBytes);
@@ -231,16 +225,10 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t  sizeInBytes)
 
 // use size for structs and classes such as Vector3 and Matrix4,
 // and use MemCpy for big arrays or unknown size arrays
-template<int alignment = 0, int size = 0>
+template<int alignment = 0>
 inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
 {
-    if_constexpr (size != 0)
-#ifdef _MSC_VER
-    __movsb((unsigned char*)dst, (unsigned char const*)src, size);
-#else
-    __builtin_memcpy(dst, src, size);
-#endif
-    else if (alignment == 8)
+    if (alignment == 8)
         MemCpyAligned64(dst, src, sizeInBytes);
     else if (alignment == 4)
         MemCpyAligned32(dst, src, sizeInBytes);

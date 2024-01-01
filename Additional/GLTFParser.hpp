@@ -104,8 +104,13 @@ typedef struct APrimitive_
     int   numIndices;
     int   numVertices;
 
+    // when we are parsing we use this as an indicator to accessor.
+    // after parsing, this will become vertex pointers AAttribType_Position, AAttribType_TexCoord...
+    // positions = (Vector3f*)vertexAttribs[0];
+    // texCoords = (Vector2f*)vertexAttribs[1]; 
+    // ...
+    void* vertexAttribs[6]; 
     // internal use only. after parsing this is useless
-    int vertexAttribs[6]; //<-when we are parsing we use this as an indicator to accessor.
     short indiceIndex; // indice index to accessor
     char  material;    // material index
     char  mode;        // 4 is triangle
@@ -153,6 +158,13 @@ typedef struct AScene_
     int*  nodes;
 } AScene;
 
+
+struct GLTFBuffer
+{
+    void* uri;
+    int byteLength;
+};
+
 typedef struct ParsedGLTF_
 {
     short numMeshes;
@@ -164,13 +176,16 @@ typedef struct ParsedGLTF_
     short numCameras;
     short numScenes;
     short defaultSceneIndex;
-    
+    short numBuffers;
+
     AErrorType error;
 
     void* stringAllocator;
     void* intAllocator;
     void* allVertices;
     void* allIndices;
+    
+    GLTFBuffer* buffers;
 
     AMesh*     meshes;
     ANode*     nodes;
