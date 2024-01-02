@@ -205,7 +205,7 @@ inline unsigned int Log10(unsigned int v)
 //!< maybe use templates?
 __forceinline __constexpr bool IsZero(float x) noexcept { return Abs(x) <= 0.0001f; }
 __forceinline __constexpr bool AlmostEqual(float x, float  y) noexcept { return Abs(x-y) <= 0.001f; }
-__forceinline __constexpr float Sign(float x, float y) 
+__forceinline __constexpr float Sign(float x) 
 {
 	int bx = BitCast<int>(x);
 	return (bx & 0x80000000) | (bx != 0);
