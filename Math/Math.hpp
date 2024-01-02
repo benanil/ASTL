@@ -33,15 +33,6 @@ __forceinline double Lerp(double x, double y, double t)
 	return x + (y - x) * t;
 }
 
-__forceinline float Sqrt(float a)
-{
-#ifdef AX_SUPPORT_SSE
-	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));  
-#elif defined(__clang__)
-	return __builtin_sqrt(a);
-#endif
-}
-
 __forceinline constexpr float SqrtConstexpr(float a)
 {
 	// from: Jack W. Cerenshaw's math toolkit for real time development book: page 63 Listing 4.3
@@ -73,8 +64,18 @@ __forceinline constexpr float SqrtConstexpr(float a)
 	return x.fp;
 }
 
-// original doom rsqrt implementation with comments :) maybe use _mm_rsqrt_ps instead ? and __builtin_sqrt if sse not supported
-// used constant(0x5f375a86f) is from Chriss Lomont's Fast Inverse Square Root paper
+__forceinline float Sqrt(float a)
+{
+#ifdef AX_SUPPORT_SSE
+	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));
+#elif defined(__clang__)
+	return __builtin_sqrt(a);
+#else
+	return SqrtConstexpr(a);
+#endif
+}
+
+// original doom rsqrt implementation with comments :)
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // https://rrrola.wz.cz/inv_sqrt.html   <- fast and 2.5x accurate
 __forceinline float RSqrt(float x) 
@@ -201,9 +202,14 @@ inline unsigned int Log10(unsigned int v)
 	return t - (v < PowersOf10[t]);                                                      
 }                                                                                        
 
+//!< maybe use templates?
 __forceinline __constexpr bool IsZero(float x) noexcept { return Abs(x) <= 0.0001f; }
 __forceinline __constexpr bool AlmostEqual(float x, float  y) noexcept { return Abs(x-y) <= 0.001f; }
-__forceinline __constexpr float Sign(float x, float y) { return y < 0.0f ? -x : x; } //!< maybe use templates?
+__forceinline __constexpr float Sign(float x, float y) 
+{
+	int bx = BitCast<int>(x);
+	return (bx & 0x80000000) | (bx != 0);
+} 
 
 __forceinline __constexpr float CopySign(float x, float y) 
 {

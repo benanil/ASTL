@@ -164,8 +164,22 @@ inline bool IsParsable(const char* curr)
 	return true;
 }
 
+
 inline float ParseFloat(const char*& text)
 {
+    const int MAX_POWER = 20;
+    const double POWER_10_POS[MAX_POWER] =
+    {
+        1.0e0,  1.0e1,  1.0e2,  1.0e3,  1.0e4,  1.0e5,  1.0e6,  1.0e7,  1.0e8,  1.0e9,
+        1.0e10, 1.0e11, 1.0e12, 1.0e13, 1.0e14, 1.0e15, 1.0e16, 1.0e17, 1.0e18, 1.0e19,
+    };
+
+    const double POWER_10_NEG[MAX_POWER] =
+    {
+        1.0e0,   1.0e-1,  1.0e-2,  1.0e-3,  1.0e-4,  1.0e-5,  1.0e-6,  1.0e-7,  1.0e-8,  1.0e-9,
+        1.0e-10, 1.0e-11, 1.0e-12, 1.0e-13, 1.0e-14, 1.0e-15, 1.0e-16, 1.0e-17, 1.0e-18, 1.0e-19,
+    };
+
     const char* ptr = text;
     while (!IsNumber(*ptr) && *ptr != '-') ptr++;
 	
@@ -181,12 +195,41 @@ inline float ParseFloat(const char*& text)
 
     double fra = 0.0, div = 1.0;
 
-    while (IsNumber(*ptr) && div < 1e8) // 1e8 is 1 and 8 zero 100000000
+    while (IsNumber(*ptr) && div < 1.0e9) // 1e8 is 1 and 8 zero 1000000000
         fra = 10.0f * fra + (double)(*ptr++ - '0'), div *= 10.0f;
-	
-    while (IsNumber(*ptr)) ptr++;
 
     num += fra / div;
+
+    while (IsNumber(*ptr)) ptr++;
+
+    if (*ptr == 'e' || *ptr == 'E') // exponent
+    {
+        ptr++;
+        const double* powers;
+
+        switch (*ptr)
+        {
+        case '+':
+            powers = POWER_10_POS;
+            ptr++;
+            break;
+        case '-':
+            powers = POWER_10_NEG;
+            ptr++;
+            break;
+        default:
+            powers = POWER_10_POS;
+            break;
+        }
+
+        int eval = 0;
+        while (IsNumber(*ptr))
+            eval = 10 * eval + (*ptr++ - '0');
+
+        num *= (eval >= MAX_POWER) ? 0.0 : powers[eval];
+    }
+    while (IsNumber(*ptr)) ptr++;
+
     text = ptr;
     return (float)(sign * num);
 }

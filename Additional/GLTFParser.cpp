@@ -506,7 +506,7 @@ __private const char* ParseNodes(const char* curr,
         {
             float matrix[16]{};
             for (int i = 0; i < 16; i++)
-            node.translation[0] = ParseFloat(curr);
+                matrix[i] = ParseFloat(curr);
 
             node.translation[0] = matrix[12];
             node.translation[1] = matrix[13];
@@ -514,9 +514,9 @@ __private const char* ParseNodes(const char* curr,
             QuaternionFromMatrix(node.rotation, matrix);
 #ifdef AX_SUPPORT_SSE
             __m128 v;
-            v = _mm_load_ps(matrix + 0); node.scale[0] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71))) * scale;
-            v = _mm_load_ps(matrix + 4); node.scale[1] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71))) * scale;
-            v = _mm_load_ps(matrix + 8); node.scale[2] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71))) * scale;
+            v = _mm_load_ps(matrix + 0); node.scale[0] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7F))) * scale;
+            v = _mm_load_ps(matrix + 4); node.scale[1] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7F))) * scale;
+            v = _mm_load_ps(matrix + 8); node.scale[2] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7F))) * scale;
 #else
             node.scale[0] = Sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1] + matrix[2] * matrix[2]);
             node.scale[1] = Sqrt(matrix[4] * matrix[4] + matrix[5] * matrix[5] + matrix[6] * matrix[6]);
@@ -969,7 +969,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
     result->numSamplers  = samplers.Size();   result->samplers  = samplers.TakeOwnership();
     result->numCameras   = cameras.Size();    result->cameras   = cameras.TakeOwnership();
     result->numScenes    = scenes.Size();     result->scenes    = scenes.TakeOwnership();
-    result->numBuffers   = buffers.Size();    result->buffers   =  buffers.TakeOwnership(); 
+    result->numBuffers   = buffers.Size();    result->buffers   = buffers.TakeOwnership(); 
     result->error = AError_NONE;
     FreeAllText(source);
     return 1;

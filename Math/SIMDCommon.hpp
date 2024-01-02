@@ -145,7 +145,7 @@ __forceinline __m128 VECTORCALL SSEVectorNormalize(const __m128 V)
 
 __forceinline float VECTORCALL SSEVectorLengthf(const __m128 v)
 {
-	return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x71)));
+	return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7f)));
 }
 
 __forceinline __m128 VECTORCALL SSEVector3Cross(const __m128 vec0, const __m128 vec1)

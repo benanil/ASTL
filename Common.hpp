@@ -181,7 +181,7 @@ typedef uint64_t ulong;
             #define AX_SUPPORT_AVX2
         #endif
     #endif
-
+    
     /* If at this point we still haven't determined compiler support for the intrinsics just fall back to __has_include. */
     #if !defined(__GNUC__) && !defined(__clang__) && defined(__has_include)
         #if !defined(AX_SUPPORT_SSE)   && !defined(AX_NO_SSE2)   && __has_include(<emmintrin.h>)

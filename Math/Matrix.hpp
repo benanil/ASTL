@@ -389,7 +389,9 @@ struct alignas(16) Matrix4
 	__forceinline static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
 	{
 		Vector3f res;
-		_mm_storeu_ps(&res.x, matrix.r[3]);
+		res.x = matrix.m[0][12];
+		res.y = matrix.m[0][13];
+		res.z = matrix.m[0][14];
 		return res;
 	}
 
