@@ -388,39 +388,39 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 
 __forceinline half ConvertFloatToHalf(float Value)
 {
-#if defined(AX_SUPPORT_SSE) && defined(__MSC_VER)
+#if 0 //defined(AX_SUPPORT_SSE) && defined(__MSC_VER)
 	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);// idk why this does not work for gcc
-#elif defined(__ARM_NEON__)
+#elif 0//defined(__ARM_NEON__)
 	return _cvtss_sh(Value, 0);
 #else
-	// taken from XNA math
-	uint Result;
-	uint IValue = ((uint*)(&Value))[0];
-	uint Sign = (IValue & 0x80000000U) >> 16U;
-	IValue = IValue & 0x7FFFFFFFU;      // Hack off the sign
+	uint32_t x = *(uint32_t*)&Value;
+	uint32_t sign = (unsigned short)(x >> 31);
+	uint32_t mantissa;
+	uint32_t exp;
+	uint16_t hf;
 
-	if (IValue > 0x47FFEFFFU) {
-		// The number is too large to be represented as a half.  Saturate to infinity.
-		Result = 0x7FFFU;
+	mantissa = x & ((1 << 23) - 1);
+	exp = x & (0xFF << 23);
+	if (exp >= 0x47800000) {
+		// check if the original number is a NaN
+		if (mantissa && (exp == (0xFF << 23))) {
+			// single precision NaN
+			mantissa = (1 << 23) - 1;
+		} else {
+			// half-float will be Inf
+			mantissa = 0;
+		}
+		hf = (((uint16_t)sign) << 15) | (uint16_t)((0x1F << 10)) |
+		     (uint16_t)(mantissa >> 13);
 	}
-	else if (IValue < 0x38800000U) {
-		// The number is too small to be represented as a normalized half.
-		// Convert it to a denormalized value.
-		uint Shift = 113U - (IValue >> 23U);
-		IValue = (0x800000U | (IValue & 0x7FFFFFU)) >> Shift;
+	// check if exponent is <= -15
+	else if (exp <= 0x38000000) {
+		hf = 0;  // too small to be represented
+	} else {
+		hf = (((uint16_t)sign) << 15) | (uint16_t)((exp - 0x38000000) >> 13) |
+		     (uint16_t)(mantissa >> 13);
 	}
-	else {
-		// Rebias the exponent to represent the value as a normalized half.
-		IValue += 0xC8000000U;
-	}
-
-	Result = ((IValue + 0x0FFFU + ((IValue >> 13U) & 1U)) >> 13U) & 0x7FFFU;
-	return (half)(Result | Sign);
-	// const uint b = BitCast<uint>(Value) + 0x00001000; // round-to-nearest-even: add last bit after truncated mantissa
-	// const uint e = (b & 0x7F800000) >> 23; // exponent
-	// const uint m = b & 0x007FFFFF; // mantissa; in line below: 0x007FF000 = 0x00800000-0x00001000 = decimal indicator flag - initial rounding
-	// uint a = (b & 0x80000000) >> 16 | (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13);
-	// return a | ((e < 113) & (e > 101))*((((0x007FF000 + m) >> (125-e)) + 1) >> 1) | (e > 143) * 0x7FFF; // sign : normalized : denormalized : saturate
+	return hf;
 #endif
 }
 
@@ -435,7 +435,7 @@ __forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
 	SmallMemCpy(res, a, n * sizeof(half));
 #else
 	for (int i = 0; i < n; i++)
-		res[i] = ConvertHalfToFloat(x[i]);
+		res[i] = ConvertFloatToHalf(x[i]);
 #endif
 }
 

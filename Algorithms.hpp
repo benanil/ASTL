@@ -184,7 +184,8 @@ inline float ParseFloat(const char*& text)
     while (!IsNumber(*ptr) && *ptr != '-') ptr++;
 	
     double sign = 1.0;
-    if(*ptr == '-') sign = -1.0, ptr++; 
+    if(*ptr == '-')
+        sign = -1.0, ptr++; 
 
     double num = 0.0;
 
@@ -228,7 +229,6 @@ inline float ParseFloat(const char*& text)
 
         num *= (eval >= MAX_POWER) ? 0.0 : powers[eval];
     }
-    while (IsNumber(*ptr)) ptr++;
 
     text = ptr;
     return (float)(sign * num);

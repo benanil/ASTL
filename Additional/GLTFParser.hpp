@@ -45,7 +45,7 @@ typedef struct AMaterial_
     {
         float16 scale;    
         float16 strength; 
-        short index; // index to texture path
+        short index; // index to texture path. -1 if is not exist
         short texCoord;
     } textures[3]; // normalTexture, occlusionTexture, emissiveTexture
 

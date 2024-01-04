@@ -11,8 +11,8 @@ struct alignas(16) Quaternion
 	union
 	{
 		struct { float x, y, z, w; };
-		float arr[4];
-		__m128 vec;
+		struct { float arr[4]; };
+		struct { __m128 vec; };
 	};
 
 	const float  operator [] (int index) const { return arr[index]; }
@@ -28,6 +28,12 @@ struct alignas(16) Quaternion
 	inline static Vector4f VECTORCALL Mul(Vector4f Q1, Vector4f Q2)
 	{
 		return BitCast<Vector4f>(Mul(Q1.vec, Q2.vec));
+	}
+
+	inline static Quaternion Normalize(Quaternion quat)
+	{
+		quat.vec = _mm_mul_ps(_mm_rsqrt_ps(_mm_dp_ps(quat.vec, quat.vec, 0xff)), quat.vec);
+		return quat;
 	}
 
 	inline static __m128 VECTORCALL Mul(const __m128 Q1, const __m128 Q2) 
@@ -255,8 +261,8 @@ struct alignas(16) Quaternion
 	union
 	{
 		struct { float x, y, z, w; };
-		float arr[4];
-		Vector4f vec;
+		struct { float arr[4]; };
+		struct { Vector4f vec; };
 	};
 
 	const float  operator [] (int index) const { return arr[index]; }

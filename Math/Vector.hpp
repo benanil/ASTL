@@ -11,7 +11,7 @@ struct Vector2
 	union
 	{
 		struct { T x, y; };
-		T arr[2];
+		struct { T arr[2]; };
 	};
 
 	static const int NumElements = 2;
@@ -103,7 +103,7 @@ struct Vector3
 	union
 	{
 		struct { T x, y, z; };
-		T arr[3];
+		struct { T arr[3]; };
 	};
 
 	static const int NumElements = 3;
@@ -229,8 +229,8 @@ using Vector3c = Vector3<char>;
 
 typedef Vector3f float3;
 typedef Vector2f float2;
-typedef Vector3s half3;
-typedef Vector2s half2;
+typedef Vector3h half3;
+typedef Vector2h half2;
 
 __forceinline float2 ConvertToFloat2(const half* h) {
 	float2 res; ConvertHalfToFloat(&res.x, h, 2); return res;
@@ -290,8 +290,8 @@ struct alignas(16) Vector4f
 	union
 	{
 		struct { float x, y, z, w; };
-		float arr[4];
-		__m128 vec;
+		struct { float arr[4]; };
+		struct { __m128 vec; };
 	};
 
 	static const int NumElements = 4;
@@ -352,8 +352,8 @@ struct alignas(32) Vector4d
 	union
 	{
 		struct { double x, y, z, w; };
-		double arr[4];
-		__m256d vec;
+		struct { double arr[4]; };
+		struct { __m256d vec; };
 	};
 
 	static const int NumElements = 4;
@@ -407,7 +407,7 @@ struct Vector4
 	union
 	{
 		struct { T x, y, z, w; };
-		T arr[4];
+		struct { T arr[4]; };
 	};
 
 	static const int NumElements = 4;

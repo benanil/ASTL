@@ -30,6 +30,14 @@ struct Matrix3
 		return M;
 	}
 
+	__forceinline static Matrix3 TBN(Vector3f normal, Vector3f tangent, Vector3f bitangent)
+	{
+		Matrix3 M;
+		M.vec[0] = normal;
+		M.vec[1] = tangent;
+		M.vec[2] = bitangent;
+		return M;
+	}
 	__forceinline static Matrix3 Identity()
 	{
 		return Make(1.0f, 0.0f, 0.0f,
