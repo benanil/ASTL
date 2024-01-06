@@ -392,7 +392,8 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
     char text[64]{};
     curr += 7; // skip meshes" 
     AMesh mesh{};
-    int numMeshes = 0;
+    MemsetZero(&mesh, sizeof(AMesh));
+
     // parse all meshes
     while (true)
     {
