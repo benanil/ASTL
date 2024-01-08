@@ -332,7 +332,7 @@ typedef ushort half;
 __forceinline float 
 ConvertHalfToFloat(half x)
 {
-#if defined(AX_SUPPORT_SSE) && defined(__MSC_VER) 
+#if defined(AX_SUPPORT_SSE) && defined(_MSC_VER) 
 	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); // idk why this does not work for gcc
 // #elif defined(AX_SUPPORT_SSE) && (defined(__GNUC__) || defined(__clang__))
 // 	return _cvtsh_ss(x); // this also does not work with gcc idk why
@@ -388,9 +388,9 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 
 __forceinline half ConvertFloatToHalf(float Value)
 {
-#if 0 //defined(AX_SUPPORT_SSE) && defined(__MSC_VER)
+#if defined(AX_SUPPORT_SSE) && defined(_MSC_VER)
 	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);// idk why this does not work for gcc
-#elif 0//defined(__ARM_NEON__)
+#elif defined(__ARM_NEON__)
 	return _cvtss_sh(Value, 0);
 #else
 	uint32_t x = *(uint32_t*)&Value;
@@ -427,7 +427,7 @@ __forceinline half ConvertFloatToHalf(float Value)
 // converts maximum 4 half
 __forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
 {
-#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
+#if defined(AX_SUPPORT_SSE) && defined(_MSC_VER)
 	alignas(16) half a[8];
 	float b[8]; 
 	SmallMemCpy(b, x, n * sizeof(float));

@@ -383,7 +383,7 @@ __private const char* ParseAttributes(const char* curr, APrimitive* primitive)
         curr = SkipUntill(curr, '"'); curr++;// skip quote because attribute in double quotes
         // using bitmask will help us to order attributes correctly(sort) Position, Normal, TexCoord
         int newIndex = TrailingZeroCount(maskBefore ^ primitive->attributes);
-        primitive->vertexAttribs[newIndex] = (void*)ParsePositiveNumber(curr);    
+        primitive->vertexAttribs[newIndex] = (void*)(uint64_t)ParsePositiveNumber(curr);
     }
 }
 

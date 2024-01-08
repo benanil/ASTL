@@ -19,14 +19,10 @@ typedef uint16_t ushort;
 typedef uint32_t uint;
 typedef uint64_t ulong;
 
-#if AX_SHARED
 #ifdef AX_EXPORT
-		#define AX_API __declspec(dllexport)
-	#else
-		#define AX_API __declspec(dllimport)
-	#endif
+	#define AX_API __declspec(dllexport)
 #else
-	#define AX_API
+	#define AX_API __declspec(dllimport)
 #endif
 
 #ifdef _MSC_VER
@@ -255,6 +251,15 @@ typedef uint64_t ulong;
 #endif
 
 AX_NAMESPACE
+
+inline constexpr bool IsAndroid()
+{
+#ifdef __ANDROID__
+    return true;
+#else
+    return false;
+#endif
+}
 
 template<typename T, uint64_t  N>
 __constexpr uint64_t  ArraySize(const T (&)[N]) { return N; }
