@@ -56,12 +56,12 @@ __forceinline constexpr float SqrtConstexpr(float a)
 	bool isOdd = expo & 1;
 	expo += isOdd;
 	x.fp *= 1.0 + (isOdd * 0.414213562);
-	expo = (expo + (expo < 0u)) * 0.5;
+	expo = (expo + (expo < 0u)) / 2;
 	// put it back
 	expo += 0x3feu;
 	x.hi &= 0x000fffffu;
 	x.hi += expo << 20u;
-	return x.fp;
+	return (float)x.fp;
 }
 
 __forceinline float Sqrt(float a)
@@ -208,7 +208,7 @@ __forceinline __constexpr bool AlmostEqual(float x, float  y) noexcept { return 
 __forceinline __constexpr float Sign(float x) 
 {
 	int bx = BitCast<int>(x);
-	return (bx & 0x80000000) | (bx != 0);
+	return (float)((bx & 0x80000000) | (bx != 0));
 } 
 
 __forceinline __constexpr float CopySign(float x, float y) 
@@ -332,10 +332,10 @@ typedef ushort half;
 __forceinline float 
 ConvertHalfToFloat(half x)
 {
-#if defined(AX_SUPPORT_SSE) && defined(_MSC_VER) 
-	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); // idk why this does not work for gcc
-// #elif defined(AX_SUPPORT_SSE) && (defined(__GNUC__) || defined(__clang__))
-// 	return _cvtsh_ss(x); // this also does not work with gcc idk why
+#if defined(AX_SUPPORT_SSE) 
+	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); 
+#elif defined(__ARM_NEON__)
+	return _cvtsh_ss(x); 
 #else
 	uint Mantissa, Exponent, Result;
 	Mantissa = (uint)(x & 0x03FF);
@@ -374,11 +374,11 @@ ConvertHalfToFloat(half x)
 // converts maximum 4 float
 __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 {
-#if defined(AX_SUPPORT_SSE) && defined(__MSVC_VER)
+#if defined(AX_SUPPORT_SSE)
 	alignas(16) float a[4];
     half b[8]; 
 	SmallMemCpy(b, x, n * sizeof(half));
-	_mm_store_ps(a, _mm_cvtph_ps(_mm_loadu_epi16(b))); // MSVC does not have scalar instructions.
+	_mm_store_ps(a, _mm_cvtph_ps(_mm_loadu_si16(b))); // MSVC does not have scalar instructions.
 	SmallMemCpy(res, a, n * sizeof(float));
 #else
 	for (int i = 0; i < n; i++)
@@ -388,8 +388,8 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 
 __forceinline half ConvertFloatToHalf(float Value)
 {
-#if defined(AX_SUPPORT_SSE) && defined(_MSC_VER)
-	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);// idk why this does not work for gcc
+#if defined(AX_SUPPORT_SSE)
+	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);
 #elif defined(__ARM_NEON__)
 	return _cvtss_sh(Value, 0);
 #else
@@ -427,7 +427,7 @@ __forceinline half ConvertFloatToHalf(float Value)
 // converts maximum 4 half
 __forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
 {
-#if defined(AX_SUPPORT_SSE) && defined(_MSC_VER)
+#if defined(AX_SUPPORT_SSE)
 	alignas(16) half a[8];
 	float b[8]; 
 	SmallMemCpy(b, x, n * sizeof(float));
@@ -436,6 +436,15 @@ __forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
 #else
 	for (int i = 0; i < n; i++)
 		res[i] = ConvertFloatToHalf(x[i]);
+#endif
+}
+
+__forceinline void ConvertFloatToHalf4(half* res, const float* x, short n)
+{
+#if defined(AX_SUPPORT_SSE) 
+	_mm_store_si128((__m128i*)res, _mm_cvtps_ph(_mm_loadu_ps(x), _MM_FROUND_TO_NEAREST_INT)); 
+#else
+	ConvertFloatToHalf(res, x, n);
 #endif
 }
 

@@ -468,7 +468,7 @@ inline void SBPush(T*& b, const T& v)
 		int* old = arr-2;
 		int newCapacity = CalculateArrayGrowth(capacity);
 		a = (T*)AllocAligned(newCapacity * sizeof(T) + twoIntSize, alignof(T));
-		MemCpy(a, old, capacity * sizeof(T) + twoIntSize);
+		MemCpy<alignof(T)>(a, old, capacity * sizeof(T) + twoIntSize);
 		FreeAligned(old);
 		a = (T*)((int*)a+2);
 		arr = ((int*)a);

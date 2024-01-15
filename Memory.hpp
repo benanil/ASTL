@@ -105,10 +105,10 @@ inline void FreeAligned(void* pMem)
 
 // if you want memmove it is here with simd version: https://hackmd.io/@AndybnA/0410
 
-inline void MemSetAligned64(void* dst, unsigned char val, uint64_t  sizeInBytes)
+inline void MemSetAligned64(void* RESTRICT dst, unsigned char val, uint64_t sizeInBytes)
 {
     // we want an offset because the while loop below iterates over 4 uint64_t at a time
-    const uint64_t * end = (uint64_t *)((char*)dst) + (sizeInBytes >> 3);
+    const uint64_t * end = (uint64_t *)((char*)dst + (sizeInBytes >> 3));
     uint64_t * dp = (uint64_t *)dst;
 #ifdef _MSC_VER
     uint64_t   d4;
@@ -135,9 +135,9 @@ inline void MemSetAligned64(void* dst, unsigned char val, uint64_t  sizeInBytes)
     };
 }
 
-inline void MemSetAligned32(void* dst, unsigned char val, uint64_t  sizeInBytes)
+inline void MemSetAligned32(uint32_t* RESTRICT dst, unsigned char val, uint64_t sizeInBytes)
 {
-    const uint32_t* end = (uint32_t*)((char*)dst) + (sizeInBytes >> 2);
+    const uint32_t* end = (uint32_t*)((char*)dst + (sizeInBytes >> 2));
     uint32_t* dp = (uint32_t*)dst;
 #ifdef _MSC_VER
     uint32_t  d4;
@@ -162,17 +162,17 @@ inline void MemSetAligned32(void* dst, unsigned char val, uint64_t  sizeInBytes)
 // use size for struct/class types such as Vector3 and Matrix4, 
 // leave as zero size constant for big arrays or unknown size arrays
 template<int alignment = 0>
-inline void MemSet(void* dst, unsigned char val, uint64_t  sizeInBytes)
+inline void MemSet(void* dst, unsigned char val, uint64_t sizeInBytes)
 {
-    if (alignment == 8)
+    if_constexpr (alignment == 8)
         MemSetAligned64(dst, val, sizeInBytes);
     else if (alignment == 4)
-        MemSetAligned32(dst, val, sizeInBytes);
+        MemSetAligned32((uint32_t*)dst, val, sizeInBytes);
     else
     {
         uint64_t  uptr = (uint64_t )dst;
         if (!(uptr & 7) && uptr >= 8) MemSetAligned64(dst, val, sizeInBytes);
-        else if (!(uptr & 3) && uptr >= 4)  MemSetAligned32(dst, val, sizeInBytes);
+        else if (!(uptr & 3) && uptr >= 4)  MemSetAligned32((uint32_t*)dst, val, sizeInBytes);
         else
         {
             unsigned char* dp = (unsigned char*)dst;
@@ -182,7 +182,7 @@ inline void MemSet(void* dst, unsigned char val, uint64_t  sizeInBytes)
     }
 }
 
-inline void MemCpyAligned64(void* dst, const void* src, uint64_t  sizeInBytes)
+inline void MemCpyAligned64(void* dst, const void* RESTRICT src, uint64_t sizeInBytes)
 {
     uint64_t *       dp  = (uint64_t *)dst;
     const uint64_t * sp  = (const uint64_t *)src;
@@ -200,7 +200,7 @@ inline void MemCpyAligned64(void* dst, const void* src, uint64_t  sizeInBytes)
     SmallMemCpy(dp, sp, sizeInBytes & 7);
 }
 
-inline void MemCpyAligned32(void* dst, const void* src, uint64_t  sizeInBytes)
+inline void MemCpyAligned32(uint32_t* dst, const uint32_t* RESTRICT src, uint64_t sizeInBytes)
 {
     uint32_t*       dp  = (uint32_t*)dst;
     const uint32_t* sp  = (const uint32_t*)src;
@@ -226,12 +226,12 @@ inline void MemCpyAligned32(void* dst, const void* src, uint64_t  sizeInBytes)
 // use size for structs and classes such as Vector3 and Matrix4,
 // and use MemCpy for big arrays or unknown size arrays
 template<int alignment = 0>
-inline void MemCpy(void* dst, const void* src, uint64_t  sizeInBytes)
+inline void MemCpy(void* dst, const void* RESTRICT src, uint64_t sizeInBytes)
 {
-    if (alignment == 8)
+    if_constexpr (alignment == 8)
         MemCpyAligned64(dst, src, sizeInBytes);
     else if (alignment == 4)
-        MemCpyAligned32(dst, src, sizeInBytes);
+        MemCpyAligned32((uint32_t*)dst, (const uint32_t*)src, sizeInBytes);
     else
     {
         const char* cend = (char*)((char*)src + sizeInBytes);

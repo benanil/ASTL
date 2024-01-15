@@ -216,8 +216,9 @@ __forceinline __m128 VECTORCALL _mm_fabs_ps(__m128 x)
 
 __forceinline __m128 VECTORCALL _mm_copysign_ps(__m128 x, __m128 y)
 {
-    return _mm_or_ps(_mm_and_ps(x, _mm_set1_ps(0x7fffffff)),
-                     _mm_and_ps(y, _mm_set1_ps(0x80000000)));
+    __m128 clearedX = _mm_and_ps(x, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff)));
+    __m128 signY    = _mm_and_ps(y, _mm_castsi128_ps(_mm_set1_epi32(0x80000000)));
+    return _mm_or_ps(clearedX, signY);
 }
 
 #if defined(__GNUC__) || defined(__clang__)

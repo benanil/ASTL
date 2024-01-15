@@ -221,10 +221,10 @@ typedef uint64_t ulong;
 #endif
 
 #if AX_CPP_VERSION < AX_CPP14
-// below c++ 14 does not support constexpr functions
-#define __constexpr
+    // below c++ 14 does not support constexpr functions
+    #define __constexpr
 #else
-#define __constexpr constexpr
+    #define __constexpr constexpr
 #endif
 
 #if AX_CPP_VERSION >= AX_CPP17
@@ -234,14 +234,25 @@ typedef uint64_t ulong;
 #endif
 
 #if AX_CPP_VERSION < AX_CPP14
-// below c++ 14 does not support constexpr
-#define __const const
+    // below c++ 14 does not support constexpr
+    #define __const const
 #else
-#define __const constexpr
+    #define __const constexpr
+#endif
+
+#ifdef _MSC_VER
+    #define SmallMemCpy(dst, src, size) __movsb((unsigned char*)dst, (unsigned char*)src, size);
+#else
+    #define SmallMemCpy(dst, src, size) __builtin_memcpy(dst, src, size);
+#endif
+
+#ifdef _MSC_VER
+    #define SmallMemSet(dst, val, size) __stosb((unsigned char*)dst, val, size);
+#else
+    #define SmallMemSet(dst, val, size) __builtin_memset(dst, val, size);
 #endif
 
 // #define AX_USE_NAMESPACE
-
 #ifdef AX_USE_NAMESPACE
 #   define AX_NAMESPACE namespace ax {
 #   define AX_END_NAMESPACE }
@@ -263,24 +274,6 @@ inline constexpr bool IsAndroid()
 
 template<typename T, uint64_t  N>
 __constexpr uint64_t  ArraySize(const T (&)[N]) { return N; }
-
-inline void SmallMemCpy(void* dst, const void* src, uint64_t  size)
-{
-#ifdef _MSC_VER
-    __movsb((unsigned char*)dst, (unsigned char*)src, size);
-#else
-    __builtin_memcpy(dst, src, size);
-#endif
-}
-
-inline void SmallMemSet(void* dst, unsigned char val, uint64_t  size)
-{
-#ifdef _MSC_VER
-    __stosb((unsigned char*)dst, val, size);
-#else
-    __builtin_memset(dst, val, size);
-#endif
-}
 
 inline void MemsetZero(void* dst, uint64_t size) { SmallMemSet(dst, 0, size); }
 

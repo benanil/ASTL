@@ -130,25 +130,28 @@ inline T* BinarySearch(T* begin, int len, T value)
 // String to number functions
 inline int ParseNumber(const char*& ptr)
 {
-  const char* curr = ptr;
-  while (*curr && (*curr != '-' && !IsNumber(*curr))) curr++; // skip whitespace
+    const char* curr = ptr;
+    while (*curr && (*curr != '-' && !IsNumber(*curr))) 
+        curr++; // skip whitespace
     
-  int val = 0l;
-  bool negative = false;
-  
-  if (*curr == '-') curr++, negative = true;
-  
-  while (*curr > '\n' && IsNumber(*curr))
-    val = val * 10 + (*curr++ - '0');
-  
-  ptr = curr;
-  return negative ? -val : val;
+    int val = 0l;
+    bool negative = false;
+    
+    if (*curr == '-') 
+        curr++, negative = true;
+    
+    while (*curr > '\n' && IsNumber(*curr))
+      val = val * 10 + (*curr++ - '0');
+    
+    ptr = curr;
+    return negative ? -val : val;
 }
 
 inline int ParsePositiveNumber(const char*& ptr)
 {
     const char* curr = ptr;
-    while (*curr && !IsNumber(*curr)) curr++; // skip whitespace
+    while (*curr && !IsNumber(*curr))
+        curr++; // skip whitespace
 
     int val = 0;
     while (*curr > '\n' && IsNumber(*curr))
@@ -163,7 +166,6 @@ inline bool IsParsable(const char* curr)
 	if (!IsNumber(*curr) || *curr != '-') return false;
 	return true;
 }
-
 
 inline float ParseFloat(const char*& text)
 {
@@ -246,8 +248,8 @@ inline float ParseFloat(const char*& text)
     #endif  
 #endif
 
-inline unsigned int Log10Algo(unsigned int n)
-{                                                                        
+inline int Log10Algo(int n)
+{
 	if (n <= 9) return 0;
 	if (n <= 99) return 1;
 	if (n <= 999) return 2;
@@ -259,12 +261,12 @@ inline unsigned int Log10Algo(unsigned int n)
 	if (n <= 999999999) return 8;
 	if (n <= 2147483647) return 9; // 2147483647 = int max
 	return 0;
-}                                                                                        
-                                                                     
-// time complexity O(numDigits(x)), space complexity O(1)                                
-// @returns number of characters added                                                   
-inline int IntToString(char* ptr, int x, int afterPoint=0)                                      
-{                                                                                        
+}
+
+// time complexity O(numDigits(x)), space complexity O(1) 
+// @returns number of characters added
+inline int IntToString(char* ptr, int x, int afterPoint=0)
+{
     int size = 0;
     if (x < 0) ptr[size++] = '-', x = 0-x;
     

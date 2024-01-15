@@ -70,6 +70,9 @@ typedef struct AMaterial_
     Texture& GetNormalTexture()    { return textures[0]; }
     Texture& GetOcclusionTexture() { return textures[1]; }
     Texture& GetEmissiveTexture()  { return textures[2]; }
+    
+    static inline float16 MakeFloat16(float x) { return (float16)(x * 400.0f); }
+
 #endif
 
 } AMaterial;
@@ -107,7 +110,7 @@ typedef struct APrimitive_
     // when we are parsing we use this as an indicator to accessor.
     // after parsing, this will become vertex pointers AAttribType_Position, AAttribType_TexCoord...
     // positions = (Vector3f*)vertexAttribs[0];
-    // texCoords = (Vector2f*)vertexAttribs[1]; 
+    // texCoords = (Vector2f*)vertexAttribs[1]; // note that tangent is vec4
     // ...
     void* vertexAttribs[6]; 
     // internal use only. after parsing this is useless

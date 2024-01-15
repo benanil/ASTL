@@ -80,7 +80,7 @@ inline char* FindCharInString(const char* s, int c)
 {
     ASSERT(c >= 0 && c < 256);
 
-    __m128i* mem = reinterpret_cast<__m128i*>(const_cast<char*>(s));
+    __m128i* mem = (__m128i*)(const_cast<char*>(s));
     const __m128i set = _mm_setr_epi8(c, 0, 0, 0, 0, 0, 0, 0, 
                                       0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -94,7 +94,7 @@ inline char* FindCharInString(const char* s, int c)
             // there is character c in a chunk
             const int idx = _mm_cmpistri(set, chunk, mode);
 
-            return reinterpret_cast<char*>(mem) + idx;;
+            return (char*)mem + idx;
         } else if (_mm_cmpistrz(set, chunk, mode)) {
             // there is zero byte in a chunk
             break;

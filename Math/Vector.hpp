@@ -332,6 +332,9 @@ struct alignas(16) Vector4f
 	Vector4f operator  /  (const float b) const { Vector4f v; v.vec = _mm_div_ps(vec, _mm_set_ps1(b)); return v; }
 	Vector4f& operator *= (const float b) { vec = _mm_mul_ps(vec, _mm_set_ps1(b)); return *this; }
 	Vector4f& operator /= (const float b) { vec = _mm_div_ps(vec, _mm_set_ps1(b)); return *this; }
+	
+	static const Vector4f Zero() { return { 0.0f,  0.0f,  0.0f }; }
+	static const Vector4f One()  { return { 1.0f,  1.0f,  1.0f }; }
 };
 
 __forceinline Vector4f MakeVec4(float scale = 0.0f)                     { Vector4f v; v.vec = _mm_set1_ps(scale);            return v; }
@@ -393,6 +396,9 @@ struct alignas(32) Vector4d
 	Vector4d operator  /  (const double b) const { Vector4d v; v.vec = _mm256_div_pd(vec, _mm256_set1_pd(b)); return v; }
 	Vector4d& operator *= (const double b) { vec = _mm256_mul_pd(vec, _mm256_set1_pd(b)); return *this; }
 	Vector4d& operator /= (const double b) { vec = _mm256_div_pd(vec, _mm256_set1_pd(b)); return *this; }
+
+	static const Vector4d Zero() { return { 0.0,  0.0,  0.0 }; }
+	static const Vector4d One()  { return { 1.0,  1.0,  1.0 }; }
 };
 
 __forceinline Vector4d MakeVec4(double scale = 0.0)                         { Vector4d v; v.vec = _mm256_set1_pd(scale);            return v; }
@@ -466,6 +472,9 @@ struct Vector4
 	Vector4 operator *= (T o) { x *= o; y *= o; z *= o; w *= o; return *this; }
 	Vector4 operator /= (T o) { x /= o; y /= o; z /= o; w /= o; return *this; }
 	Vector4 operator -= (T o) { x -= o; y -= o; z -= o; w -= o; return *this; }
+	
+	static const Vector4 Zero() { return { 0.0,  0.0,  0.0 }; }
+	static const Vector4 One()  { return { 1.0,  1.0,  1.0 }; }
 };
 
 template<typename T> __forceinline Vector4<T> MakeVec4(T scale = 0)              { Vector4<T> v; v.x = v.y = v.z = v.w = scale;              return v;}

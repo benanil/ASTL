@@ -53,6 +53,20 @@ inline const char* GetFileExtension(const char* path, int size)
     return path + size;
 }
 
+inline void ChangeExtension(char* path, int pathLen, const char* newExt)
+{
+    int lastDot = pathLen - 1;
+    while (path[lastDot - 1] != '.')
+        lastDot--;
+
+    int i = lastDot;
+    for (; *newExt; i++)
+        path[i] = *newExt++;
+    // clean the right with zeros
+    while (i < pathLen)
+        path[i++] = '\0';
+}
+
 inline bool FileHasExtension(const char* path, int size, const char* extension)
 {
     int extLen = 0;
@@ -97,7 +111,7 @@ struct ScopedFILE
     }
 };
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #define F_OK 0
 #define access _access
@@ -143,12 +157,18 @@ inline bool RenameFile(const char* oldFile, const char* newFile)
     return rename(oldFile, newFile) != 0;
 }
 
-inline bool CreateFolder(const char* folderName) {
-  return mkdir(folderName
+inline bool CreateFolder(const char* folderName) 
+{
+#ifdef __ANDROID__
+    __builtin_trap();
+    return false;
+#else
+    return _mkdir(folderName
                #ifndef _WIN32
                , 0777
                #endif 
                ) == 0;
+#endif
 }
 
 inline bool IsDirectory(const char* path)
@@ -207,8 +227,16 @@ struct AFile
 
 inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
 {
+    FILE* file;
     const char* modes[2] = { "rb", "wb" };
-    return { fopen(fileName, modes[flag]) };
+#ifdef _MSC_VER
+    fopen_s(&file, fileName, modes[flag]);
+#else
+    file = fopen(fileName, modes[flag]);
+#endif
+    AFile afile;
+    afile.file = file;
+    return afile;
 }
 
 inline void AFileRead(void* dst, uint64_t size, AFile file)
@@ -234,7 +262,7 @@ inline bool AFileExist(AFile file)
 inline uint64_t AFileSize(AFile file)
 {
 #ifdef _WIN32
-    return _filelengthi64(fileno(file.file));
+    return _filelengthi64(_fileno(file.file));
 #elif defined(__ANDROID__)
     return AAsset_getLength(file.asset);
 #else
@@ -248,7 +276,7 @@ inline uint64_t AFileSize(AFile file)
 inline char* ReadAllFile(const char* fileName, char* buffer = 0)
 {
     AFile file = AFileOpen(fileName, AOpenFlag_Read);
-    int fileSize = AFileSize(file);
+    uint64_t fileSize = AFileSize(file);
     if (buffer == nullptr) 
         buffer = new char[fileSize]{}; // +1 for null terminator
     AFileRead(buffer, fileSize, file);
@@ -276,7 +304,7 @@ inline char* ReadAllText(const char* fileName, char* buffer = 0, long* numCharac
     }
     
     // Determine the file size
-    size_t file_size = AFileSize(file);
+    uint64_t file_size = AFileSize(file);
 
     // Allocate memory to store the entire file
     if (buffer == nullptr) 
@@ -294,7 +322,8 @@ inline char* ReadAllText(const char* fileName, char* buffer = 0, long* numCharac
     AFileRead(buffer, file_size, file);
     buffer[file_size] = '\0'; // Null-terminate the buffer
     AFileClose(file);
-    if (numCharacters) *numCharacters = file_size + 1;
+    if (numCharacters) 
+        *numCharacters = (long)file_size + 1;
     return buffer - startTextLen;
 }
 
@@ -332,6 +361,7 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
     long sourceSize = 0;
     bool bufferProvided = buffer != 0;
     char* sourceFile = ReadAllText(source, buffer, &sourceSize);
+    
     FILE* dstFile = fopen(dst, "w");
     fwrite(sourceFile, 1, sourceSize, dstFile);
     fclose(dstFile);
