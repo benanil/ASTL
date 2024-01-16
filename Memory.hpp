@@ -526,7 +526,22 @@ struct StackAllocator
     }
 };
 
-// todo add ScopedPtr
+template<typename T>
+struct ScopedPtr
+{
+    T* ptr;
+    
+    ScopedPtr(T* x) : ptr(x) {}
+    ~ScopedPtr() { delete[] ptr; ptr = nullptr; }
+    
+    T* operator->() { return ptr; }
+    operator T*() const { return ptr; }
+
+          T& operator[](int n)       { return ptr[n]; }
+    const T& operator[](int n) const { return ptr[n]; }
+
+};
+
 // todo add ScopedFn
 // todo SharedPtr in different hpp file 
 

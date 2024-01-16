@@ -136,6 +136,18 @@ inline const char* FindCharInString(const char *s, int c)
 
 #endif
 
+inline int StringContains(const char* ptr, const char* other)
+{
+    int otherLen = StringLength(other);
+    int size = StringLength(ptr);
+
+    for (int i = size - otherLen; i >= 0; i--) {
+        if (StringEqual(ptr + i, other, otherLen))
+        return i;
+    }
+    return -1;
+}
+
 // https://github.com/lemire/fastvalidate-utf-8/blob/master/include/simdasciicheck.h
 inline bool ValidateAscii(const char *src, uint64_t len) 
 {
@@ -164,7 +176,7 @@ inline bool ValidateAscii(const char *src, uint64_t len)
 inline bool IsUTF8ASCII(const char* string, uint64_t size)
 {
     const unsigned char * bytes = (const unsigned char *)string;
-    for (int i = 0; i < size; i++)
+    for (uint64_t i = 0; i < size; i++)
     {
         // use bytes[0] <= 0x7F to allow ASCII control characters
         if (!(bytes[i] == 0x09 || bytes[i] == 0x0A || bytes[i] == 0x0D ||
@@ -544,8 +556,7 @@ public:
     {
         uint32_t size = this->GetSize();
         ASSERT((_index + _count) <= size);
-        uint32_t newSize = MAX(this->GetSize() - _count, 0u);
-
+       
         uint32_t i = _index;
         uint32_t j = _index + _count;
 

@@ -90,7 +90,7 @@ __private const char* CopyStringInQuotes(char*& str, const char* curr, AStringAl
     // get length in quotes
     const char* quote = curr;
     while (*quote != '"') quote++;
-    int len = quote - curr;
+    int len = (int)(quote - curr);
     char* alloc = stringAllocator.AllocateUninitialized(len + 16);
     str = alloc;
 
@@ -923,11 +923,11 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
         // get number of vertex, getting first attribute count because all of the others are same
         AMesh mesh = meshes[m];
         mesh.numPrimitives = SBCount(mesh.primitives);
-        for (uint64_t p = 0; p < mesh.numPrimitives; p++)
+        for (int p = 0; p < mesh.numPrimitives; p++)
         {
             APrimitive& primitive = mesh.primitives[p];
             // get position attrib's count' because all attributes same
-            int numVertex = accessors[(size_t)primitive.vertexAttribs[0]].count; 
+            int numVertex = accessors[(int)(size_t)primitive.vertexAttribs[0]].count; 
             primitive.numVertices = numVertex;
         
             // get number of index
@@ -950,7 +950,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
             const int supportedAttributes = 6;
             for (int j = 0; attributes > 0 && j < supportedAttributes; j += NextSetBit(&attributes))
             {
-                accessor     = accessors[(size_t)primitive.vertexAttribs[j]];
+                accessor     = accessors[(int)(size_t)primitive.vertexAttribs[j]];
                 view         = bufferViews[accessor.bufferView];
                 offset       = int64_t(accessor.byteOffset) + view.byteOffset;
                 

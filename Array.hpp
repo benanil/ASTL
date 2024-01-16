@@ -21,9 +21,9 @@ struct Array
 	static const int InitialSize = AllocatorT::InitialSize;
        
 	// don't change this variables if you don't know what are you doing
-	ValueT* arr    = nullptr;                                             
-	int m_count    = 0;       
-	int m_capacity = 0;       
+	ValueT* arr    = nullptr;
+	int m_count    = 0;
+	int m_capacity = 0;
 	AllocatorT allocator{};
 
 	Array() : arr(nullptr), m_count(0), m_capacity(0), allocator()
@@ -47,6 +47,7 @@ struct Array
 
 	explicit Array(int _capacity) : m_capacity(_capacity)
 	{
+		if (_capacity == 0) return;
 		arr = allocator.AllocateUninitialized(m_capacity);
 	}
 

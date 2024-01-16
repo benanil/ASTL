@@ -56,7 +56,7 @@ __forceinline constexpr float SqrtConstexpr(float a)
 	bool isOdd = expo & 1;
 	expo += isOdd;
 	x.fp *= 1.0 + (isOdd * 0.414213562);
-	expo = (expo + (expo < 0u)) / 2;
+	expo = (expo + (expo < 0u)) >> 1;
 	// put it back
 	expo += 0x3feu;
 	x.hi &= 0x000fffffu;
@@ -112,14 +112,14 @@ __forceinline float Exp(float f)
 
 	x = f * 1.44269504088896340f;		// multiply with ( 1 / log( 2 ) )
 
-	i = *((int*)&x);
+	i = BitCast<int>(x);
 	s = ( i >> IEEE_FLT_SIGN_BIT );
 	e = ( ( i >> IEEE_FLT_MANTISSA_BITS ) & ( ( 1 << IEEE_FLT_EXPONENT_BITS ) - 1 ) ) - IEEE_FLT_EXPONENT_BIAS;
 	m = ( i & ( ( 1 << IEEE_FLT_MANTISSA_BITS ) - 1 ) ) | ( 1 << IEEE_FLT_MANTISSA_BITS );
 	i = ( ( m >> ( IEEE_FLT_MANTISSA_BITS - e ) ) & ~( e >> 31 ) ) ^ s;
 
 	exponent = ( i + IEEE_FLT_EXPONENT_BIAS ) << IEEE_FLT_MANTISSA_BITS;
-	y = *((float*)&exponent);
+	y = BitCast<float>(exponent);
 	x -= (float) i;
 	if ( x >= 0.5f ) {
 		x -= 0.5f;
@@ -208,7 +208,7 @@ __forceinline __constexpr bool AlmostEqual(float x, float  y) noexcept { return 
 __forceinline __constexpr float Sign(float x) 
 {
 	int bx = BitCast<int>(x);
-	return (float)((bx & 0x80000000) | (bx != 0));
+	return (float)((int)!!(bx & 0x80000000) | (int)(bx != 0));
 } 
 
 __forceinline __constexpr float CopySign(float x, float y) 
@@ -223,7 +223,7 @@ __forceinline __constexpr bool IsNan(float f)
 	uint32 intValue = BitCast<uint32>(f);
 	uint32 exponent = (intValue >> 23) & 0xFF;
 	uint32 fraction = intValue & 0x7FFFFF;
-	return (exponent == 0xFF) & (fraction != 0);
+	return (exponent == 0xFF) && (fraction != 0);
 }
 
 __forceinline __constexpr float FMod(float x, float y) {

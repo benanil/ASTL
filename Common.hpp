@@ -263,6 +263,7 @@ typedef uint64_t ulong;
 
 AX_NAMESPACE
 
+// change it as is mobile maybe?
 inline constexpr bool IsAndroid()
 {
 #ifdef __ANDROID__
@@ -376,12 +377,12 @@ template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return M
 
 __forceinline __constexpr int64_t Abs(int64_t x) 
 {
-    return (x < 0l) ? -x : x;
+    return x & ~(1ull << 63ull);
 }
 
 __forceinline __constexpr int Abs(int x)
 {
-    return (x < 0) ? -x : x;
+    return x & ~(1 << 31);
 }
 
 __forceinline __constexpr float Abs(float x)

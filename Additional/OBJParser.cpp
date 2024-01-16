@@ -122,8 +122,8 @@ int ParseObj(const char* path, ParsedObj* scene)
 
             // set default properties
             materials.Back().specularColor   = ~0u, materials.Back().diffuseColor = ~0u; // white
-            materials.Back().specularFactor  = 2.2f * 400.0f;
-            materials.Back().roughnessFactor = 0.6f * 400.0f;
+            materials.Back().specularFactor  = AMaterial::MakeFloat16(2.2f);
+            materials.Back().roughnessFactor = AMaterial::MakeFloat16(0.6f);
             materials.Back().name = mtlText + PointerDistance(mtlText, curr);
             
             uint32_t hash = WangHash(uint(curr[0]) | uint(curr[1] << 8) | uint(curr[2] << 16));
@@ -262,14 +262,20 @@ int ParseObj(const char* path, ParsedObj* scene)
             {
                 int positionIdx = 0, textureIdx = 0, normalIdx = 0;
                 // since we know indices are not negative values we are parsing like this
-                while (IsNumber(*curr)) positionIdx = 10 * positionIdx + (*curr++ - '0'); curr++; // last ptr++ for jump '/'
+                while (IsNumber(*curr))
+                    positionIdx = 10 * positionIdx + (*curr++ - '0'); 
+                curr++; // last ptr++ for jump '/'
                 
                 if (*curr != '/') // texture coord might not exist
-                    while (IsNumber(*curr)) textureIdx = 10 * textureIdx + (*curr++ - '0');
+                {
+                    while (IsNumber(*curr)) 
+                        textureIdx = 10 * textureIdx + (*curr++ - '0');
+                    curr++; // last ptr++ for jump '/'
+                }
                 
+                while (IsNumber(*curr))
+                    normalIdx = 10 * normalIdx + (*curr++ - '0');
                 curr++;
-                
-                while (IsNumber(*curr)) normalIdx = 10 * normalIdx + (*curr++ - '0'); curr++;
                
                 positionIdx--, textureIdx--, normalIdx--;// obj index always starts from 1
 
@@ -296,11 +302,12 @@ int ParseObj(const char* path, ParsedObj* scene)
             }
 
             if (IsNumber(*curr)) // is face has more than 3 element (for example color)
-                while (*curr && !IsWhitespace(*curr) || *curr != '\n') curr++;
-
+                while (*curr && !IsWhitespace(*curr) || *curr != '\n')
+                    curr++;
 
             // skip line&whiteSpace
-            while (*curr && IsWhitespace(*curr) || *curr == '\n') curr++;
+            while (*curr && IsWhitespace(*curr) || *curr == '\n')
+                curr++;
         }
         
         // any vertex parsed?
@@ -315,7 +322,7 @@ int ParseObj(const char* path, ParsedObj* scene)
             primitive.indexType   = 0x1405 - 0x1400; // GL_UNSIGNED_INT - GL_BYTE to get index so result is GraphicType_UnsignedInt
             primitive.numIndices  = indices.Size() - indiceStart;
             primitive.numVertices = vertices.Size() - vertexStart;
-            primitive.material    = 0; //materialIndex;
+            primitive.material    = materialIndex;
             
             meshes.Back().numPrimitives = 1;
             meshes.Back().primitives = nullptr;

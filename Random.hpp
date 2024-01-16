@@ -117,10 +117,10 @@ namespace Random
 	{
 		const int mask = (1 << 27) - 1;
 		// https://docs.oracle.com/javase/8/docs/api/java/util/Random.html
-		// long x = next & mask;
-		// x += (next >> 32) & (mask >> 1);
-		// return x / (double)(1L << 53);
-		return (((long)(next & (mask >> 1)) << 27) + ((next >> 32) & mask)) / (double)(1LL << 53LL);
+		long x = next & mask;
+		x += (next >> 32) & (mask >> 1);
+		return x / (double)(1LL << 53L);
+		// return (((long)(next & (mask >> 1)) << 27) + ((next >> 32) & mask)) / (double)(1LL << 53LL);
 		// return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
 	}
 	
@@ -283,7 +283,6 @@ inline uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
 		h *= m;
 	}
 
-	const unsigned char * data2 = (const unsigned char*)data;
 	uint64_t  d;
 	SmallMemCpy(&d, data, len & 7);
 	h ^= d;
