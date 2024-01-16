@@ -100,6 +100,8 @@ public:
 	~RedBlackTree()
 	{
 		// Clear();
+		// Note: Fixed Size Growable Allocator's destructor will clean this data structure
+		//       no need for recursive deletation.
 	}
 
 	const Node* Nil() const { return &m_protect; }
