@@ -102,10 +102,11 @@ typedef struct APrimitive_
     void* indices; 
     void* vertices;
     
-    int   attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
-    int   indexType; // GL_UNSIGNED_INT, GL_UNSIGNED_BYTE.. 
-    int   numIndices;
-    int   numVertices;
+    int attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
+    int indexType; //  GL_UNSIGNED_INT, GL_UNSIGNED_BYTE.. 
+    int numIndices;
+    int numVertices;
+    int indexOffset;
 
     // when we are parsing we use this as an indicator to accessor.
     // after parsing, this will become vertex pointers AAttribType_Position, AAttribType_TexCoord...
@@ -187,7 +188,10 @@ typedef struct ParsedGLTF_
     void* intAllocator;
     void* allVertices;
     void* allIndices;
-    
+
+    int totalVertices;
+    int totalIndices;
+
     GLTFBuffer* buffers;
 
     AMesh*     meshes;

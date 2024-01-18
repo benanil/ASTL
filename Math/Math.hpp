@@ -439,12 +439,12 @@ __forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
 #endif
 }
 
-__forceinline void ConvertFloatToHalf4(half* res, const float* x, short n)
+__forceinline void ConvertFloatToHalf4(half* res, const float* x)
 {
 #if defined(AX_SUPPORT_SSE) 
 	_mm_store_si128((__m128i*)res, _mm_cvtps_ph(_mm_loadu_ps(x), _MM_FROUND_TO_NEAREST_INT)); 
 #else
-	ConvertFloatToHalf(res, x, n);
+	ConvertFloatToHalf(res, x, 4);
 #endif
 }
 

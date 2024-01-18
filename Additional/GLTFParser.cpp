@@ -955,8 +955,27 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
                 offset       = int64_t(accessor.byteOffset) + view.byteOffset;
                 
                 primitive.vertexAttribs[j] = (char*)buffers[view.buffer].uri + offset;
-            }    
+            }
         }
+    }
+    // calculate num vertices and indices
+    {
+        int totalVertexCount = 0;
+        int totalIndexCount = 0;
+        // Calculate total vertices, and indices
+        for (int m = 0; m < meshes.Size(); ++m)
+        {
+            AMesh mesh = meshes[m];
+            for (uint64_t p = 0; p < mesh.numPrimitives; p++)
+            {
+                APrimitive& primitive = mesh.primitives[p];
+                totalIndexCount  += primitive.numIndices;
+                totalVertexCount += primitive.numVertices;
+            }
+        }
+
+        result->totalIndices  = totalIndexCount;
+        result->totalVertices = totalVertexCount;
     }
 
     result->stringAllocator = stringAllocator.TakeOwnership();
