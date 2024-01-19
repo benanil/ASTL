@@ -542,7 +542,6 @@ struct ScopedPtr
 
 };
 
-// todo add ScopedFn
 // todo SharedPtr in different hpp file 
 
 AX_END_NAMESPACE 
