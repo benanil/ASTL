@@ -209,6 +209,7 @@ struct alignas(16) Matrix4
 	const Vector3f GetRight()   const { return v[0].xyz(); }
 
 	// please assign normalized vectors, returns view matrix
+	// creates view matrix
 	__forceinline static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
 	{
 		__m128 EyePosition  = _mm_loadu_ps(&eye.x);
@@ -244,6 +245,18 @@ struct alignas(16) Matrix4
 		M.m[3][2] = -(2.0f * zFar * zNear) / (zFar - zNear);
 		M.m[3][3] = 0.0f;
 		return M;
+	}
+
+	__forceinline static Matrix4 OrthoRH(float left, float right, float bottom, float top, float zNear, float zFar)
+	{
+		Matrix4 Result = Identity();
+		Result[0][0] =  2.0f / (right - left);
+		Result[1][1] =  2.0f / (top - bottom);
+		Result[2][2] = -2.0f / (zFar - zNear);
+		Result[3][0] = -(right + left) / (right - left);
+		Result[3][1] = -(top + bottom) / (top - bottom);
+		Result[3][2] = -(zFar + zNear) / (zFar - zNear);
+		return Result;
 	}
 
 	// https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
@@ -709,6 +722,18 @@ Matrix4
 		return M;
 	}
 
+	__forceinline static Matrix4 OrthoRH(float left, float right, float bottom, float top, float zNear, float zFar)
+	{
+		Matrix4 Result = Identity();
+		Result[0][0] =  2.0f / (right - left);
+		Result[1][1] =  2.0f / (top - bottom);
+		Result[2][2] = -2.0f / (zFar - zNear);
+		Result[3][0] = -(right + left) / (right - left);
+		Result[3][1] = -(top + bottom) / (top - bottom);
+		Result[3][2] = -(zFar + zNear) / (zFar - zNear);
+		return Result;
+	}
+
 	// this will not work on camera matrix this is for only transformation matricies
 	inline Matrix4 static InverseTransform(Matrix4 inM)
 	{
@@ -862,6 +887,15 @@ Matrix4
 		                Vector3f::Length(matrix.r[2].xyz()),
 		                Vector3f::Length(matrix.r[1].xyz()));
 	}
+
+	void SetPosition(Vector3f position) noexcept
+	{
+		m[3][0] = position.x;
+		m[3][1] = position.y;
+		m[3][2] = position.z;
+	}
+
+	Vector3f GetPosition() { return ExtractPosition(*this); }
 
 	__forceinline static Matrix4 RotationX(float angleRadians) {
 		Matrix4 out_matrix = Identity();
