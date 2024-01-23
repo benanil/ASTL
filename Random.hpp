@@ -178,13 +178,13 @@ namespace Random
 		pcg.inc = seed << 1 | 1u;
 	}
 
-	__forceinline void Xoroshiro128PlusInit(uint64_t  s[2])
+	__forceinline void Xoroshiro128PlusInit(uint64_t s[2])
 	{
 		s[0] += Seed64(); s[1] += Seed64();
 		s[0] |= 1; // non zero
 	}
 	
-	__forceinline void Xoroshiro128PlusSeed(uint64_t  s[2], uint64_t  seed)
+	__forceinline void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t  seed)
 	{
 		seed |= 1; // non zero
 		s[0] = MurmurHash(seed); 
@@ -192,7 +192,7 @@ namespace Random
 	}
 	
 	// concise hashing function. https://nullprogram.com/blog/2017/09/21/
-	__forceinline uint64_t  Xoroshiro128Plus(uint64_t  s[2])
+	__forceinline uint64_t Xoroshiro128Plus(uint64_t s[2])
 	{
 		uint64_t  s0 = s[0];
 		uint64_t  s1 = s[1];

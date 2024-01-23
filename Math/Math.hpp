@@ -448,6 +448,17 @@ __forceinline void ConvertFloatToHalf4(half* res, const float* x)
 #endif
 }
 
+// packs -1,1 range float to short
+__forceinline short PackSnorm16(float x)
+{
+	return (short)Clamp(x * (float)INT16_MAX, (float)INT16_MIN, (float)INT16_MAX);
+}
+
+__forceinline float UnpackSnorm16(short x)
+{
+	return (float)x / (float)INT16_MAX;
+}
+
 //  ######################################  
 //  #####      [COLOR FUNCTINS]      #####  
 //  ######################################  

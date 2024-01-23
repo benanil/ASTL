@@ -194,7 +194,7 @@ int ParseObj(const char* path, ParsedObj* scene)
         if (*curr == 'x')
             printf("break");
 
-        while (*curr && *curr == '\n' || IsWhitespace(*curr)) 
+        while (*curr && (*curr == '\n' || IsWhitespace(*curr))) 
             curr++;
 
         // skip comment lines
@@ -306,7 +306,7 @@ int ParseObj(const char* path, ParsedObj* scene)
                     curr++;
 
             // skip line&whiteSpace
-            while (*curr && IsWhitespace(*curr) || *curr == '\n')
+            while (*curr && (IsWhitespace(*curr) || *curr == '\n'))
                 curr++;
         }
         

@@ -31,13 +31,7 @@ struct Array
 
 	~Array()
 	{
-		if (arr != nullptr)
-		{
-			allocator.Deallocate(arr, m_capacity);
-			m_count = 0;
-			m_capacity = 0;
-			arr = nullptr;
-		}
+		Clear();
 	}
 
 	explicit Array(const AllocatorT& _allocator) : arr(nullptr), m_count(0), m_capacity(0), allocator(_allocator)
@@ -275,7 +269,13 @@ struct Array
 
 	void Clear()
 	{
-		Resize(0);
+		if (arr != nullptr)
+		{
+			allocator.Deallocate(arr, m_capacity);
+			m_count = 0;
+			m_capacity = 0;
+			arr = nullptr;
+		}
 	}
 
 	void RemoveAt(Iterator _it, int _count = 1)
@@ -316,15 +316,15 @@ struct Array
 
 	void Resize(int _size)
 	{
-		if (_size != m_capacity)
+		if (_size > m_capacity)
 		{
 			if (arr) // array can be nullptr (first initialization)
 				arr = allocator.Reallocate(arr, m_capacity, _size);
 			else
 				arr = allocator.Allocate(_size);
 			m_capacity = _size;
-			m_count    = _size;
 		}
+		m_count    = _size;
 	}
 
 	// you can use this function after removing elements in the array, this will reduct the amount of memory used

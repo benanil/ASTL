@@ -397,9 +397,9 @@ struct alignas(16) Matrix4
 	__forceinline static Vector3f VECTORCALL ExtractPosition(const Matrix4 matrix) noexcept
 	{
 		Vector3f res;
-		res.x = matrix.m[0][12];
-		res.y = matrix.m[0][13];
-		res.z = matrix.m[0][14];
+		res.x = matrix.m[3][0];
+		res.y = matrix.m[3][1];
+		res.z = matrix.m[3][2];
 		return res;
 	}
 
@@ -414,6 +414,15 @@ struct alignas(16) Matrix4
 	{
 		return MakeVec3(SSEVectorLengthf(matrix.r[0]), SSEVectorLengthf(matrix.r[2]), SSEVectorLengthf(matrix.r[1]));
 	}
+
+	void SetPosition(Vector3f position) noexcept
+	{
+		m[3][0] = position.x;
+		m[3][1] = position.y;
+		m[3][2] = position.z;
+	}
+
+	Vector3f GetPosition() { return ExtractPosition(*this); }
 
 	__forceinline static Matrix4 RotationX(float angleRadians) {
 		Matrix4 out_matrix = Identity();

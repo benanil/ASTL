@@ -966,7 +966,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
         for (int m = 0; m < meshes.Size(); ++m)
         {
             AMesh mesh = meshes[m];
-            for (uint64_t p = 0; p < mesh.numPrimitives; p++)
+            for (int p = 0; p < mesh.numPrimitives; p++)
             {
                 APrimitive& primitive = mesh.primitives[p];
                 totalIndexCount  += primitive.numIndices;
