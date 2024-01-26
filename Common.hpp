@@ -349,6 +349,11 @@ __forceinline __constexpr int NextSetBit(int* bits)
     return tz;
 }
 
+__forceinline __constexpr bool EnumHasBit(int _enum, int bit)
+{
+    return !!(_enum & bit);
+}
+
 template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) 
 {

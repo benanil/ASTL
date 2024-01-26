@@ -135,6 +135,18 @@ inline void MemSetAligned64(void* RESTRICT dst, unsigned char val, uint64_t size
     };
 }
 
+inline void MemSet32(uint32_t* RESTRICT dst, uint32_t val, uint32_t numValues)
+{
+    for (uint32_t i = 0; i < numValues; i++)
+        dst[i] = val;
+}
+
+inline void MemSet64(uint64_t* RESTRICT dst, uint64_t val, uint32_t numValues)
+{
+    for (uint32_t i = 0; i < numValues; i++)
+        dst[i] = val;
+}
+
 inline void MemSetAligned32(uint32_t* RESTRICT dst, unsigned char val, uint64_t sizeInBytes)
 {
     const uint32_t* end = (uint32_t*)((char*)dst + (sizeInBytes >> 2));

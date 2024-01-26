@@ -990,6 +990,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
     result->numCameras   = cameras.Size();    result->cameras   = cameras.TakeOwnership();
     result->numScenes    = scenes.Size();     result->scenes    = scenes.TakeOwnership();
     result->numBuffers   = buffers.Size();    result->buffers   = buffers.TakeOwnership(); 
+    result->scale = scale;
     result->error = AError_NONE;
     FreeAllText(source);
     return 1;

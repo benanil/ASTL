@@ -1,5 +1,6 @@
 #pragma once
 #include "Quaternion.hpp"
+#include <math.h>
 
 AX_NAMESPACE 
 
@@ -194,6 +195,11 @@ struct alignas(16) Matrix4
 		return CreateScale(vec3[0], vec3[1], vec3[2]);
 	}
 
+	__forceinline static Matrix4 CreateScale(float scale)
+	{
+		return CreateScale(scale, scale, scale);
+	}
+
 	__forceinline static Matrix4 CreateRotation(Vector3f right, Vector3f up, Vector3f forward)
 	{
 		Matrix4 m;
@@ -235,7 +241,7 @@ struct alignas(16) Matrix4
 	__forceinline static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
 	{
 		const float rad = fov;
-		const float h = Cos(0.5f * rad) / Sin(0.5f * rad);
+		const float h = cosf(0.5f * rad) / sinf(0.5f * rad);
 		const float w = h * height / width; /// max(width , Height) / min(width , Height)?
 		Matrix4 M = Identity();
 		M.m[0][0] = w;
@@ -672,6 +678,11 @@ Matrix4
 		return CreateScale(vec3.x, vec3.y, vec3.z);
 	}
 
+	__forceinline static Matrix4 CreateScale(float scale)
+	{
+		return CreateScale(scale, scale, scale);
+	}
+
 	__forceinline static Matrix4 CreateRotation(Vector3f right, Vector3f up, Vector3f forward)
 	{
 		Matrix4 m;
@@ -710,8 +721,8 @@ Matrix4
 	__forceinline static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
 	{
 		const float rad = fov;
-		const float h = Cos(0.5f * rad) / Sin(0.5f * rad);
-		const float w = height / width;
+		const float h = cosf(0.5f * rad) / sinf(0.5f * rad);
+		const float w = h * height / width;
 		Matrix4 M = Identity();
 		M.m[0][0] = w;
 		M.m[1][1] = h;

@@ -191,6 +191,7 @@ typedef struct ParsedGLTF_
 
     int totalVertices;
     int totalIndices;
+    float scale;
 
     GLTFBuffer* buffers;
 
