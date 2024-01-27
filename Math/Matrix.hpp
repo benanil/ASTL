@@ -700,22 +700,24 @@ Matrix4
 	// please assign normalized vectors, returns view matrix
 	__forceinline static Matrix4 LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
 	{
-		Vector3f eyeDir = -center;
-		Vector3f r0 = Vector3f::Normalize(Vector3f::Cross(up, eyeDir));
-		Vector3f r1 = Vector3f::Normalize(Vector3f::Cross(eyeDir, r0));
+		Vector3f f = center;
+		Vector3f s = Vector3f::Normalize(Vector3f::Cross(f, up));
+		Vector3f u = Vector3f::Cross(s, f);
 		
-		Vector3f negEyePosition = -eye;
-		
-		float d0 = Vector3f::Dot(r0, negEyePosition);
-		float d1 = Vector3f::Dot(r1, negEyePosition);
-		float d2 = Vector3f::Dot(eyeDir, negEyePosition);
-		
-		Matrix4 M;
-		M.m[0][0] = r0.x;     M.m[0][1] = r0.y;     M.m[0][2] = r0.z;     M.m[0][3] = d0;
-		M.m[1][0] = r1.x;     M.m[1][1] = r1.y;     M.m[1][2] = r1.z;     M.m[1][3] = d1;
-		M.m[2][0] = eyeDir.x; M.m[2][1] = eyeDir.y; M.m[2][2] = eyeDir.z; M.m[2][3] = d2;
-		M.m[3][0] = 0.0f;     M.m[3][1] = 0.0f;     M.m[3][2] = 0.0f;     M.m[3][3] = 1.0f;
-		return Matrix4::Transpose(M);
+		Matrix4 Result = Identity();
+		Result[0][0] = s.x;
+		Result[1][0] = s.y;
+		Result[2][0] = s.z;
+		Result[0][1] = u.x;
+		Result[1][1] = u.y;
+		Result[2][1] = u.z;
+		Result[0][2] =-f.x;
+		Result[1][2] =-f.y;
+		Result[2][2] =-f.z;
+		Result[3][0] =-Vector3f::Dot(s, eye);
+		Result[3][1] =-Vector3f::Dot(u, eye);
+		Result[3][2] = Vector3f::Dot(f, eye);
+		return Result;
 	}
 
 	__forceinline static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
