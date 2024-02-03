@@ -865,7 +865,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
 __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
 {
     ASSERT(result && path);
-    long sourceSize = 0;
+    uint64_t sourceSize = 0;
     char* source = ReadAllText(path, nullptr, &sourceSize);
     MemsetZero(result, sizeof(ParsedGLTF));
 

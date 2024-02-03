@@ -290,7 +290,7 @@ inline char* ReadAllFile(const char* fileName, char* buffer = 0)
 // numCharacters : if not null returns length of the imported string
 // startText     : if its not null will be added to start of the buffer
 // note: if you define it you are responsible of deleting the buffer
-inline char* ReadAllText(const char* fileName, char* buffer = 0, long* numCharacters = 0, const char* startText = 0)
+inline char* ReadAllText(const char* fileName, char* buffer = 0, uint64_t* numCharacters = 0, const char* startText = 0)
 {
     int startTextLen = 0;
     if (startText) 
@@ -323,7 +323,7 @@ inline char* ReadAllText(const char* fileName, char* buffer = 0, long* numCharac
     buffer[file_size] = '\0'; // Null-terminate the buffer
     AFileClose(file);
     if (numCharacters) 
-        *numCharacters = (long)file_size + 1;
+        *numCharacters = (uint64_t)file_size + 1;
     return buffer - startTextLen;
 }
 
@@ -351,20 +351,21 @@ struct ScopedText
 {
     char* text;
     ScopedText(char* txt) : text(txt) {}
-   ~ScopedText() { delete[] text; }
+    ~ScopedText() { delete[] text; }
+    operator char*() const { return text; }
 };
 
 // buffer is pre allocated memory if exist. otherwise null. 
 // note: if you define it you are responsible of deleting the buffer
 inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
 {
-    long sourceSize = 0;
+    uint64_t sourceSize = 0;
     bool bufferProvided = buffer != 0;
     char* sourceFile = ReadAllText(source, buffer, &sourceSize);
     
-    FILE* dstFile = fopen(dst, "w");
-    fwrite(sourceFile, 1, sourceSize, dstFile);
-    fclose(dstFile);
+    AFile dstFile = AFileOpen(dst, AOpenFlag_Write);
+    AFileWrite(sourceFile, sourceSize, dstFile);
+    AFileClose(dstFile);
 
     if (!bufferProvided) delete[] buffer;
 }
