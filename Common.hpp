@@ -36,7 +36,6 @@ typedef uint64_t ulong;
 #endif
 
 #ifdef _MSC_VER
-#   define VC_EXTRALEAN 1
 #   include <intrin.h>
 #	define VECTORCALL __vectorcall
 #elif __CLANG__
@@ -273,8 +272,8 @@ inline constexpr bool IsAndroid()
 #endif
 }
 
-template<typename T, uint64_t  N>
-__constexpr uint64_t  ArraySize(const T (&)[N]) { return N; }
+template<typename T, int N>
+__constexpr int ArraySize(const T (&)[N]) { return N; }
 
 inline void MemsetZero(void* dst, uint64_t size) { SmallMemSet(dst, 0, size); }
 

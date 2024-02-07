@@ -1,6 +1,6 @@
 #pragma once
 #include "Quaternion.hpp"
-#include <math.h>
+#include <math.h> // < sinf, cosf for more preciseness
 
 AX_NAMESPACE 
 

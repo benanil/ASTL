@@ -6,6 +6,13 @@
 
 #pragma once
 
+// AFile  AFileOpen(const char* fileName, AOpenFlag flag);
+// void   AFileRead(void* dst, uint64_t size, AFile file);
+// void   AFileWrite(const void* src, uint64_t size, AFile file);
+// void   AFileClose(AFile file);
+// bool   AFileExist(AFile file);
+// uint64 AFileSize(AFile file);
+
 // char*  GetFileExtension(path, size);
 // bool   FileHasExtension(path, size, extension);
 // char*  PathGoBackwards (path, end, skipSeparator);
