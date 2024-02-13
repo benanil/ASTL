@@ -141,9 +141,9 @@ inline int StringContains(const char* ptr, const char* other)
     int otherLen = StringLength(other);
     int size = StringLength(ptr);
 
-    for (int i = size - otherLen; i >= 0; i--) {
+    for (int i = 0; i + otherLen <= size; i++) {
         if (StringEqual(ptr + i, other, otherLen))
-        return i;
+            return i;
     }
     return -1;
 }
@@ -422,7 +422,7 @@ public:
     void Append(int i)   { char arr[16]{}; IntToString(arr, i);   Append(arr); }
     
 
-    int IndexOf(const char* other) const
+    int LastOf(const char* other) const
     {
         int otherLen = StringLength(other);
         const char* ptr = GetPtr();
@@ -435,9 +435,9 @@ public:
         return -1;
     }
 
-    int IndexOf(const String& other)   const { return IndexOf(other.CStr()) != -1; }
-    bool Contains(const char* other)   const { return IndexOf(other) != -1; }
-    bool Contains(const String& other) const { return IndexOf(other.CStr()) != -1; }
+    int LastOf(const String& other)   const { return LastOf(other.CStr()) != -1; }
+    bool Contains(const char* other)   const { return LastOf(other) != -1; }
+    bool Contains(const String& other) const { return LastOf(other.CStr()) != -1; }
 
     void Reserve(uint32_t size)
     {
@@ -507,14 +507,14 @@ public:
 
     void Remove(const char* find)
     {
-        int x = IndexOf(find);
+        int x = LastOf(find);
         if (x == -1) return;
         Remove(x, StringLength(find));
     }
 
     void Replace(const char* find, const char* replace)
     {
-        int x = IndexOf(find);
+        int x = LastOf(find);
         if (x == -1) return;
         Insert(x, replace);
         int repLen = StringLength(replace);
@@ -523,7 +523,7 @@ public:
 
     void Replace(const String& find, const String& replace)
     {
-        int x = IndexOf(find.c_str());
+        int x = LastOf(find.c_str());
         if (x == -1) return;
         Insert(x, replace);
         Remove(x + replace.Length(), find.Length());

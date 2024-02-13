@@ -40,19 +40,19 @@ static inline HitRecord CreateHitRecord() {
 
 static bool VECTORCALL IntersectTriangle(const RaySSE& ray, const Tri* tri, Triout* o, int i)
 {
-	const __m128 edge1 = _mm_and_ps(_mm_sub_ps(tri->v1, tri->v0), g_XSelect1110);
-	const __m128 edge2 = _mm_and_ps(_mm_sub_ps(tri->v2, tri->v0), g_XSelect1110);
-	const __m128 h = SSEVector3Cross(ray.direction, edge2);
-	const __m128 a = _mm_dp_ps(edge1, h, 0xff);
+	const vec_t edge1 = VecMask(VecSub(tri->v1, tri->v0), VecSelect1110);
+	const vec_t edge2 = VecMask(VecSub(tri->v2, tri->v0), VecSelect1110);
+	const vec_t h = Vec3Cross(ray.direction, edge2);
+	const vec_t a = VecDot(edge1, h);
 	// if (fabs(a) < 0.0001f) return false; // ray parallel to triangle
-	const __m128 f = _mm_rcp_ps(a);
-	const __m128 s = _mm_sub_ps(ray.origin, tri->v0);
-	const float  u = _mm_cvtss_f32(_mm_mul_ps(f, _mm_dp_ps(s, h, 0xff)));
-	const __m128 q = SSEVector3Cross( s, edge1 );
-	const float  v = _mm_cvtss_f32(_mm_mul_ps(f, _mm_dp_ps(ray.direction, q, 0xff)));
-	const float  t = _mm_cvtss_f32(_mm_mul_ps(f, _mm_dp_ps(edge2, q, 0xff)));
+	const vec_t f = VecRcp(a);
+	const vec_t s = VecSub(ray.origin, tri->v0);
+	const float  u = VecGetX(VecMul(f, VecDot(s, h)));
+	const vec_t  q = Vec3Cross( s, edge1 );
+	const float  v = VecGetX(VecMul(f, VecDot(ray.direction, q, 0xff)));
+	const float  t = VecGetX(VecMul(f, VecDot(edge2, q, 0xff)));
 	
-	int passed = _mm_movemask_ps(_mm_cmpgt_ps(_mm_setr_ps(u, v, t, 1.0f-u-v), _mm_setzero_ps()));
+	int passed = VecMovemask(VecCmpGt(VecSetR(u, v, t, 1.0f-u-v), VecZero()));
 	// if passed we are going to draw triangle
 	if (passed == 0b1111) {
 		o->u = u; o->v = v; o->t = t;
@@ -61,12 +61,12 @@ static bool VECTORCALL IntersectTriangle(const RaySSE& ray, const Tri* tri, Trio
 	return passed;
 }
 
-static float VECTORCALL IntersectAABB(__m128 origin, const __m128 invDir, const __m128 aabbMIN, const __m128& aabbMAX, float minSoFar)
+static float VECTORCALL IntersectAABB(vec_t origin, const vec_t invDir, const vec_t aabbMIN, const vec_t& aabbMAX, float minSoFar)
 {
-	__m128 tmin = _mm_mul_ps(_mm_sub_ps(aabbMIN, origin), invDir);
-	__m128 tmax = _mm_mul_ps(_mm_sub_ps(aabbMAX, origin), invDir);
-	float tnear = Max3(_mm_min_ps(tmin, tmax));
-	float tfar  = Min3(_mm_max_ps(tmin, tmax));
+	vec_t tmin = VecMul(VecSub(aabbMIN, origin), invDir);
+	vec_t tmax = VecMul(VecSub(aabbMAX, origin), invDir);
+	float tnear = Max3(VecMin(tmin, tmax));
+	float tfar  = Min3(VecMax(tmin, tmax));
 	// return tnear < tfar && tnear > 0.0f && tnear < minSoFar;
 	if (tnear < tfar && tnear > 0.0f && tnear < minSoFar)
 		return tnear; else return RayacastMissDistance;
@@ -79,7 +79,7 @@ static bool IntersectBVH(const RaySSE& ray, const BVHNode* nodes, uint rootNode,
 {
 	int nodesToVisit[32] = { (int)rootNode };
 	int currentNodeIndex = 1;
-	__m128 invDir = _mm_rcp_ps(ray.direction);
+	vec_t invDir = VecRcp(ray.direction);
 	bool intersection = 0; int protection = 0;
 	
 	while (currentNodeIndex > 0 && protection++ < 250)
@@ -154,7 +154,7 @@ inline int SampleSkyboxPixel(float3 rayDirection, Texture texture)
 	return (phi * texture.width) + theta + 2;
 }
 
-__m128 SetZValue(__m128 vector, float new_z_value)
+vec_t SetZValue(vec_t vector, float new_z_value)
 {
 	float elements[4];
 	_mm_storeu_ps(elements, vector);
@@ -199,7 +199,7 @@ HitRecord CPU_RayCast(RaySSE ray)
 	if (besthit.distance == RayacastMissDistance) {
 		union u { uint color; RGB8 rgb; } us;
 		Vector3f v3;
-		SSEStoreVector3(&v3.x, ray.direction);
+		Vec3Store(&v3.x, ray.direction);
 		us.rgb = m_data.TexturePixels[SampleSkyboxPixel(v3, m_data.Textures[2])];
 		record.color = us.color; // convert skybox color to uint32sa
 		return record;
@@ -218,8 +218,8 @@ HitRecord CPU_RayCast(RaySSE ray)
 	record.normal = Vector3f::Normalize((n0 * baryCentrics.x) + (n1 * baryCentrics.y) + (n2 * baryCentrics.z));
 
 	record.uv = ConvertToFloat2(&triangle.uv0x) * baryCentrics.x
-		        + ConvertToFloat2(&triangle.uv1x) * baryCentrics.y
-		        + ConvertToFloat2(&triangle.uv2x) * baryCentrics.z;
+		      + ConvertToFloat2(&triangle.uv1x) * baryCentrics.y
+		      + ConvertToFloat2(&triangle.uv2x) * baryCentrics.z;
 	
 	RGB8 pixel = m_data.TexturePixels[SampleTexture(m_data.Textures[material.albedoTextureIndex], record.uv)];
 	

@@ -145,16 +145,21 @@ typedef uint64_t ulong;
 /* Architecture Detection */
 // detection code from mini audio
 // you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
-#ifdef __ARM_NEON__
-    #include <arm_neon.h>
-#endif
 
 #if defined(__x86_64__) || defined(_M_X64)
 #   define AX_X64
 #elif defined(__i386) || defined(_M_IX86)
 #   define AX_X86
-#elif defined(__arm__) || defined(_M_ARM) || defined(__arm64) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
-#   define AX_ARM
+#elif defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
+    #define AX_ARM
+#endif
+
+#if defined(AX_ARM)
+    #if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || defined(__aarch64__))
+        #include <arm64_neon.h>
+    #else
+        #include <arm_neon.h>
+    #endif
 #endif
 
 // write AX_NO_SSE2 or AX_NO_AVX2 to disable vector instructions
@@ -251,6 +256,8 @@ typedef uint64_t ulong;
     #define SmallMemSet(dst, val, size) __builtin_memset(dst, val, size);
 #endif
 
+#define MemsetZero(dst, size) SmallMemSet(dst, 0, size)
+
 // #define AX_USE_NAMESPACE
 #ifdef AX_USE_NAMESPACE
 #   define AX_NAMESPACE namespace ax {
@@ -275,15 +282,15 @@ inline constexpr bool IsAndroid()
 template<typename T, int N>
 __constexpr int ArraySize(const T (&)[N]) { return N; }
 
-inline void MemsetZero(void* dst, uint64_t size) { SmallMemSet(dst, 0, size); }
-
 template<typename T>
 __forceinline __constexpr T PopCount(T x)
 {
     // according to intel intrinsic, popcnt instruction is 3 cycle (equal to mulps, addps) 
     // throughput is even double of mulps and addps which is 1.0 (%100)
     // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
-#ifdef AX_SUPPORT_SSE
+#if defined(__ARM_NEON__)
+    return vcnt_u8((int8x8_t)x);
+#elif defined(AX_SUPPORT_SSE)
 	if_constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
     else if (sizeof(T) == 8) return _mm_popcnt_u64(x);
 #elif defined(__GNUC__) || !defined(__MINGW32__)
@@ -357,10 +364,9 @@ template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) 
 {
 #if AX_CPP_VERSION < AX_CPP17
-  return *(const To*)&_Val;
+  return *reinterpret_cast<const To*>(&_Val);
 #else
-  return *(const To *)&_Val;
-  // return __builtin_bit_cast(To, _Val);
+  return __builtin_bit_cast(To, _Val);
 #endif
 }
 
@@ -462,6 +468,14 @@ struct KeyValuePair
 
     KeyValuePair() {}
     KeyValuePair(KeyT ky, ValueT val) : key((KeyT&&)ky), value((ValueT&&)val) {}
+
+    bool operator > (const KeyValuePair& other) {
+        return key > other.key;
+    }
+
+    bool operator < (const KeyValuePair& other) {
+        return key < other.key;
+    }
 
     bool operator == (const KeyValuePair& other) {
         return key == other.key && value == other.value;

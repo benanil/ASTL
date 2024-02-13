@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.hpp"
-#include "Math/SIMDCommon.hpp"
 
 AX_NAMESPACE
 

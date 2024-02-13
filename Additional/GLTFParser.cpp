@@ -842,7 +842,13 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         }
         else if (StrCMP16(curr, "alphaMode"))
         {
-            curr = SkipUntill(curr, ','); // skip alpha mode
+            char text[16]={0};
+            curr += sizeof("alphaMode|");
+            curr = SkipUntill(curr, '"');
+            curr = GetStringInQuotes(text, curr);
+                 if (StrCMP16(text, "OPAQUE")) material.alphaMode = AMaterialAlphaMode_Opaque;
+            else if (StrCMP16(text, "MASK"))   material.alphaMode = AMaterialAlphaMode_Mask;
+            else if (StrCMP16(text, "BLEND"))  material.alphaMode = AMaterialAlphaMode_Blend;
         }
         else if (StrCMP16(curr, "alphaCutoff"))
         {

@@ -36,6 +36,12 @@ enum AErrorType_
 };
 typedef int AErrorType;
 
+enum AMaterialAlphaMode_
+{
+    AMaterialAlphaMode_Opaque, AMaterialAlphaMode_Blend, AMaterialAlphaMode_Mask
+};
+typedef int AMaterialAlphaMode;
+
 typedef struct AMaterial_
 {
     // original value multiplied by 400 to get real value: float scale = ((float)scale) / 400.0f; 
@@ -62,7 +68,8 @@ typedef struct AMaterial_
     unsigned diffuseColor, specularColor, baseColorFactor;
     float alphaCutoff;
     bool doubleSided;
-    
+    AMaterialAlphaMode alphaMode;
+
 #ifdef __cplusplus
     const Texture& GetNormalTexture()    const { return textures[0]; }
     const Texture& GetOcclusionTexture() const { return textures[1]; }
@@ -118,6 +125,9 @@ typedef struct APrimitive_
     short indiceIndex; // indice index to accessor
     char  material;    // material index
     char  mode;        // 4 is triangle
+    // AABB min and max
+    float min[4];
+    float max[4];
 } APrimitive;
 
 typedef struct AMesh_

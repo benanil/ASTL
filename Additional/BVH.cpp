@@ -12,77 +12,77 @@ AX_NAMESPACE
 // use simd more
 struct aabb 
 { 
-	__m128 bmin, bmax;
+	vec_t bmin, bmax;
 	
-	aabb() : bmin(_mm_set1_ps(1e30f)), bmax(_mm_set_ps1(-1e30f)) {}
+	aabb() : bmin(VecSet1(1e30f)), bmax(VecSet1(-1e30f)) {}
 
-	void grow(__m128 p)
+	void grow(vec_t p)
 	{ 
-		bmin = _mm_min_ps(bmin, p), bmax = _mm_max_ps(bmax, p);
+		bmin = VecMin(bmin, p), bmax = VecMax(bmax, p);
 	}
 
 	void grow(const Tri* tri) 
 	{ 
-		bmin = _mm_min_ps(bmin, tri->v0);
-		bmin = _mm_min_ps(bmin, tri->v1); 
-		bmin = _mm_min_ps(bmin, tri->v2);
-		bmax = _mm_max_ps(bmax, tri->v0);
-		bmax = _mm_max_ps(bmax, tri->v1);
-		bmax = _mm_max_ps(bmax, tri->v2);
+		bmin = VecMin(bmin, tri->v0);
+		bmin = VecMin(bmin, tri->v1); 
+		bmin = VecMin(bmin, tri->v2);
+		bmax = VecMax(bmax, tri->v0);
+		bmax = VecMax(bmax, tri->v1);
+		bmax = VecMax(bmax, tri->v2);
 	}
 	
 	void grow(aabb other)
 	{
-		if (AX_LIKELY(SSEVectorGetX(other.bmin) != 1e30f))
+		if (AX_LIKELY(VecGetX(other.bmin) != 1e30f))
 		{
-			bmin = _mm_min_ps(bmin, other.bmin);
-			bmax = _mm_max_ps(bmax, other.bmin);
-			bmin = _mm_min_ps(bmin, other.bmax);
-			bmax = _mm_max_ps(bmax, other.bmax);
+			bmin = VecMin(bmin, other.bmin);
+			bmax = VecMax(bmax, other.bmin);
+			bmin = VecMin(bmin, other.bmax);
+			bmax = VecMax(bmax, other.bmax);
 		}
 	}
 
 	float area() 
 	{ 
-		__m128 e = _mm_sub_ps(bmax, bmin); // box extent
-		__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XSelect1110);
-		return hsum_ps_sse3(eSurface);
+		vec_t e = VecSub(bmax, bmin); // box extent
+		vec_t eSurface = VecMask(VecMul(e, VecSwizzle(e, 1, 2, 0, 0)), VecSelect1110);
+		return VecHSum(eSurface);
 	}
 };
 
 static uint totalNodesUsed = 0;
 static BVHNode* nodes;
 
-#define GetCenteroid(tri, axis) SSEVectorGetW(*((__m128*)(tri) + axis)) 
+#define GetCenteroid(tri, axis) VecGetW(*((vec_t*)(tri) + axis)) 
 
 static void UpdateNodeBounds(BVHNode* bvhNode, const Tri* tris, uint nodeIdx)
 {
     BVHNode* node = bvhNode + nodeIdx;
-    __m128 nodeMin = _mm_set1_ps(1e30f), nodeMax = _mm_set1_ps(-1e30f);
-    const __m128* leafPtr = (const __m128*)(tris + node->leftFirst);
+    vec_t nodeMin = VecSet1(1e30f), nodeMax = VecSet1(-1e30f);
+    const vec_t* leafPtr = (const vec_t*)(tris + node->leftFirst);
 
     AX_ASSUME(node->triCount > 0);
     for (uint i = 0; i < node->triCount; i++)
     {
-    	nodeMin = _mm_min_ps(nodeMin, leafPtr[0]);
-    	nodeMin = _mm_min_ps(nodeMin, leafPtr[1]);
-    	nodeMin = _mm_min_ps(nodeMin, leafPtr[2]);
+    	nodeMin = VecMin(nodeMin, leafPtr[0]);
+    	nodeMin = VecMin(nodeMin, leafPtr[1]);
+    	nodeMin = VecMin(nodeMin, leafPtr[2]);
     	
-    	nodeMax = _mm_max_ps(nodeMax, leafPtr[0]);
-    	nodeMax = _mm_max_ps(nodeMax, leafPtr[1]);
-    	nodeMax = _mm_max_ps(nodeMax, leafPtr[2]);
+    	nodeMax = VecMax(nodeMax, leafPtr[0]);
+    	nodeMax = VecMax(nodeMax, leafPtr[1]);
+    	nodeMax = VecMax(nodeMax, leafPtr[2]);
     	leafPtr += 5; // +3 for vertexPositions + 1 for (texcoords + material index) + 1 for normals
     }
     
-    SSEStoreVector3(&node->aabbMin.x, nodeMin);
-    SSEStoreVector3(&node->aabbMax.x, nodeMax);
+    Vec3Store(&node->aabbMin.x, nodeMin);
+    Vec3Store(&node->aabbMax.x, nodeMax);
 }
 
 __forceinline float CalculateCost(const BVHNode* node)
 { 
-	__m128 e = _mm_sub_ps(node->maxv, node->minv); // box extent
-	__m128 eSurface = _mm_and_ps(_mm_mul_ps(e, _mm_permute_ps(e, _MM_SHUFFLE(1, 2, 0, 0))), g_XSelect1110);
-	return node->triCount * hsum_ps_sse3(eSurface);
+	vec_t e = VecSub(node->maxv, node->minv); // box extent
+	vec_t eSurface = VecMask(VecMul(e, VecSwizzle(e, 1, 2, 0, 0)), VecSelect1110);
+	return node->triCount * VecHSum(eSurface);
 }
 
 static float EvaluateSAH(const BVHNode* node, Tri* tris, int axis, float pos)
@@ -192,10 +192,10 @@ static void SubdivideBVH(BVHNode* bvhNode, Tri* tris, uint nodeIdx)
 			i++;
 		else {
 			// swap elements with simd 2x faster
-			__m128* a = (__m128*)(tris + i);
-			__m128* b = (__m128*)(tris + j);
+			vec_t* a = (vec_t*)(tris + i);
+			vec_t* b = (vec_t*)(tris + j);
 			
-			__m128 t = *a;
+			vec_t t = *a;
 			*a++ = *b, *b++ = t, t = *a; // swap a[0], b[0] vertex0
 			*a++ = *b, *b++ = t, t = *a; // swap a[1], b[1] vertex1
 			*a++ = *b, *b++ = t, t = *a; // swap a[2], b[2] vertex2
