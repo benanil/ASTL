@@ -52,7 +52,7 @@ typedef __m128 veci_t;
 #define VecSetR(x, y, z, w) _mm_setr_ps(x, y, z, w) /* -> {x, y, z, w} */
 #define VecLoad(x)          _mm_loadu_ps(x)
 #define VecLoadA(x)         _mm_load_ps(x)
-#define Vec3Load(x)         _mm_loadu_ps(x)
+#define Vec3Load(x)         VecSetW(_mm_loadu_ps(x), 0.0f)
 
 #define VecStore(ptr, x)       _mm_store_ps(ptr, x)
 #define VecFromInt(x, y, z, w) _mm_castsi128_ps(_mm_setr_epi32(x, y, z, w))
@@ -86,6 +86,8 @@ typedef __m128 veci_t;
 #define VecSubf(a, b) _mm_sub_ps(a, VecSet1(b))
 #define VecMulf(a, b) _mm_mul_ps(a, VecSet1(b))
 #define VecDivf(a, b) _mm_div_ps(a, VecSet1(b))
+
+#define VecFmadLane(a, b, c, l) _mm_fmadd_ps(a, _mm_permute_ps(b, MakeShuffleMask(l, l, l, l)), c)
 
 #define VecFmad(a, b, c) _mm_fmadd_ps(a, b, c)
 #define VecHadd(a, b) _mm_hadd_ps(a, b)
@@ -198,12 +200,13 @@ typedef uint32x4_t veci_t;
 #define VecSub(a, b) vsubq_f32(a, b)
 #define VecMul(a, b) vmulq_f32(a, b)
 #define VecDiv(a, b) ARMVectorDevide(a, b)
-
+                                                     
 #define VecAddf(a, b) vaddq_f32(a, VecSet1(b))
 #define VecSubf(a, b) vsubq_f32(a, VecSet1(b))
 #define VecMulf(a, b) vmulq_f32(a, VecSet1(b))
 #define VecDivf(a, b) ARMVectorDevide(a, VecSet1(b))
 
+#define VecFmadLane(a, b, c, l) vfmaq_laneq_f32(c, a, b, l)
 #define VecFmad(a, b, c) vfmaq_f32(a, b, c)
 #define VecHadd(a, b)    vpaddq_f32(a, b)
 #define VecSqrt(a)       vsqrtq_f32(a)
@@ -613,6 +616,11 @@ __forceinline vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
     veci_t signY        = VecAnd(VecToInt(y), signBit);
     veci_t res = VecOr(clearedX, signY);
     return VecFromVeci(res);
+}
+
+__forceinline vec_t VecLerp(vec_t x, vec_t y, float t)
+{
+    return VecFmad(VecSub(y, x), VecSet1(t), x);
 }
 
 #if defined(__GNUC__) || defined(__clang__)

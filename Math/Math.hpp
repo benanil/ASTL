@@ -19,51 +19,49 @@ constexpr float Epsilon  = 0.0001f;
 // for integer constants use stdint.h's INT32_MIN, INT64_MIN, INT32_MAX...
 // for float constants use float.h's FLT_MAX, FLT_MIN, DBL_MAX, DBL_MIN
 
-//  ######################################  
-//  #####  [BASE FUNCTINS]  #####  
-//  ######################################  
+/*//////////////////////////////////////////////////////////////////////////*/
+/*                           Base Functions                                 */
+/*//////////////////////////////////////////////////////////////////////////*/
 
-__forceinline float Lerp(float x, float y, float t) {
+__forceinline __constexpr float Lerp(float x, float y, float t) {
 	return x + (y - x) * t;
 }
 
-__forceinline double Lerp(double x, double y, double t) {
+__forceinline __constexpr double Lerp(double x, double y, double t) {
 	return x + (y - x) * t;
 }
 
-__forceinline constexpr float SqrtConstexpr(float a)
-{
-	// from: Jack W. Cerenshaw's math toolkit for real time development book: page 63 Listing 4.3
-	// I've removed some of the branches. slightly slower than sqrtf
-	// double version is also here: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
-	const double A = 0.417319242, B = 0.5901788532;
-	union { double fp; struct { unsigned lo, hi; }; } x {};
-	if (a <= 0.001) return 0.0f;
-	x.fp = (double)a;
-	// grab the exponent
-	unsigned expo = (x.hi >> 20u) - 0x3fe;
-	x.hi &= 0x000fffffu;
-	x.hi += 0x3fe00000u;
-	// get square root of normalized number
-	double root = A + B * x.fp;
-	root = 0.5 * (x.fp / root + root); // you can even remove this haha if you do that you might want to reduce this: 0.414213562
-	root = 0.5 * (x.fp / root + root);
-	// root = 0.5 * (x.fp / root + root); // iterate 3 times probably overkill
-	// now rebuild the result
-	x.fp = root;
-	bool isOdd = expo & 1;
-	expo += isOdd;
-	x.fp *= 1.0 + (isOdd * 0.414213562);
-	expo = (expo + (expo < 0u)) >> 1;
-	// put it back
-	expo += 0x3feu;
-	x.hi &= 0x000fffffu;
-	x.hi += expo << 20u;
-	return (float)x.fp;
+__forceinline __constexpr float SqrtConstexpr(float a) {
+    // from: Jack W. Cerenshaw's math toolkit for real time development book: page 63 Listing 4.3
+    // I've removed some of the branches. slightly slower than sqrtf
+    // double version is also here: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
+    const double A = 0.417319242, B = 0.5901788532;
+    union { double fp; struct { unsigned lo, hi; }; } x {};
+    if (a <= 0.001) return 0.0f;
+    x.fp = (double)a;
+    // grab the exponent
+    unsigned expo = (x.hi >> 20u) - 0x3fe;
+    x.hi &= 0x000fffffu;
+    x.hi += 0x3fe00000u;
+    // get square root of normalized number
+    double root = A + B * x.fp;
+    root = 0.5 * (x.fp / root + root); // you can even remove this haha if you do that you might want to reduce this: 0.414213562
+    root = 0.5 * (x.fp / root + root);
+    // root = 0.5 * (x.fp / root + root); // iterate 3 times probably overkill
+    // now rebuild the result
+    x.fp = root;
+    bool isOdd = expo & 1;
+    expo += isOdd;
+    x.fp *= 1.0 + (isOdd * 0.414213562);
+    expo = (expo + (expo < 0u)) >> 1;
+    // put it back
+    expo += 0x3feu;
+    x.hi &= 0x000fffffu;
+    x.hi += expo << 20u;
+    return (float)x.fp;
 }
 
-__forceinline float Sqrt(float a)
-{
+__forceinline float Sqrt(float a) {
 #ifdef AX_SUPPORT_SSE
 	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));
 #elif defined(__clang__)
@@ -76,8 +74,7 @@ __forceinline float Sqrt(float a)
 // original doom rsqrt implementation with comments :)
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // https://rrrola.wz.cz/inv_sqrt.html   <- fast and 2.5x accurate
-__forceinline float RSqrt(float x) 
-{
+__forceinline float RSqrt(float x) {
 #ifdef AX_SUPPORT_SSE
 	// when I compile with godbolt -O1 expands to one instruction vrsqrtss
 	// which is approximately equal latency as mulps.
@@ -85,7 +82,7 @@ __forceinline float RSqrt(float x)
   //       vrsqrtss        xmm0, xmm0, xmm0
   //       ret
 	return _mm_cvtss_f32(_mm_rsqrt_ps(_mm_set_ps1(x)));
-#elif defined(__ARM_NEON__)
+#elif defined(AX_ARM)
 	return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
 #else
 	float f = x;
@@ -99,8 +96,7 @@ __forceinline float RSqrt(float x)
 __forceinline __constexpr float Fract(float a) { a = Abs(a); return a - int(a); }
 
 // https://github.com/id-Software/DOOM-3/blob/master/neo/idlib/math/Math.h
-__forceinline float Exp(float f)
-{
+__forceinline float Exp(float f) {
     const int IEEE_FLT_MANTISSA_BITS  =	23;
     const int IEEE_FLT_EXPONENT_BITS  =	8;
     const int IEEE_FLT_EXPONENT_BIAS  =	127;
@@ -133,8 +129,7 @@ __forceinline float Exp(float f)
 // https://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
 // https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81
 // should be much more precise with large b
-__forceinline __constexpr float Pow(float a, float b) 
-{
+__forceinline __constexpr float Pow(float a, float b) {
     // calculate approximation with fraction of the exponent
     int e = (int) b;
     union {
@@ -159,21 +154,18 @@ __forceinline __constexpr float Pow(float a, float b)
 }
 
 // https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81 <--you can find double versions
-__forceinline __constexpr float Log(float x)
-{
-	return (BitCast<int>(x) - 1064866805) * 8.262958405176314e-8f;
+__forceinline __constexpr float Log(float x) {
+    return (BitCast<int>(x) - 1064866805) * 8.262958405176314e-8f;
 }
 
 // if you want log10 for integer you can look at Algorithms.hpp
-__forceinline __constexpr float Log10(float x)
-{ 
-	return Log(x) / 2.30258509299f; // ln(x) / ln(10)
+__forceinline __constexpr float Log10(float x) { 
+    return Log(x) / 2.30258509299f; // ln(x) / ln(10)
 } 
 
 // you might look at this link as well: https://tech.ebayinc.com/engineering/fast-approximate-logarithms-part-i-the-basics/
-__forceinline __constexpr float Log2(float x)
-{
-	return Log(x) / 0.6931471805599453094f; // ln(x) / ln(2) 
+__forceinline __constexpr float Log2(float x) {
+    return Log(x) / 0.6931471805599453094f; // ln(x) / ln(2) 
 }
 
 // https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
@@ -190,9 +182,9 @@ __forceinline __constexpr unsigned int Log2(unsigned int v)
     return MultiplyDeBruijnBitPosition[(uint32_t)(v * 0x07C4ACDDU) >> 27];
 }
 
-inline unsigned int Log10(unsigned int v)
+inline __constexpr unsigned int Log10(unsigned int v)
 {                                                   // this would work too
-    static unsigned int const PowersOf10[] = {      // if (n <= 9) return 1;    
+    unsigned int const PowersOf10[] = {             // if (n <= 9) return 1;
         1, 10, 100, 1000, 10000, 100000,            // if (n <= 99) return 2;
         1000000, 10000000, 100000000, 1000000000    // if (n <= 999) return 3;
     };                                              // ...
@@ -200,20 +192,25 @@ inline unsigned int Log10(unsigned int v)
     return t - (v < PowersOf10[t]);                                                      
 }                                                                                        
 
-//!< maybe use templates?
-__forceinline __constexpr bool IsZero(float x) noexcept { return Abs(x) <= 0.0001f; }
-__forceinline __constexpr bool AlmostEqual(float x, float  y) noexcept { return Abs(x-y) <= 0.001f; }
-__forceinline __constexpr float Sign(float x) { return x > 0.0f; } // no zero >  || x != 0.0f
+__forceinline __constexpr bool IsZero(float x) {
+    return Abs(x) <= 0.0001f; 
+}
 
-__forceinline __constexpr float CopySign(float x, float y) 
-{
+__forceinline __constexpr bool AlmostEqual(float x, float  y) {
+    return Abs(x-y) <= 0.001f;
+}
+
+__forceinline __constexpr float Sign(float x) {
+    return x > 0.0f; // no zero >  || x != 0.0f
+} 
+
+__forceinline __constexpr float CopySign(float x, float y) {
     int ix = BitCast<int>(x) & 0x7fffffff;
     int iy = BitCast<int>(y) & 0x80000000;
     return BitCast<float>(ix | iy);
 }
 
-__forceinline __constexpr bool IsNan(float f)
-{
+__forceinline __constexpr bool IsNan(float f) {
     uint32 intValue = BitCast<uint32>(f);
     uint32 exponent = (intValue >> 23) & 0xFF;
     uint32 fraction = intValue & 0x7FFFFF;
@@ -256,21 +253,18 @@ __forceinline __constexpr float ATan2(float y, float x) {
     return CopySign(th, y);          // [-π,π] 
 }
 
-__forceinline float ASin(float z)
-{
+__forceinline float ASin(float z) {
 	return ATan2(z, Sqrt(1.0f-(z * z)));
 }
 
 // https://en.wikipedia.org/wiki/Sine_and_cosine
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
 
-__forceinline __constexpr float RepeatPI(float x) 
-{
+__forceinline __constexpr float RepeatPI(float x) {
   return  FMod(x + PI, TwoPI) - PI;
 }
 
-__forceinline __constexpr float Sin(float x) 
-{
+__forceinline __constexpr float Sin(float x) {
     float xx = x * x * x;                // x^3
     float t = x - (xx * 0.16666666666f); // x3/!3  6 = !3 = 1.6666 = rcp(3)
     t += (xx *= x * x) * 0.00833333333f; // x5/!5  120 = !5 = 0.0083 = rcp(5)
@@ -280,8 +274,7 @@ __forceinline __constexpr float Sin(float x)
 }
 
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
-__forceinline __constexpr float Cos(float x) 
-{
+__forceinline __constexpr float Cos(float x) {
     float xx = x * x;                    // x^2
     float t = 1.0f - (xx * 0.5f);        // 1-(x2/!2) 0.5f = rcp(!2)
     t += (xx *= x * x) * 0.04166666666f; // t + (x4/!4) 0.04166 = rcp(24) = 24.0f = !4
@@ -290,13 +283,11 @@ __forceinline __constexpr float Cos(float x)
     return t;
 }
 
-__forceinline __constexpr void SinCos(float x, float* s, float* c)
-{
+__forceinline __constexpr void SinCos(float x, float* s, float* c) {
 	*s = Sin(x); *c = Cos(x); 
 }
 
-__forceinline __constexpr float Tan(float radians) 
-{
+__forceinline __constexpr float Tan(float radians) {
     float rr = radians * radians;
     float a = 9.5168091e-03f;
     a *= rr; a += 2.900525e-03f;
@@ -323,8 +314,7 @@ __forceinline __constexpr float SinPI(float x)  { return Sin(x) / PI; }
 
 typedef ushort half;
 
-__forceinline float ConvertHalfToFloat(half x)
-{
+__forceinline float ConvertHalfToFloat(half x) {
 #if defined(AX_SUPPORT_SSE) 
 	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); 
 #elif defined(__ARM_NEON__)
@@ -365,8 +355,7 @@ __forceinline float ConvertHalfToFloat(half x)
 // return BitCast<float>(a); // sign : normalized : denormalized
 
 // converts maximum 4 float
-__forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
-{
+__forceinline void ConvertHalfToFloat(float* res, const half* x, short n) {
 #if defined(AX_SUPPORT_SSE)
 	alignas(16) float a[4];
     half b[8]; 
@@ -379,8 +368,7 @@ __forceinline void ConvertHalfToFloat(float* res, const half* x, short n)
 #endif
 }
 
-__forceinline half ConvertFloatToHalf(float Value)
-{
+__forceinline half ConvertFloatToHalf(float Value) {
 #if defined(AX_SUPPORT_SSE)
 	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);
 #elif defined(__ARM_NEON__)
@@ -416,17 +404,16 @@ __forceinline half ConvertFloatToHalf(float Value)
 }
 
 // converts maximum 4 half
-__forceinline void ConvertFloatToHalf(half* res, const float* x, short n)
-{
+__forceinline void ConvertFloatToHalf(half* res, const float* x, short n) {
 #if defined(AX_SUPPORT_SSE)
-	alignas(16) half a[8];
-	float b[8]; 
-	SmallMemCpy(b, x, n * sizeof(float));
-	_mm_store_si128((__m128i*)a, _mm_cvtps_ph(_mm_loadu_ps(x), 0)); // MSVC does not have scalar instructions.
-	SmallMemCpy(res, a, n * sizeof(half));
+    alignas(16) half a[8];
+    float b[8]; 
+    SmallMemCpy(b, x, n * sizeof(float));
+    _mm_store_si128((__m128i*)a, _mm_cvtps_ph(_mm_loadu_ps(x), 0)); // MSVC does not have scalar instructions.
+    SmallMemCpy(res, a, n * sizeof(half));
 #else
-	for (int i = 0; i < n; i++)
-		res[i] = ConvertFloatToHalf(x[i]);
+    for (int i = 0; i < n; i++)
+        res[i] = ConvertFloatToHalf(x[i]);
 #endif
 }
 
@@ -440,13 +427,11 @@ __forceinline void ConvertFloatToHalf4(half* res, const float* x)
 }
 
 // packs -1,1 range float to short
-__forceinline short PackSnorm16(float x)
-{
+__forceinline short PackSnorm16(float x) {
     return (short)Clamp(x * (float)INT16_MAX, (float)INT16_MIN, (float)INT16_MAX);
 }
 
-__forceinline float UnpackSnorm16(short x)
-{
+__forceinline float UnpackSnorm16(short x) {
     return (float)x / (float)INT16_MAX;
 }
 
@@ -466,8 +451,7 @@ __forceinline uint PackColorRGBAU32(float* c) {
     return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16) | ((uint)(c[3] * 255.0f) << 24);
 }
 
-__forceinline void UnpackColorRGBf(unsigned color, float* colorf)
-{
+__forceinline void UnpackColorRGBf(unsigned color, float* colorf) {
     static const float toFloat = 1.0f / 255.0f;
     colorf[0] = float(color >> 0  & 0xFF) * toFloat;
     colorf[1] = float(color >> 8  & 0xFF) * toFloat;
@@ -482,21 +466,18 @@ __forceinline void UnpackColorRGBAf(unsigned color, float* colorf) {
     colorf[3] = float(color >> 24) * toFloat;
 }
 
-template<typename T> __forceinline __constexpr T Min3(T a, T b, T c) 
-{
+template<typename T> __forceinline __constexpr T Min3(T a, T b, T c) {
     T res = a < b ? a : b;
     return res < c ? c : res;
 }
 
-template<typename T> __forceinline __constexpr T Max3(T a, T b, T c) 
-{
+template<typename T> __forceinline __constexpr T Max3(T a, T b, T c) {
     T res = a > b ? a : b;
     return res > c ? res : c;
 }
 
 template<int numCol = 4> // number of columns of matrix, 3 or 4
-inline void QuaternionFromMatrix(float* Orientation, const float* m)
-{
+inline void QuaternionFromMatrix(float* Orientation, const float* m) {
     int i, j, k = 0;
     float root, trace = m[0*numCol+0] + m[1 * numCol + 1] + m[2 * numCol + 2];
     

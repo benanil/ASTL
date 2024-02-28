@@ -20,7 +20,7 @@
 #include "../Algorithms.hpp"
 #include "../Array.hpp"
 #include "../String.hpp"
-#include "../Math/Math.hpp"
+#include "../Math/Matrix.hpp"
 
 #define __private static
 #define __public 
@@ -31,7 +31,7 @@ struct GLTFAccessor
     int componentType; // GraphicType
     int count;
     int byteOffset;
-    int type; // 1 = SCALAR, 2 = VEC2, 3 = VEC3, 4 = VEC4 
+    int type; // 1 = SCALAR, 2 = VEC2, 3 = VEC3, 4 = VEC4, mat4
 };
 
 struct GLTFBufferView
@@ -44,6 +44,7 @@ struct GLTFBufferView
 };
 
 typedef FixedSizeGrowableAllocator<char> AStringAllocator;
+typedef FixedSizeGrowableAllocator<int>  AIntAllocator;
 
 
 #if 0 // AX_SUPPORT_SSE
@@ -93,11 +94,9 @@ __private const char* CopyStringInQuotes(char*& str, const char* curr, AStringAl
     int len = (int)(quote - curr);
     char* alloc = stringAllocator.AllocateUninitialized(len + 16);
     str = alloc;
-
-    while (*curr != '"')
-    {
-        *alloc++ = *curr++;
-    }
+    SmallMemCpy(alloc, curr, len);
+    alloc += len;
+    curr  += len;
     *alloc = '\0'; // null terminate
     return ++curr;// skip quote
 }
@@ -108,6 +107,29 @@ __private const char* GetStringInQuotes(char* str, const char* curr)
     AX_NO_UNROLL while (*curr != '"') *str++ = *curr++;
     *str = '\0'; // null terminate
     return ++curr;
+}
+
+__private const char* HashStringInQuotes(uint64_t* hash, const char* curr)
+{
+    ++curr; // skip quote " 
+    uint64_t h = 0ull;
+    uint64_t shift = 0;
+    AX_NO_UNROLL while (*curr != '"' && shift < 64) { h |= uint64_t(*curr++) << shift; shift += 8; }
+    *hash = h;
+    return ++curr;
+}
+
+// most 8 characters
+constexpr uint64_t AHashString8(const char* curr)
+{
+    uint64_t h = 0ull;
+    uint64_t shift = 0;
+    while (*curr != '\0') 
+    { 
+        h |= uint64_t(*curr++) << shift; 
+        shift += 8; 
+    }
+    return h;
 }
 
 __private const char* SkipToNextNode(const char* curr, char open, char close)
@@ -152,13 +174,13 @@ __private const char* ParseAccessors(const char* curr, Array<GLTFAccessor>& acce
         }
         ASSERT(*curr != '\0' && "parsing accessors failed probably you forget to close brackets!");
         curr++;
-        if (StrCMP16(curr, "bufferView"))    accessor.bufferView = ParsePositiveNumber(curr);
+        if (StrCMP16(curr, "bufferView"))         accessor.bufferView = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "byteOffset"))    accessor.byteOffset = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "componentType")) accessor.componentType = ParsePositiveNumber(curr) - 0x1400; // GL_BYTE 
         else if (StrCMP16(curr, "count"))         accessor.count = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "name"))
         {
-            curr += 6; // skip name":     because we don't need accessor's name
+            curr += sizeof("name'"); // we don't need accessor's name
             int numQuotes = 0;
             // skip two quotes
             while (numQuotes < 2)
@@ -166,13 +188,19 @@ __private const char* ParseAccessors(const char* curr, Array<GLTFAccessor>& acce
         }
         else if (StrCMP16(curr, "type"))
         {
-            curr += 6; // skip type
-            int quoteCnt = 0;
-            while (quoteCnt < 2)
-            {
-                quoteCnt += *curr++ == '"';
-            }
-            accessor.type = curr[-2] != 'R' ? curr[-2] - '0' : 1; // if scalar 1 otherwise Vec2 or Vec3
+            curr += sizeof("type'"); // skip type
+            curr = SkipUntill(curr, '"');
+            uint64_t hash;
+            curr = HashStringInQuotes(&hash, curr);
+            
+            switch (hash)
+            {   case AHashString8("SCALAR"): accessor.type = 1; break;
+                case AHashString8("VEC2"):   accessor.type = 2; break;
+                case AHashString8("VEC3"):   accessor.type = 3; break;
+                case AHashString8("VEC4"):   accessor.type = 4; break;
+                case AHashString8("MAT4"):   accessor.type = 16;break;
+                default: ASSERT(0 && "Unknown accessor type");
+            };
         }
         else if (StrCMP16(curr, "min")) curr = SkipToNextNode(curr, '[', ']'); // skip min and max
         else if (StrCMP16(curr, "max")) curr = SkipToNextNode(curr, '[', ']');
@@ -188,7 +216,7 @@ __private const char* ParseAccessors(const char* curr, Array<GLTFAccessor>& acce
 __private const char* ParseBufferViews(const char* curr, Array<GLTFBufferView>& bufferViews)
 {
     GLTFBufferView bufferView{};
-    curr += 13; // skip bufferViews"
+    curr += sizeof("bufferViews'");
 
     // read each buffer view
     while (true)
@@ -204,29 +232,65 @@ __private const char* ParseBufferViews(const char* curr, Array<GLTFBufferView>& 
             if (*curr++ == ']') return curr; // end all buffer views
         }
         ASSERT(*curr != '0' && "buffer view parse failed, probably you forgot to close brackets!");
-        curr++;
-        if      (StrCMP16(curr, "buffer"))     bufferView.buffer = ParsePositiveNumber(++curr); 
-        else if (StrCMP16(curr, "byteOffset")) bufferView.byteOffset = ParsePositiveNumber(++curr); 
-        else if (StrCMP16(curr, "byteLength")) bufferView.byteLength = ParsePositiveNumber(++curr); 
-        else if (StrCMP16(curr, "byteStride")) bufferView.byteStride = ParsePositiveNumber(++curr); 
-        else if (StrCMP16(curr, "target"))     bufferView.target = ParsePositiveNumber(++curr);         
-        else if (StrCMP16(curr, "name")) {
-            curr += 6; // we don't need name of the buffer.
-            int numQuote = 0;
-            while (numQuote < 2)
-            numQuote += *curr++ == '"';
+
+        uint64_t hash;
+        curr = HashStringInQuotes(&hash, curr);
+
+        switch (hash)
+        {
+            case AHashString8("buffer"):    bufferView.buffer = ParsePositiveNumber(++curr); break; 
+            case AHashString8("byteOffs"):  bufferView.byteOffset = ParsePositiveNumber(++curr); break; 
+            case AHashString8("byteLeng"):  bufferView.byteLength = ParsePositiveNumber(++curr); break; 
+            case AHashString8("byteStri"):  bufferView.byteStride = ParsePositiveNumber(++curr); break; 
+            case AHashString8("target"):    bufferView.target = ParsePositiveNumber(++curr); break;
+            case AHashString8("name"):  {
+                int numQuote = 0;
+                while (numQuote < 2)
+                    numQuote += *curr++ == '"';
+                break;
+            }
+            default: {
+                ASSERT(0 && "UNKNOWN buffer view value!");
+                return (const char*)AError_UNKNOWN_BUFFER_VIEW_VAR;
+            }
+        };
+    }
+}
+
+static void DecodeBase64(char *dst, const char *src, size_t src_length)
+{
+    struct Base64Table
+    {
+        uint8_t table[256] = { 0 };
+        constexpr Base64Table()
+        {
+            for (char c = 'A'; c <= 'Z'; c++) table[c] = (uint8_t)(c - 'A');
+            for (char c = 'a'; c <= 'z'; c++) table[c] = (uint8_t)(26 + (c - 'a'));
+            for (char c = '0'; c <= '9'; c++) table[c] = (uint8_t)(52 + (c - '0'));
+            table['+'] = 62;
+            table['/'] = 63;
         }
-        else {
-            ASSERT(0 && "UNKNOWN buffer view value!");
-            return (const char*)AError_UNKNOWN_BUFFER_VIEW_VAR;
-        }
+    };
+    
+    static constexpr Base64Table table{};
+    
+    for (uint64_t i = 0; i + 4 <= src_length; i += 4) {
+        uint32_t a = table.table[src[i + 0]];
+        uint32_t b = table.table[src[i + 1]];
+        uint32_t c = table.table[src[i + 2]];
+        uint32_t d = table.table[src[i + 3]];
+           
+        dst[0] = (char)(a << 2 | b >> 4);
+        dst[1] = (char)(b << 4 | c >> 2);
+        dst[2] = (char)(c << 6 | d);
+        dst += 3;
     }
 }
 
 __private const char* ParseBuffers(const char* curr, const char* path, Array<GLTFBuffer>& bufferArray)
 {
     GLTFBuffer buffer{};
-    curr += 9; // skip buffers"
+    curr += sizeof("buffers'"); // skip buffers"
     char binFilePath[256]={0};
     char* endOfWorkDir = binFilePath;
     int binPathlen = StringLength(path);
@@ -237,7 +301,6 @@ __private const char* ParseBuffers(const char* curr, const char* path, Array<GLT
     while (binFilePath[binPathlen - 1] != '/' && binFilePath[binPathlen - 1] != '\\')
         binFilePath[--binPathlen] = '\0', endOfWorkDir--;
 
-    // get path of 
     // read each buffer
     while (true)
     {
@@ -248,7 +311,7 @@ __private const char* ParseBuffers(const char* curr, const char* path, Array<GLT
             {
                 bufferArray.Add(buffer);
                 MemsetZero(&buffer, sizeof(GLTFBuffer));
-                MemsetZero(binFilePath, sizeof(binFilePath));
+                MemsetZero(endOfWorkDir, sizeof(binFilePath) - (size_t)(endOfWorkDir - binFilePath));
             }
 
             if (*curr++ == ']') return curr; // end all buffers
@@ -257,12 +320,26 @@ __private const char* ParseBuffers(const char* curr, const char* path, Array<GLT
         curr++;
         if (StrCMP16(curr, "uri")) // is uri
         {
-            curr += 5; // skip uri": 
+            curr += sizeof("uri'"); // skip uri": 
             while (*curr != '"') curr++;
-            curr = GetStringInQuotes(endOfWorkDir, curr);
-            buffer.uri = ReadAllText(binFilePath);
-            ASSERT(buffer.uri && "uri is not exist");
-            if (!buffer.uri) return (const char*)AError_BIN_NOT_EXIST;
+            if (StartsWith(curr, "\"data:"))
+            {
+                curr = SkipAfter(curr, ',');
+                uint64_t base64Size = 0;
+                while (curr[base64Size] != '\"') {
+                    base64Size++;
+                }
+                buffer.uri = (void*)new char[base64Size];
+                DecodeBase64((char*)buffer.uri, curr, base64Size);
+                curr += base64Size + 1;
+            }
+            else
+            {
+                curr = GetStringInQuotes(endOfWorkDir, curr);
+                buffer.uri = ReadAllFile(binFilePath);
+                ASSERT(buffer.uri && "uri is not exist");
+                if (!buffer.uri) return (const char*)AError_BIN_NOT_EXIST;
+            }
         }
         else if (StrCMP16(curr, "byteLength"))
         {
@@ -351,7 +428,7 @@ __private const char* ParseTextures(const char* curr, Array<ATexture>& textures,
         }
         else if (StrCMP16(curr, "name"))
         {
-            curr = CopyStringInQuotes(texture.name, curr + 7, stringAllocator);
+            curr = CopyStringInQuotes(texture.name, curr + 5, stringAllocator);
         }
         else {
             ASSERT(0 && "Unknown buffer variable! sampler, source or name excepted.");
@@ -371,13 +448,14 @@ __private const char* ParseAttributes(const char* curr, APrimitive* primitive)
         
         curr++; // skip "
         int maskBefore = primitive->attributes;
-        if      (StrCMP16(curr, "POSITION"))   primitive->attributes |= AAttribType_POSITION;
-        else if (StrCMP16(curr, "NORMAL"))     primitive->attributes |= AAttribType_NORMAL;
-        else if (StrCMP16(curr, "TEXCOORD_0")) primitive->attributes |= AAttribType_TEXCOORD_0;
-        else if (StrCMP16(curr, "TANGENT"))    primitive->attributes |= AAttribType_TANGENT;
-        else if (StrCMP16(curr, "TEXCOORD_1")) primitive->attributes |= AAttribType_TEXCOORD_1;
-        else if (StrCMP16(curr, "TEXCOORD_")) { curr = SkipAfter(curr, '"'); continue; }
-        // todo add joints and weights
+        if      (StrCMP16(curr, "POSITION"))   { primitive->attributes |= AAttribType_POSITION; }
+        else if (StrCMP16(curr, "NORMAL"))     { primitive->attributes |= AAttribType_NORMAL; }
+        else if (StrCMP16(curr, "TEXCOORD_0")) { primitive->attributes |= AAttribType_TEXCOORD_0; }
+        else if (StrCMP16(curr, "TANGENT"))    { primitive->attributes |= AAttribType_TANGENT; }
+        else if (StrCMP16(curr, "TEXCOORD_1")) { primitive->attributes |= AAttribType_TEXCOORD_1; }
+        else if (StrCMP16(curr, "JOINTS_0"))   { primitive->attributes |= AAttribType_JOINTS; }
+        else if (StrCMP16(curr, "WEIGHTS_0"))  { primitive->attributes |= AAttribType_WEIGHTS; }
+        else if (StrCMP16(curr, "TEXCOORD_"))  { curr = SkipAfter(curr, '"'); continue; } // < NO more than two texture coords
         else { ASSERT(0 && "attribute variable unknown!"); return (const char*)AError_UNKNOWN_ATTRIB; }
 
         curr = SkipUntill(curr, '"'); curr++;// skip quote because attribute in double quotes
@@ -390,7 +468,7 @@ __private const char* ParseAttributes(const char* curr, APrimitive* primitive)
 __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStringAllocator& stringAllocator)
 {
     char text[64]{};
-    curr += 7; // skip meshes" 
+    curr += sizeof("meshes'"); // skip meshes" 
     AMesh mesh{};
     MemsetZero(&mesh, sizeof(AMesh));
 
@@ -418,6 +496,7 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
         }
 
         APrimitive primitive{};  
+        primitive.material = -1;
         // parse primitives
         while (true)
         {
@@ -428,6 +507,7 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
                     SBPush(mesh.primitives, primitive);
                     MemsetZero(&primitive, sizeof(APrimitive));
                     mesh.numPrimitives++;
+                    primitive.material = -1;
                 }
 
                 if (*curr++ == ']') goto end_primitives; // this is end of primitive list
@@ -446,6 +526,39 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
     return nullptr;
 }
 
+struct IntPtrPair { int numElements, *ptr; };
+
+static IntPtrPair ParseIntArray(const char*& cr, AIntAllocator& intAllocator)
+{
+    const char* curr = cr;
+    IntPtrPair result={};
+    // find how many elements there are:
+    while (!IsNumber(*curr)) curr++;
+    
+    const char* begin = curr;
+    result.numElements = 1;
+    while (true)
+    {
+        result.numElements += *curr == ',';
+        if (*curr++ == ']') break;
+    }
+    curr = begin;
+    result.ptr = intAllocator.AllocateUninitialized(result.numElements);
+    result.numElements = 0;
+    
+    while (*curr != ']')
+    {
+        if (IsNumber(*curr))
+        {
+            result.ptr[result.numElements] = ParsePositiveNumber(curr);
+            result.numElements++;
+        }
+        curr++;
+    }
+    cr = curr;
+    return result;
+}
+
 __private const char* ParseNodes(const char* curr,
                                  Array<ANode>& nodes,
                                  AStringAllocator& stringAllocator,
@@ -456,6 +569,8 @@ __private const char* ParseNodes(const char* curr,
     ANode node{};
     node.rotation[3] = 1.0f;
     node.scale[0] = node.scale[1] = node.scale[2] = scale; 
+    node.index = -1;
+    
     // read each node
     while (true)
     {
@@ -468,6 +583,7 @@ __private const char* ParseNodes(const char* curr,
                 MemsetZero(&node, sizeof(ANode));
                 node.rotation[3] = 1.0f;
                 node.scale[0] = node.scale[1] = node.scale[2] = scale;
+                node.index = -1;
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
@@ -479,50 +595,26 @@ __private const char* ParseNodes(const char* curr,
         else if (StrCMP16(curr, "camera")) { node.type = 1; node.index = ParsePositiveNumber(curr); continue; } // don't want to skip ] that's why continue
         else if (StrCMP16(curr, "children"))
         {
-            // find how many childs there are:
-            while (!IsNumber(*curr)) curr++;
-           
-            const char* begin = curr;
-            node.numChildren = 1;
-            while (true)
-            {
-                node.numChildren += *curr == ',';
-                if (*curr++ == ']') break;
-            }
-            curr = begin;
-            node.children = intAllocator.AllocateUninitialized(node.numChildren);
-            node.numChildren = 0;
-
-            while (*curr != ']')
-            {
-                if (IsNumber(*curr))
-                {
-                    node.children[node.numChildren] = ParsePositiveNumber(curr);
-                    node.numChildren++;
-                }
-                curr++;
-            }
+            IntPtrPair result = ParseIntArray(curr, intAllocator);
+            node.numChildren = result.numElements;
+            node.children = result.ptr;
         }
         else if (StrCMP16(curr, "matrix"))
         {
-            float matrix[16]{};
+            Matrix4 m;
+            float* matrix = m.GetPtr();
+            
             for (int i = 0; i < 16; i++)
                 matrix[i] = ParseFloat(curr);
-
+            
+            m = Matrix4::Transpose(m);
             node.translation[0] = matrix[12];
             node.translation[1] = matrix[13];
             node.translation[2] = matrix[14];
             QuaternionFromMatrix(node.rotation, matrix);
-#ifdef AX_SUPPORT_SSE
-            __m128 v;
-            v = _mm_load_ps(matrix + 0); node.scale[0] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7F))) * scale;
-            v = _mm_load_ps(matrix + 4); node.scale[1] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7F))) * scale;
-            v = _mm_load_ps(matrix + 8); node.scale[2] = _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v, v, 0x7F))) * scale;
-#else
-            node.scale[0] = Sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1] + matrix[2] * matrix[2]);
-            node.scale[1] = Sqrt(matrix[4] * matrix[4] + matrix[5] * matrix[5] + matrix[6] * matrix[6]);
-            node.scale[2] = Sqrt(matrix[8] * matrix[8] + matrix[9] * matrix[9] + matrix[10] * matrix[10]);
-#endif
+
+            Vector3f v = Matrix4::ExtractScale(m) * scale;
+            SmallMemCpy(node.scale, &v.x, sizeof(Vector3f));  
         }
         else if (StrCMP16(curr, "translation"))
         {
@@ -545,13 +637,17 @@ __private const char* ParseNodes(const char* curr,
         }
         else if (StrCMP16(curr, "name"))
         {
-            curr += 5;
-            curr = CopyStringInQuotes(node.name, curr, stringAllocator);
+            curr = CopyStringInQuotes(node.name, curr + 5, stringAllocator);
+            continue; 
+        }
+        else if (StrCMP16(curr, "skin"))
+        {
+            node.skin = ParsePositiveNumber(curr);
             continue; // continue because we don't want to skip ] and it is not exist
         }
         else
         {
-            ASSERT(0 && "Unknown image value uri is the only val!");
+            ASSERT(0 && "Unknown node variable");
             return (const char*)AError_UNKNOWN_NODE_VAR;
         }
 
@@ -667,8 +763,7 @@ __private const char* ParseScenes(const char* curr, Array<AScene>& scenes,
         }
         else if (StrCMP16(curr, "name"))
         {
-            curr += 5;
-            curr = CopyStringInQuotes(scene.name, curr, stringAllocator);
+            curr = CopyStringInQuotes(scene.name, curr + 5, stringAllocator);
         }
     } 
 }
@@ -778,11 +873,11 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         curr++; // skips the "
         if (StrCMP16(curr, "name"))
         {
-            curr = CopyStringInQuotes(material.name, curr + 6, stringAllocator);
+            curr = CopyStringInQuotes(material.name, curr + 5, stringAllocator);
         }
         else if (StrCMP16(curr, "doubleSided"))
         {
-            curr += 12; // skip doubleSided"
+            curr += sizeof("doubleSided'"); // skip doubleSided"
             AX_NO_UNROLL while (!IsLower(*curr)) curr++;
             material.doubleSided = *curr == 't';
         }
@@ -843,7 +938,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         else if (StrCMP16(curr, "alphaMode"))
         {
             char text[16]={0};
-            curr += sizeof("alphaMode|");
+            curr += sizeof("alphaMode'");
             curr = SkipUntill(curr, '"');
             curr = GetStringInQuotes(text, curr);
                  if (StrCMP16(text, "OPAQUE")) material.alphaMode = AMaterialAlphaMode_Opaque;
@@ -868,12 +963,180 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
     return curr;
 }
 
-__public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
+static const char* ParseSkins(const char* curr, Array<ASkin>& skins, AStringAllocator& stringAllocator, AIntAllocator& intAllocator)
+{
+    curr = SkipAfter(curr, '[');
+    
+    ASkin skin{};
+    skin.skeleton = -1;
+
+    // read each node
+    while (true)
+    {
+        // search for name
+        while (*curr && *curr != '"')
+        {
+            if (*curr == '}')
+            {
+                skins.Add(skin);
+                MemsetZero(&skin, sizeof(ASkin));
+                skin.skeleton = -1;
+            }
+            if (*curr++ == ']') return curr; // end all nodes
+        }
+        ASSERT(*curr != '\0' && "parsing skins not possible, probably forgot to close brackets!");
+        curr++; // skips the "
+
+        if (StrCMP16(curr, "inverseBindMatrices"))
+        {
+            // we will parse later, because we are not sure we are parsed accessors at this point
+            skin.inverseBindMatrices = (float*)(size_t)ParsePositiveNumber(curr);
+        }
+        else if (StrCMP16(curr, "skeleton"))            skin.skeleton = ParsePositiveNumber(curr);
+        else if (StrCMP16(curr, "name"))                curr = CopyStringInQuotes(skin.name, curr + 5, stringAllocator);
+        else if (StrCMP16(curr, "joints"))
+        {
+            IntPtrPair result = ParseIntArray(curr, intAllocator);
+            skin.numJoints = result.numElements;
+            skin.joints = result.ptr;
+            curr++; // skip ]
+        }
+    }
+    return curr;
+}
+
+static const char* ParseAnimations(const char* curr, Array<AAnimation>& animations, 
+                                   AStringAllocator& stringAllocator, AIntAllocator& intAllocator)
+{
+    curr = SkipAfter(curr, '[');
+    Array<AAnimChannel> channels;
+    Array<AAnimSampler> samplers;
+
+    AAnimation animation{};
+    // read each node
+    while (true)
+    {
+        // search for name
+        while (*curr && *curr != '"')
+        {
+            if (*curr == '}')
+            {
+                animation.numSamplers = samplers.Size();
+                animation.numChannels = channels.Size();
+                animation.samplers = samplers.TakeOwnership();
+                animation.channels = channels.TakeOwnership();
+                animations.Add(animation);
+                MemsetZero(&animation, sizeof(AAnimation));
+            }
+            if (*curr++ == ']') 
+                return curr; // end all nodes
+        }
+        ASSERT(*curr != '\0' && "parsing animations not possible, probably forgot to close brackets!");
+        curr++; // skips the "
+
+        if (StrCMP16(curr, "name"))
+        {
+            curr = CopyStringInQuotes(animation.name, curr + sizeof("name'"), stringAllocator);
+        }
+        else if (StrCMP16(curr, "channels"))
+        {
+            curr += sizeof("channels'");
+            AAnimChannel channel;
+            bool parsingTarget = false;
+            while (true)
+            {
+                while (*curr && *curr != '"')
+                {
+                    if (*curr == ']') { curr++; /* skip ] */ goto end_parsing; }
+                    if (*curr == '}') 
+                    {
+                        if (parsingTarget) parsingTarget = false;
+                        else 
+                        {
+                            channels.Add(channel);
+                            MemsetZero(&channel, sizeof(AAnimChannel));
+                        }
+                    }
+                    curr++;
+                }
+                ASSERT(*curr != '\0' && "parsing anim channels not possible, probably forgot to close brackets!");
+
+                uint64_t hash;
+                curr = HashStringInQuotes(&hash, curr);
+
+                switch (hash)
+                {
+                    case AHashString8("sampler"): channel.sampler = ParsePositiveNumber(curr);     break;
+                    case AHashString8("node"):    channel.targetNode = ParsePositiveNumber(curr);  break;
+                    case AHashString8("target"):  curr += sizeof("target'"); parsingTarget = true; break; 
+                    case AHashString8("path"):
+                    {
+                        curr = SkipAfter(curr, '"');
+                        switch (*curr) {
+                            case 't': channel.targetPath = AAnimTargetPath_Translation; curr += sizeof("translation'"); break;
+                            case 'r': channel.targetPath = AAnimTargetPath_Rotation;    curr += sizeof("rotation'"); break;
+                            case 's': channel.targetPath = AAnimTargetPath_Scale;       curr += sizeof("scale'"); break;
+                            default: ASSERT(0 && "Unknown animation path value");
+                        };
+                        break;
+                    }
+                    default: ASSERT(0 && "Unknown animation channel value");
+                };
+            }
+        }
+        else if (StrCMP16(curr, "samplers"))
+        {
+            curr += sizeof("samplers'");
+            AAnimSampler sampler;
+            while (true)
+            {
+                while (*curr && *curr != '"')
+                {
+                    if (*curr == ']') { curr++; /* skip ] */ goto end_parsing; }
+                    if (*curr == '}') 
+                    {
+                        samplers.Add(sampler);
+                        MemsetZero(&sampler, sizeof(AAnimSampler));
+                    }
+                    curr++;
+                }
+                ASSERT(*curr != '\0' && "parsing anim channels not possible, probably forgot to close brackets!");
+
+                uint64_t hash;
+                curr = HashStringInQuotes(&hash, curr);
+
+                switch (hash)
+                {
+                    case AHashString8("input"):         sampler.input  = (float*)(size_t)ParsePositiveNumber(curr); break;
+                    case AHashString8("output"):        sampler.output = (float*)(size_t)ParsePositiveNumber(curr); break;
+                    case AHashString8("interpol"): // you've been searching from interpol hands up!!
+                    {
+                        curr += sizeof("interpolation") - sizeof("interpol");
+                        curr = SkipAfter(curr, '"');
+                        switch (*curr)
+                        {
+                            case 'L': sampler.interpolation = 0; curr += sizeof("Linear'");      break; // Linear
+                            case 'S': sampler.interpolation = 1; curr += sizeof("Step'");        break; // Step
+                            case 'C': sampler.interpolation = 2; curr += sizeof("CubicSpline'"); break; // CubicSpline
+                            default: ASSERT(0 && "Unknown animation path value"); break;
+                        };
+                        break;
+                    }
+                    default: ASSERT(0 && "Unknown animation sampler value"); break;
+                };
+            }
+        }
+        end_parsing:{}
+    }
+    return curr;
+}
+
+__public int ParseGLTF(const char* path, SceneBundle* result, float scale)
 {
     ASSERT(result && path);
     uint64_t sourceSize = 0;
     char* source = ReadAllText(path, nullptr, &sourceSize);
-    MemsetZero(result, sizeof(ParsedGLTF));
+    MemsetZero(result, sizeof(SceneBundle));
 
     if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; ASSERT(0); return 0; }
 
@@ -890,6 +1153,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
 
     Array<AMesh>  meshes; Array<ANode>        nodes; Array<AMaterial> materials; Array<ATexture>  textures;
     Array<AImage> images; Array<ASampler>  samplers; Array<ACamera>     cameras; Array<AScene>    scenes;
+    Array<ASkin>  skins; Array<AAnimation> animations;
 
     const char* curr = source;
     while (*curr)
@@ -901,7 +1165,7 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
 
         curr++; // skips the "
         if      (StrCMP16(curr, "accessors"))    curr = ParseAccessors(curr, accessors);
-        else if (StrCMP16(curr, "scenes"))       curr = ParseScenes(curr, scenes, stringAllocator, intAllocator); // todo add scenes
+        else if (StrCMP16(curr, "scenes"))       curr = ParseScenes(curr, scenes, stringAllocator, intAllocator);
         else if (StrCMP16(curr, "scene"))        result->defaultSceneIndex = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "bufferViews"))  curr = ParseBufferViews(curr, bufferViews);
         else if (StrCMP16(curr, "buffers"))      curr = ParseBuffers(curr, path, buffers);     
@@ -911,7 +1175,9 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
         else if (StrCMP16(curr, "materials"))    curr = ParseMaterials(curr, materials, stringAllocator);
         else if (StrCMP16(curr, "nodes"))        curr = ParseNodes(curr, nodes, stringAllocator, intAllocator, scale);
         else if (StrCMP16(curr, "samplers"))     curr = ParseSamplers(curr, samplers);    
-        else if (StrCMP16(curr, "cameras"))      curr = ParseCameras(curr, cameras, stringAllocator); // todo cameras
+        else if (StrCMP16(curr, "cameras"))      curr = ParseCameras(curr, cameras, stringAllocator); 
+        else if (StrCMP16(curr, "skins"))        curr = ParseSkins(curr, skins, stringAllocator, intAllocator); 
+        else if (StrCMP16(curr, "animations"))   curr = ParseAnimations(curr, animations, stringAllocator, intAllocator); 
         else if (StrCMP16(curr, "asset"))        curr = SkipToNextNode(curr, '{', '}'); // it just has text data that doesn't have anything to do with meshes, (author etc..) if you want you can add this feature :)
         else if (StrCMP16(curr, "extensionsUsed") || StrCMP16(curr, "extensionsRequ")) curr = SkipToNextNode(curr, '[', ']');
         else { ASSERT(0); curr = (const char*)AError_UNKNOWN_DESCRIPTOR; }
@@ -932,14 +1198,14 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
         for (int p = 0; p < mesh.numPrimitives; p++)
         {
             APrimitive& primitive = mesh.primitives[p];
-            // get position attrib's count' because all attributes same
+            // get position attrib's count because all attributes same
             int numVertex = accessors[(int)(size_t)primitive.vertexAttribs[0]].count; 
             primitive.numVertices = numVertex;
         
             // get number of index
             GLTFAccessor accessor = accessors[primitive.indiceIndex];
             primitive.numIndices = accessor.count;
-        
+
             accessor = accessors[primitive.indiceIndex];
             GLTFBufferView view = bufferViews[accessor.bufferView];
             int64_t offset = (int64_t)accessor.byteOffset + view.byteOffset;
@@ -947,14 +1213,25 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
             primitive.indices = ((char*)buffers[view.buffer].uri) + offset;
             primitive.indexType = accessor.componentType;
             
+            // get joint data that we need for creating vertices
+            const int jointIndex = TrailingZeroCount(AAttribType_JOINTS);
+            accessor = accessors[(int)(size_t)primitive.vertexAttribs[jointIndex]];
+            primitive.jointType   = (short)accessor.componentType;
+            primitive.jointCount  = (short)accessor.type;
+            primitive.jointStride = (short)bufferViews[accessor.bufferView].byteStride;
+
+            // get weight data that we need for creating vertices
+            const int weightIndex = TrailingZeroCount(AAttribType_WEIGHTS);
+            accessor = accessors[(int)(size_t)primitive.vertexAttribs[weightIndex]];
+            primitive.weightType   = (short)accessor.componentType;
+            primitive.weightStride = (short)bufferViews[accessor.bufferView].byteStride;
+
             // position, normal, texcoord are different buffers, 
             // we are unifying all attributes to Vertex* buffer here
-            int attributes = primitive.attributes;
-            
             // even though attrib definition in gltf is not ordered, this code will order it, because we traversing set bits
             // for example it converts from this: TexCoord, Normal, Position to Position, Normal, TexCoord
-            const int supportedAttributes = 6;
-            for (int j = 0; attributes > 0 && j < supportedAttributes; j += NextSetBit(&attributes))
+            unsigned attributes = primitive.attributes;
+            for (int j = 0; attributes > 0 && j < AAttribType_Count; j += NextSetBit(&attributes))
             {
                 accessor     = accessors[(int)(size_t)primitive.vertexAttribs[j]];
                 view         = bufferViews[accessor.bufferView];
@@ -964,6 +1241,46 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
             }
         }
     }
+
+    for (int s = 0; s < skins.Size(); s++)
+    {
+        ASkin& skin = skins[s];
+        size_t skinIndex = (size_t)skin.inverseBindMatrices;
+        GLTFAccessor   accessor  = accessors[(int)skinIndex];
+        GLTFBufferView view      = bufferViews[accessor.bufferView];
+        int64_t        offset    = int64_t(accessor.byteOffset) + view.byteOffset;
+        skin.inverseBindMatrices = (float*)((char*)buffers[view.buffer].uri + offset);
+    }
+
+    for (int a = 0; a < animations.Size(); a++)
+    {
+        AAnimation& animation = animations[a];
+        animation.duration = 0.0f;
+
+        for (int s = 0; s < animation.numSamplers; s++)
+        {
+            AAnimSampler& sampler = animation.samplers[s];
+            size_t inputIndex = (size_t)sampler.input;
+            GLTFAccessor   accessor  = accessors[(int)inputIndex];
+            GLTFBufferView view      = bufferViews[accessor.bufferView];
+            int64_t        offset    = int64_t(accessor.byteOffset) + view.byteOffset;
+            
+            sampler.input = (float*)((char*)buffers[view.buffer].uri + offset);
+            sampler.count = accessor.count;
+            
+            size_t outputIndex = (size_t)sampler.output;
+            accessor = accessors[(int)outputIndex];
+            view     = bufferViews[accessor.bufferView];
+            offset   = int64_t(accessor.byteOffset) + view.byteOffset;
+            
+            sampler.output = (float*)((char*)buffers[view.buffer].uri + offset);
+            sampler.count = MIN(sampler.count, accessor.count);
+            sampler.numComponent = accessor.type;
+            
+            animation.duration = MAX(animation.duration, sampler.input[sampler.count - 1]);
+        }
+    }
+
     // calculate num vertices and indices
     {
         int totalVertexCount = 0;
@@ -987,22 +1304,24 @@ __public int ParseGLTF(const char* path, ParsedGLTF* result, float scale)
     result->stringAllocator = stringAllocator.TakeOwnership();
     result->intAllocator    = intAllocator.TakeOwnership();
 
-    result->numMeshes    = meshes.Size();     result->meshes    = meshes.TakeOwnership();   
-    result->numNodes     = nodes.Size();      result->nodes     = nodes.TakeOwnership();    
-    result->numMaterials = materials.Size();  result->materials = materials.TakeOwnership();
-    result->numTextures  = textures.Size();   result->textures  = textures.TakeOwnership(); 
-    result->numImages    = images.Size();     result->images    = images.TakeOwnership();   
-    result->numSamplers  = samplers.Size();   result->samplers  = samplers.TakeOwnership();
-    result->numCameras   = cameras.Size();    result->cameras   = cameras.TakeOwnership();
-    result->numScenes    = scenes.Size();     result->scenes    = scenes.TakeOwnership();
-    result->numBuffers   = buffers.Size();    result->buffers   = buffers.TakeOwnership(); 
+    result->numMeshes     = meshes.Size();     result->meshes     = meshes.TakeOwnership();
+    result->numNodes      = nodes.Size();      result->nodes      = nodes.TakeOwnership();
+    result->numMaterials  = materials.Size();  result->materials  = materials.TakeOwnership();
+    result->numTextures   = textures.Size();   result->textures   = textures.TakeOwnership(); 
+    result->numImages     = images.Size();     result->images     = images.TakeOwnership();
+    result->numSamplers   = samplers.Size();   result->samplers   = samplers.TakeOwnership();
+    result->numCameras    = cameras.Size();    result->cameras    = cameras.TakeOwnership();
+    result->numScenes     = scenes.Size();     result->scenes     = scenes.TakeOwnership();
+    result->numBuffers    = buffers.Size();    result->buffers    = buffers.TakeOwnership();
+    result->numAnimations = animations.Size(); result->animations = animations.TakeOwnership();
+    result->numSkins      = skins.Size();      result->skins      = skins.TakeOwnership();
     result->scale = scale;
     result->error = AError_NONE;
     FreeAllText(source);
     return 1;
 }
 
-__public void FreeParsedGLTF(ParsedGLTF* gltf)
+__public void FreeParsedGLTF(SceneBundle* gltf)
 {
     struct CharFragment { 
         CharFragment* next; char* ptr; int64_t   size;
@@ -1048,16 +1367,28 @@ __public void FreeParsedGLTF(ParsedGLTF* gltf)
     for (int i = 0; i < gltf->numMeshes; i++)
         SBFree(gltf->meshes[i].primitives);
 
-    if (gltf->meshes)    delete[] gltf->meshes;
-    if (gltf->nodes)     delete[] gltf->nodes;
-    if (gltf->materials) delete[] gltf->materials;
-    if (gltf->textures)  delete[] gltf->textures;
-    if (gltf->images)    delete[] gltf->images;
-    if (gltf->samplers)  delete[] gltf->samplers;
-    if (gltf->cameras)   delete[] gltf->cameras;
-    if (gltf->scenes)    delete[] gltf->scenes;
-    if (gltf->allVertices) delete[] (float*)gltf->allVertices;
+    if (gltf->meshes)      delete[] gltf->meshes;
+    if (gltf->nodes)       delete[] gltf->nodes;
+    if (gltf->materials)   delete[] gltf->materials;
+    if (gltf->textures)    delete[] gltf->textures;
+    if (gltf->images)      delete[] gltf->images;
+    if (gltf->samplers)    delete[] gltf->samplers;
+    if (gltf->cameras)     delete[] gltf->cameras;
+    if (gltf->scenes)      delete[] gltf->scenes;
+    if (gltf->skins)       delete[] gltf->skins;
+    if (gltf->animations)
+    {
+        for (int i = 0; i < gltf->numAnimations; i++)
+        {
+            delete[] gltf->animations[i].samplers;
+            delete[] gltf->animations[i].channels;
+        }
+        delete[] gltf->animations;
+    }
+    if (gltf->allVertices) FreeAligned(gltf->allVertices);
     if (gltf->allIndices)  FreeAligned(gltf->allIndices);
+    
+    MemsetZero(gltf, sizeof(SceneBundle));
 }
 
 const char* ParsedSceneGetError(AErrorType error)

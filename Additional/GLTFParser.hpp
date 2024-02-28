@@ -7,7 +7,10 @@ enum AAttribType_
     AAttribType_TEXCOORD_0 = 1 << 1,
     AAttribType_NORMAL     = 1 << 2,
     AAttribType_TANGENT    = 1 << 3,
-    AAttribType_TEXCOORD_1 = 1 << 4
+    AAttribType_TEXCOORD_1 = 1 << 4,
+    AAttribType_JOINTS     = 1 << 5,
+    AAttribType_WEIGHTS    = 1 << 6,
+    AAttribType_Count      = 7
 };
 typedef int AAttribType;
 
@@ -63,7 +66,7 @@ typedef struct AMaterial_
     float16 roughnessFactor;
 
     char* name;
-    float16 emissiveFactor[3]; 
+    float16 emissiveFactor[3];
     float16 specularFactor;
     unsigned diffuseColor, specularColor, baseColorFactor;
     float alphaCutoff;
@@ -97,9 +100,10 @@ typedef struct ANode_
     float scale[3];
 
     int   type;  // 0 mesh or 1 camera
-    int   index; // index of mesh or camera
-    char* name;
+    int   index; // index of mesh or camera, -1 if node doesn't have mesh or camera
+    int   skin; 
     int   numChildren;
+    char* name;
     int*  children;
 } ANode;
 
@@ -109,22 +113,29 @@ typedef struct APrimitive_
     void* indices; 
     void* vertices;
     
-    int attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
-    int indexType; //  GL_UNSIGNED_INT, GL_UNSIGNED_BYTE.. 
+    unsigned attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
+    int indexType; // GraphicType_UnsignedInt, GraphicType_UnsignedShort.. 
     int numIndices;
     int numVertices;
     int indexOffset;
+    short jointType;   // GraphicType_UnsignedInt, GraphicType_UnsignedShort.. 
+    short jointCount;  // per vertex bone count (joint), 1-4
+    short jointStride; // lets say index data is rgba16u  [r, g, b, a, .......] stride might be bigger than joint
+
+    short weightType;   // GraphicType_UnsignedInt, GraphicType_UnsignedShort.. 
+    short weightStride; // lets say index data is rgba16u  [r, g, b, a, .......] stride might be bigger than joint
+
+    // internal use only. after parsing this is useless
+    short indiceIndex; // indice index to accessor
+    short material;    // material index
+    short mode;        // 4 is triangle
 
     // when we are parsing we use this as an indicator to accessor.
     // after parsing, this will become vertex pointers AAttribType_Position, AAttribType_TexCoord...
     // positions = (Vector3f*)vertexAttribs[0];
     // texCoords = (Vector2f*)vertexAttribs[1]; // note that tangent is vec4
     // ...
-    void* vertexAttribs[6]; 
-    // internal use only. after parsing this is useless
-    short indiceIndex; // indice index to accessor
-    char  material;    // material index
-    char  mode;        // 4 is triangle
+    void* vertexAttribs[AAttribType_Count]; 
     // AABB min and max
     float min[4];
     float max[4];
@@ -168,18 +179,67 @@ static_assert(sizeof(ASampler) == sizeof(int), "size must be 4");
 typedef struct AScene_
 {
     char* name;
-    int   numNodes;   
+    int   numNodes;
     int*  nodes;
 } AScene;
 
 
-struct GLTFBuffer
+typedef struct GLTFBuffer_
 {
     void* uri;
     int byteLength;
-};
+} GLTFBuffer;
 
-typedef struct ParsedGLTF_
+typedef struct ASkin_
+{
+    int skeleton; // < index of the root node
+    int numJoints;
+    float *inverseBindMatrices; // matrix4x4 * numJoints
+    int   *joints; // < indices of bone nodes 
+    char  *name;
+} ASkin;
+
+enum AAnimTargetPath_ {
+    AAnimTargetPath_Translation, 
+    AAnimTargetPath_Rotation, 
+    AAnimTargetPath_Scale
+};
+typedef int AAnimTargetPath;
+
+enum ASamplerInterpolation_ {
+    ASamplerInterpolation_Linear, 
+    ASamplerInterpolation_Step, 
+    ASamplerInterpolation_CubicSpline
+};
+typedef int ASamplerInterpolation;
+
+typedef struct AAnimChannel_
+{
+    int sampler;
+    int targetNode;
+    AAnimTargetPath targetPath; 
+} AAnimChannel;
+
+typedef struct AAnimSampler_
+{
+    float* input;
+    float* output; // quaternion or vector array
+    int count;
+    int numComponent; // 3,4 vec3 or vec4
+    ASamplerInterpolation interpolation;
+} AAnimSampler;
+
+typedef struct AAnimation_
+{
+    int numSamplers;
+    int numChannels;
+    float duration; // total duration
+    AAnimChannel* channels;
+    AAnimSampler* samplers;
+    char* name;
+} AAnimation;
+
+typedef struct SceneBundle_
 {
     short numMeshes;
     short numNodes;
@@ -191,6 +251,8 @@ typedef struct ParsedGLTF_
     short numScenes;
     short defaultSceneIndex;
     short numBuffers;
+    short numAnimations;
+    short numSkins;
 
     AErrorType error;
 
@@ -205,15 +267,17 @@ typedef struct ParsedGLTF_
 
     GLTFBuffer* buffers;
 
-    AMesh*     meshes;
-    ANode*     nodes;
-    AMaterial* materials;
-    ATexture*  textures;
-    AImage*    images;
-    ASampler*  samplers;
-    ACamera*   cameras;
-    AScene*    scenes;
-} ParsedGLTF;
+    AMesh      *meshes;
+    ANode      *nodes;
+    AMaterial  *materials;
+    ATexture   *textures;
+    AImage     *images;
+    ASampler   *samplers;
+    ACamera    *cameras;
+    AScene     *scenes;
+    AAnimation *animations;
+    ASkin      *skins;
+} SceneBundle;
 
 typedef struct ParsedObj_
 {
@@ -235,13 +299,13 @@ typedef struct ParsedObj_
 
 // if there is an error error will be minus GLTFErrorType
 // out scene should not be null
-int ParseGLTF(const char* path, ParsedGLTF* scene, float scale);
+int ParseGLTF(const char* path, SceneBundle* scene, float scale);
 
 int ParseObj(const char* path, ParsedObj* scene);
 
 
 // Free
 
-void FreeParsedGLTF(ParsedGLTF* gltf);
+void FreeParsedGLTF(SceneBundle* gltf);
 
 const char* ParsedSceneGetError(AErrorType error);

@@ -92,7 +92,7 @@ struct Array
 		return *this;
 	}
 
-	Array& operator = (Array&& other) noexcept
+	Array& operator = (Array&& other)
 	{
 		if (&other != this)
 		{

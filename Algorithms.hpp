@@ -11,10 +11,10 @@ namespace ax {
 #endif
 
 inline constexpr bool IsNumber(char a) { return a <= '9' && a >= '0'; };
-inline constexpr bool IsLower(char a) { return a >= 'a' && a <= 'z'; };
-inline constexpr bool IsUpper(char a) { return a >= 'A' && a <= 'Z'; };
-inline constexpr bool ToLower(char a) { return a < 'a' ? a + ('A' - 'a') : a; }
-inline constexpr bool ToUpper(char a) { return a > 'Z' ? a - 'a' + 'A' : a; }
+inline constexpr bool IsLower(char a)  { return a >= 'a' && a <= 'z'; };
+inline constexpr bool IsUpper(char a)  { return a >= 'A' && a <= 'Z'; };
+inline constexpr bool ToLower(char a)  { return a < 'a' ? a + ('A' - 'a') : a; }
+inline constexpr bool ToUpper(char a)  { return a > 'Z' ? a - 'a' + 'A' : a; }
 // is alphabetical character?
 inline constexpr bool IsChar(char a) { return IsUpper(a) || IsLower(a); };
 inline constexpr bool IsWhitespace(char c) { return c <= ' '; }
@@ -22,9 +22,9 @@ inline constexpr bool IsWhitespace(char c) { return c <= ' '; }
 template<typename T>
 inline constexpr void Swap(T& a, T& b)
 {
-	T temp = (T&&)a;
-	a = (T&&)b;
-	b = (T&&)temp;
+    T temp = (T&&)a;
+    a = (T&&)b;
+    b = (T&&)temp;
 }
 
 template<typename T>
@@ -44,18 +44,18 @@ inline void BubbleSort(T* arr, int len)
 template<typename T>
 inline void ShellSort(T* arr, int n)
 {
-	for (int gap = n / 2; gap > 0; gap /= 2)
-	{
-		for (int i = gap; i < n; ++i)
-		{
-			T temp = arr[i];
-			int j = i;
-			for (; j >= gap && arr[j - gap] > temp; j -= gap)
-				arr[j] = arr[j - gap];
-
-			arr[j] = temp;
-		}
-	}
+    for (int gap = n / 2; gap > 0; gap /= 2)
+    {
+        for (int i = gap; i < n; ++i)
+        {
+            T temp = arr[i];
+            int j = i;
+            for (; j >= gap && arr[j - gap] > temp; j -= gap)
+                arr[j] = arr[j - gap];
+            
+            arr[j] = temp;
+        }
+    }
 }
 
 
@@ -65,47 +65,47 @@ inline void ShellSort(T* arr, int n)
 template<typename T>
 inline void QuickSort(T* arr, int left, int right)
 {
-	int i, j;
-	while (right > left)
-	{
-		j = right;
-		i = left - 1;
-		T v = arr[right];
-
-		while (true)
-		{
-			do i++; while (arr[i] < v && i < j);
-			do j--; while (arr[j] > v && i < j);
-
-			if (i >= j) break;
-			Swap(arr[i], arr[j]);
-		}
-
-		Swap(arr[i], arr[right]);
-
-		if ((i - 1 - left) <= (right - i - 1))
-		{
-			QuickSort(arr, left, i - 1);
-			left = i + 1;
-		}
-		else
-		{
-			QuickSort(arr, i + 1, right);
-			right = i - 1;
-		}
-	}
+    int i, j;
+    while (right > left)
+    {
+        j = right;
+        i = left - 1;
+        T v = arr[right];
+            
+        while (true)
+        {
+            do i++; while (arr[i] < v && i < j);
+            do j--; while (arr[j] > v && i < j);
+            
+            if (i >= j) break;
+            Swap(arr[i], arr[j]);
+        }
+        
+        Swap(arr[i], arr[right]);
+            
+        if ((i - 1 - left) <= (right - i - 1))
+        {
+            QuickSort(arr, left, i - 1);
+            left = i + 1;
+        }
+        else
+        {
+            QuickSort(arr, i + 1, right);
+            right = i - 1;
+        }
+    }
 }
 
 
 template<typename T>
 inline void Reverse(T* begin, T* end)
 {
-	while (begin < end)
-	{
-		Swap(*begin, *end);
-		begin++;
-		end--;
-	}
+    while (begin < end)
+    {
+        Swap(*begin, *end);
+        begin++;
+        end--;
+    }
 }
 
 // this is classic binary search. or you can use this:
@@ -114,17 +114,17 @@ inline void Reverse(T* begin, T* end)
 template<typename T>
 inline T* BinarySearch(T* begin, int len, T value)
 {
-	int low = 0;
-	int high = len;
-
-	while (low < high)
-	{
+    int low = 0;
+    int high = len;
+    
+    while (low < high)
+    {
         T mid = (low + high) >> 1;
         if (begin[mid] < value) low = mid + 1;
         else if (begin[mid] > value) high = mid - 1;
         else return begin + mid; // (begin[mid] == value)
-	}
-	return nullptr;
+    }
+    return nullptr;
 }
 
 // String to number functions
@@ -250,17 +250,17 @@ inline float ParseFloat(const char*& text)
 
 inline int Log10Algo(int n)
 {
-	if (n <= 9) return 0;
-	if (n <= 99) return 1;
-	if (n <= 999) return 2;
-	if (n <= 9999) return 3;
-	if (n <= 99999) return 4;
-	if (n <= 999999) return 5;
-	if (n <= 9999999) return 6;
-	if (n <= 99999999) return 7;
-	if (n <= 999999999) return 8;
-	if (n <= 2147483647) return 9; // 2147483647 = int max
-	return 0;
+    if (n <= 9) return 0;
+    if (n <= 99) return 1;
+    if (n <= 999) return 2;
+    if (n <= 9999) return 3;
+    if (n <= 99999) return 4;
+    if (n <= 999999) return 5;
+    if (n <= 9999999) return 6;
+    if (n <= 99999999) return 7;
+    if (n <= 999999999) return 8;
+    if (n <= 2147483647) return 9; // 2147483647 = int max
+    return 0;
 }
 
 // time complexity O(numDigits(x)), space complexity O(1) 
@@ -270,7 +270,7 @@ inline int IntToString(char* ptr, int x, int afterPoint=0)
     int size = 0;
     if (x < 0) ptr[size++] = '-', x = 0-x;
     
-	int numDigits = Log10Algo(x);
+    int numDigits = Log10Algo(x);
     int blen = numDigits;
     
     AX_NO_UNROLL while (++blen <= afterPoint)
@@ -278,8 +278,8 @@ inline int IntToString(char* ptr, int x, int afterPoint=0)
         ptr[size++] = '0';
     }
 
-	unsigned int const PowersOf10[10] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
-	numDigits = PowersOf10[numDigits];
+    unsigned int const PowersOf10[10] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+    numDigits = PowersOf10[numDigits];
 
     while (numDigits)
     {
@@ -295,9 +295,9 @@ inline int IntToString(char* ptr, int x, int afterPoint=0)
 
 inline int Pow10(int x) 
 {
-	int res = x != 0;
-	while (x-- > 0) res *= 10;
-	return res;
+    int res = x != 0;
+    while (x-- > 0) res *= 10;
+    return res;
 }
 
 // converts floating point to string
@@ -326,12 +326,12 @@ inline bool StartsWith(const char*& curr, const char* str)
 
 template<typename T> inline void Fill(T* begin, T* end, const T& val)
 {
-	while (begin < end) *begin++ = val;
+    while (begin < end) *begin++ = val;
 }
 
 template<typename T> inline void FillN(T* arr, T val, int n)
 {
-	for (int i = 0; i < n; ++i) arr[i] = val;
+    for (int i = 0; i < n; ++i) arr[i] = val;
 }
 
 template<typename T> inline bool Contains(const T* arr, const T& val, int n)
@@ -360,14 +360,14 @@ template<typename T> inline int CountIf(const T* arr, const T& val, int n)
 
 template<typename T> inline void Copy(T* dst, const T* src, int n)
 {
-	for (int i = 0; i < n; ++i)
-		dst[i] = src[i];
+    for (int i = 0; i < n; ++i)
+        dst[i] = src[i];
 }
 
 template<typename T> inline void MoveArray(T* dst, T* src, int n)
 {
   for (int i = 0; i < n; ++i)
-	dst[i] = (T&&)src[i];
+        dst[i] = (T&&)src[i];
 }
 
 template<typename T> inline void ClearN(T* src, int n)

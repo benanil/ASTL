@@ -245,7 +245,7 @@ typedef uint64_t ulong;
 #endif
 
 #ifdef _MSC_VER
-    #define SmallMemCpy(dst, src, size) __movsb((unsigned char*)dst, (unsigned char*)src, size);
+    #define SmallMemCpy(dst, src, size) __movsb((unsigned char*)(dst), (unsigned char*)(src), size);
 #else
     #define SmallMemCpy(dst, src, size) __builtin_memcpy(dst, src, size);
 #endif
@@ -318,13 +318,13 @@ template<typename T>
 __forceinline __constexpr T TrailingZeroCount(T x) 
 {
 #ifdef _MSC_VER
-	if_constexpr (sizeof(T) == 4) return _tzcnt_u32(x);
-	else if (sizeof(T) == 8) return _tzcnt_u64(x);
+	if_constexpr (sizeof(T) == 4) return (T)_tzcnt_u32(x);
+	else if (sizeof(T) == 8) return (T)_tzcnt_u64(x);
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	if_constexpr (sizeof(T) == 4) return __builtin_ctz(x);
-	else if (sizeof(T) == 8) return __builtin_ctzll(x);
+	if_constexpr (sizeof(T) == 4) return (T)__builtin_ctz(x);
+	else if (sizeof(T) == 8) return (T)__builtin_ctzll(x);
 #else
-	return PopCount((x & -x) - 1);
+	return (T)PopCount((x & -x) - 1);
 #endif
 }
 
@@ -343,22 +343,21 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 	x |= (x >> 4);
 	x |= (x >> 8);
 	x |= (x >> 16);
-	return 32 - PopCount(x);
+    if (sizeof(T) == 8) x |= (x >> 32); 
+	return (sizeof(T) * 8) - PopCount(x);
 #endif
 }
 
-__forceinline __constexpr int NextSetBit(int* bits)
+template<typename T>
+__forceinline __constexpr T NextSetBit(T* bits)
 {
-    *bits &= ~1;
-    int tz = TrailingZeroCount(*bits);
+    *bits &= ~T(1);
+    T tz = TrailingZeroCount<T>(*bits);
     *bits >>= tz;
     return tz;
 }
 
-__forceinline __constexpr bool EnumHasBit(int _enum, int bit)
-{
-    return !!(_enum & bit);
-}
+#define EnumHasBit(_enum, bit) !!(_enum & bit)
 
 template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) 

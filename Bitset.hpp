@@ -7,7 +7,7 @@ AX_NAMESPACE
 template<int numBits> struct Bitset
 {
 public:
-	uint64_t bits[numBits/64] = { 0 };
+	uint64_t bits[MAX(numBits/64, 1)] = { 0 };
 	const int size = (numBits / 64) + 1;
 
 	void Set(int idx) {
@@ -68,7 +68,7 @@ inline __constexpr void FillN(T* ptr, int len, T val) {
 
 struct Bitset128
 {
-	unsigned long bits[2] = { 0 };
+	ulong bits[2] = { 0 };
 
 	Bitset128() { bits[0] = 0ul; bits[1] = 0ul; }
 	Bitset128(const char* str) {
@@ -77,7 +77,7 @@ struct Bitset128
 			bits[i > 63] |= (1 << (i & 63)) * (*str++ - '0');
 		}
 	}
-	Bitset128(unsigned long repeat) { bits[0] = repeat; bits[1] = repeat;  }
+	Bitset128(ulong repeat) { bits[0] = repeat; bits[1] = repeat;  }
 	Bitset128(ulong a, ulong b) { bits[0] = a; bits[1] = b; }
 
 	bool Get(int idx) const { return (bits[idx > 63] >> idx) & 1; }

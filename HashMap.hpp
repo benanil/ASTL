@@ -438,7 +438,7 @@ public:
         return *this;
     }
 
-    HashMap& operator = (HashMap&& other) noexcept 
+    HashMap& operator = (HashMap&& other) 
     {
         if (&other != this) {
             ReallocateBuckets(other.m_num_buckets); 

@@ -336,7 +336,7 @@ public:
     }
 
     // move constructor
-    String(String&& other) noexcept
+    String(String&& other)
     {
         SmallMemCpy(lowHigh, other.lowHigh, 24);
         other.lowHigh[0] = other.lowHigh[1] = other.lowHigh[2] = 0;

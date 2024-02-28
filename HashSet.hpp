@@ -367,7 +367,7 @@ public:
         return *this;
     }
 
-    HashSet& operator = (HashSet&& other) noexcept 
+    HashSet& operator = (HashSet&& other) 
     {
         if (&other != this) {
             ReallocateBuckets(other.m_num_buckets); // deallocate before m_values is set (might have another allocator)

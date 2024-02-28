@@ -36,12 +36,12 @@ public:
 
 	void SetRotationEuler(Vector3f euler) 
 	{
-		this->rotation = Quaternion::FromEuler(euler); needsUpdate = true;
+		this->rotation = QFromEuler(euler); needsUpdate = true;
 	}
 	
 	void SetRotationEulerDegree(Vector3f euler) 
 	{
-		this->rotation = Quaternion::FromEuler(euler * DegToRad); needsUpdate = true;
+		this->rotation = QFromEuler(euler * DegToRad); needsUpdate = true;
 	}
 
 	void SetRotationQuaternion(const Quaternion& rotation) 
@@ -70,10 +70,10 @@ public:
 	}
 
 	Quaternion GetRotation() const { return rotation; }
-	Vector3f GetEulerDegree() const { return Quaternion::ToEulerAngles(rotation) * RadToDeg; }
-	Vector3f GetEuler() const { return Quaternion::ToEulerAngles(rotation); }
+	Vector3f GetEulerDegree() const { return QToEulerAngles(rotation) * RadToDeg; }
+	Vector3f GetEuler() const { return QToEulerAngles(rotation); }
 	
-	Vector3f GetForward() const { return rotation.GetForward(); }
-	Vector3f GetUp()      const { return rotation.GetUp(); }
-	Vector3f GetRight()   const { return rotation.GetRight(); }
+	Vector3f GetForward() const { return QGetForward(rotation); }
+	Vector3f GetUp()      const { return QGetUp(rotation); }
+	Vector3f GetRight()   const { return QGetRight(rotation); }
 };

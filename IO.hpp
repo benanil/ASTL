@@ -207,6 +207,16 @@ inline void AFileRead(void* dst, uint64_t size, AFile file)
     AAsset_read(file.asset, dst, size);
 }
 
+inline void AFileSeekBegin(long size, AFile file)
+{
+    AAsset_seek(file.asset, 0, SEEK_SET);
+}
+
+inline void AFileSeek(long offset, AFile file)
+{
+    AAsset_seek(file.asset, offset, SEEK_CUR);
+}
+
 inline void AFileWrite(const void* src, uint64_t size, AFile file)
 { }
 
@@ -254,6 +264,16 @@ inline void AFileRead(void* dst, uint64_t size, AFile file)
 inline void AFileWrite(const void* src, uint64_t size, AFile file)
 { 
     fwrite(src, 1, size, file.file);
+}
+
+inline void AFileSeekBegin(AFile file)
+{
+    fseek(file.file, 0, SEEK_SET);
+}
+
+inline void AFileSeek(long offset, AFile file)
+{
+    fseek(file.file, offset, SEEK_CUR);
 }
 
 inline void AFileClose(AFile file)
@@ -317,6 +337,15 @@ inline char* ReadAllText(const char* fileName, char* buffer = 0, uint64_t* numCh
     if (buffer == nullptr) 
         buffer = new char[file_size + 40 + startTextLen] {}; // +1 for null terminator
     
+    if (file_size >= 3)
+    {
+        AFileRead(buffer, 3, file);
+        bool isBOM = buffer[0] == '\xEF' && buffer[1] == '\xBB' && buffer[2] == '\xBF';
+        if (!isBOM) {
+            AFileSeekBegin(file);
+        }
+    }
+
     if (startText) 
         while (*startText) *buffer++ = *startText++;
     
@@ -324,7 +353,7 @@ inline char* ReadAllText(const char* fileName, char* buffer = 0, uint64_t* numCh
         AFileClose(file);
         return nullptr; // Return an error code
     }
-    
+
     // Read the entire file into the buffer
     AFileRead(buffer, file_size, file);
     buffer[file_size] = '\0'; // Null-terminate the buffer

@@ -153,7 +153,7 @@ public:
 		return *this;
 	}
 	
-	Queue& operator = (Queue&& other) noexcept
+	Queue& operator = (Queue&& other)
 	{
 		if (&other != this)
 		{
