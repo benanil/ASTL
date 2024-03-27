@@ -406,7 +406,7 @@ __constexpr inline uint64_t StringToHash64(const char* str, uint64_t len)
     
 		while (shift < 60)
 		{
-			k     |= ulong(ToUpper(*str++) - '0') << shift;
+			k     |= uint64_t(ToUpper(*str++) - '0') << shift;
 			shift += 6ull;
 		}
 		// fill missing 4 bits, 10 is random shift to choose for last 4 bit

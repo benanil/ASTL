@@ -13,7 +13,7 @@ public:
 	void Set(int idx) {
 		int arrIndex = idx / 64;
 		int bitIndex = idx & 63;
-		bits[arrIndex] |= 1ul << bitIndex;
+		bits[arrIndex] |= 1ull << bitIndex;
 	}
 
 	bool Get(int idx) {
@@ -48,6 +48,55 @@ public:
 		return false;
 	}
 
+	// >>
+	void ShiftRight(int n)
+	{
+		// shift that integer and the integers that is left of it
+		int numInt = size - 1;
+		while (n > 0)
+		{
+			int numShift = MIN(n, 64);
+			uint64_t mask = ~0ull >> (64 - numShift);
+			int carry = 0;
+			int i = numInt;
+
+			while (i >= 0)
+			{
+				int tmp = bits[i] & mask;
+				bits[i] >>= numShift;
+				bits[i] |= carry << (64 - numShift);
+				carry = tmp;
+				i--;
+			}
+			n -= 64;
+			numInt -= 1;
+		}
+	}
+	
+	// <<
+	void ShiftLeft(int n)
+	{
+		int numInt = 0;
+		while (n > 0)
+		{
+			int numShift = MIN(n, 64);
+			uint64_t mask = ~0ull << (64 - numShift);
+			int carry = 0;
+			int i = numInt;
+
+			while (i < size)
+			{
+				int tmp = bits[i] & mask;
+				bits[i] <<= numShift;
+				bits[i] |= carry >> (64 - numShift);
+				carry = tmp;
+				i++;
+			}
+			n -= 64;
+			numInt += 1;
+		}
+	}
+
 	int Count() {
 		int sum = 0;
 		for (int i = 0; i < size - 1; ++i)
@@ -57,6 +106,45 @@ public:
 		for (int i = 0; i < lastBits; ++i)
 			sum += ((1ul << i) & bits[size - 1]) > 0;
 		return sum;
+	}
+
+	Bitset operator & (const Bitset other) const {
+		Bitset res;
+		for (int i = 0; i < size; i++)
+			res.bits[i] = bits[i] & other.bits[i];
+		return res; 
+	}
+
+	Bitset operator | (const Bitset other) const {
+		Bitset res;
+		for (int i = 0; i < size; i++)
+			res.bits[i] = bits[i] | other.bits[i];
+		return res; 
+	}
+
+	Bitset operator ^ (const Bitset other) const {
+		Bitset res;
+		for (int i = 0; i < size; i++)
+			res.bits[i] = bits[i] ^ other.bits[i];
+		return res; 
+	}
+
+	Bitset operator &= (const Bitset other) {
+		for (int i = 0; i < size; i++)
+			bits[i] &= other.bits[i];
+		return *this;
+	}
+
+	Bitset operator |= (const Bitset other) {
+		for (int i = 0; i < size; i++)
+			bits[i] |= other.bits[i];
+		return *this;
+	}
+
+	Bitset operator ^= (const Bitset other) {
+		for (int i = 0; i < size; i++)
+			bits[i] ^= other.bits[i];
+		return *this;
 	}
 };
 
@@ -68,7 +156,7 @@ inline __constexpr void FillN(T* ptr, int len, T val) {
 
 struct Bitset128
 {
-	ulong bits[2] = { 0 };
+	uint64_t bits[2] = { 0 };
 
 	Bitset128() { bits[0] = 0ul; bits[1] = 0ul; }
 	Bitset128(const char* str) {
@@ -77,12 +165,12 @@ struct Bitset128
 			bits[i > 63] |= (1 << (i & 63)) * (*str++ - '0');
 		}
 	}
-	Bitset128(ulong repeat) { bits[0] = repeat; bits[1] = repeat;  }
-	Bitset128(ulong a, ulong b) { bits[0] = a; bits[1] = b; }
+	Bitset128(uint64_t repeat) { bits[0] = repeat; bits[1] = repeat;  }
+	Bitset128(uint64_t a, uint64_t b) { bits[0] = a; bits[1] = b; }
 
 	bool Get(int idx) const { return (bits[idx > 63] >> idx) & 1; }
-	void Set(int idx)       { bits[idx > 63] |= 1ul << (idx & 63); }
-	void Reset(int idx)     { bits[idx > 63] &= ~(1ul << (idx & 63)); }
+	void Set(int idx)       { bits[idx > 63] |= 1ull << (idx & 63); }
+	void Reset(int idx)     { bits[idx > 63] &= ~(1ull << (idx & 63)); }
 
 	Bitset128 operator &  (const Bitset128 other) const { return { bits[0] & other.bits[0], bits[1] & other.bits[1] }; }
 	Bitset128 operator |  (const Bitset128 other) const { return { bits[0] | other.bits[0], bits[1] | other.bits[1] }; }
@@ -96,7 +184,7 @@ struct Bitset128
 	
 	bool All()  const { return bits[0] == ~0ul && bits[1] == ~0ul; }
 	bool Any()  const { return bits[0] + bits[1] > 0; }
-	int Count() const { return PopCount(bits[0]) + PopCount(bits[1]); }
+	int Count() const { return (int)PopCount64(bits[0]) + (int)PopCount64(bits[1]); }
 };
 
 

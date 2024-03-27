@@ -17,7 +17,6 @@ typedef long long int64;
 typedef uint8_t  uchar;
 typedef uint16_t ushort;
 typedef uint32_t uint;
-typedef uint64_t ulong;
 
 #ifdef AX_EXPORT
 	#define AX_API __declspec(dllexport)
@@ -42,6 +41,16 @@ typedef uint64_t ulong;
 #   define VECTORCALL [[clang::vectorcall]] 
 #elif __GNUC__
 #   define VECTORCALL  
+#endif
+
+#if defined(__cplusplus) &&  __cplusplus >= 201103L
+   #define AX_THREAD_LOCAL       thread_local
+#elif defined(__GNUC__) && __GNUC__ < 5
+   #define AX_THREAD_LOCAL       __thread
+#elif defined(_MSC_VER)
+   #define AX_THREAD_LOCAL       __declspec(thread)
+#elif defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
+   #define AX_THREAD_LOCAL       _Thread_local
 #endif
 
 #if defined(__GNUC__)
@@ -218,7 +227,7 @@ typedef uint64_t ulong;
     #define AX_CPP17 201703L
     #define AX_CPP20 202002L
 #elif defined(_MSC_VER)
-    #define AX_CPP_VERSION _MSC_VER
+    #define AX_CPP_VERSION __cplusplus
     #define AX_CPP14 1900
     #define AX_CPP17 1910
     #define AX_CPP20 1920
@@ -251,12 +260,40 @@ typedef uint64_t ulong;
 #endif
 
 #ifdef _MSC_VER
-    #define SmallMemSet(dst, val, size) __stosb((unsigned char*)dst, val, size);
+    #define SmallMemSet(dst, val, size) __stosb((unsigned char*)(dst), val, size);
 #else
     #define SmallMemSet(dst, val, size) __builtin_memset(dst, val, size);
 #endif
 
 #define MemsetZero(dst, size) SmallMemSet(dst, 0, size)
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_M_IX86) //< The __unaligned modifier isn't valid for the x86 platform.
+    #define UnalignedLoad64(ptr) *((uint64_t*)(ptr))
+#else
+    #define UnalignedLoad64(ptr) *((__unaligned uint64_t*)(ptr))
+#endif
+#else
+    __forceinline uint64_t UnalignedLoad64(void const* ptr) {
+        __attribute__((aligned(1))) uint64_t const *result = (uint64_t const *)ptr;
+        return *result;
+    }
+#endif
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_M_IX86) //< The __unaligned modifier isn't valid for the x86 platform.
+    #define UnalignedLoad32(ptr) *((uint32_t*)(ptr))
+#else
+    #define UnalignedLoad32(ptr) *((__unaligned uint32_t*)(ptr))
+#endif
+#else
+    __forceinline uint64_t UnalignedLoad32(void const* ptr) {
+        __attribute__((aligned(1))) uint32_t const *result = (uint32_t const *)ptr;
+        return *result;
+    }
+#endif
+
+#define UnalignedLoadWord(x) (sizeof(unsigned long long) == 8 ? UnalignedLoad64(x) : UnalignedLoad32(x))
 
 // #define AX_USE_NAMESPACE
 #ifdef AX_USE_NAMESPACE
@@ -282,62 +319,91 @@ inline constexpr bool IsAndroid()
 template<typename T, int N>
 __constexpr int ArraySize(const T (&)[N]) { return N; }
 
-template<typename T>
-__forceinline __constexpr T PopCount(T x)
-{
-    // according to intel intrinsic, popcnt instruction is 3 cycle (equal to mulps, addps) 
-    // throughput is even double of mulps and addps which is 1.0 (%100)
-    // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
+#if defined(_MSC_VER)     /* Visual Studio */
+    #define AX_BSWAP32(x) _byteswap_ulong(x)
+#elif (defined (__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)) \
+|| (defined(__clang__) && __has_builtin(__builtin_bswap32))
+    #define AX_BSWAP32(x) __builtin_bswap32(x)
+#else
+inline uint32_t AX_BSWAP32(uint32_t x) {
+    return ((in << 24) & 0xff000000 ) |
+           ((in <<  8) & 0x00ff0000 ) |
+           ((in >>  8) & 0x0000ff00 ) |
+           ((in >> 24) & 0x000000ff );
+}
+#endif
+
+#if defined(_MSC_VER) 
+    #define ByteSwap32(x) _byteswap_uint64(x)
+#elif (defined (__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)) \
+|| (defined(__clang__) && __has_builtin(__builtin_bswap32))
+    #define ByteSwap64(x) __builtin_bswap64(x)
+#else
+inline uint64_t ByteSwap(uint64_t x) {
+    return ((x << 56) & 0xff00000000000000ULL) |
+           ((x << 40) & 0x00ff000000000000ULL) |
+           ((x << 24) & 0x0000ff0000000000ULL) |
+           ((x << 8)  & 0x000000ff00000000ULL) |
+           ((x >> 8)  & 0x00000000ff000000ULL) |
+           ((x >> 24) & 0x0000000000ff0000ULL) |
+           ((x >> 40) & 0x000000000000ff00ULL) |
+           ((x >> 56) & 0x00000000000000ffULL);
+}
+#endif
+
+#define ByteSwapWord(x) (sizeof(unsigned long long) == 8 ? ByteSwap64(x) : ByteSwap32(x))
+
+// according to intel intrinsic, popcnt instruction is 3 cycle (equal to mulps, addps) 
+// throughput is even double of mulps and addps which is 1.0 (%100)
+// https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
+
 #if defined(__ARM_NEON__)
-    return vcnt_u8((int8x8_t)x);
+    #define PopCount32(x) vcnt_u8((int8x8_t)x)
 #elif defined(AX_SUPPORT_SSE)
-	if_constexpr (sizeof(T) == 4) return _mm_popcnt_u32(x);
-    else if (sizeof(T) == 8) return _mm_popcnt_u64(x);
+	#define PopCount32(x) _mm_popcnt_u32(x)
+    #define PopCount64(x) _mm_popcnt_u64(x)
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	if_constexpr (sizeof(T) == 4) return __builtin_popcount(x);
-	else if (sizeof(T) == 8) return __builtin_popcountl(x);
+	#define PopCount32(x) __builtin_popcount(x)
+	#define PopCount64(x) __builtin_popcountl(x)
 #else
-	if_constexpr (sizeof(T) == 4)
-	{
-		x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
-		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
-		x = (x + (x >> 4)) & 0x0F0F0F0F;        // groups of 8
-		return (x * 0x01010101) >> 24;          // horizontal sum of bytes	
-	}
-	else if (sizeof(T) == 8) // standard popcount; from wikipedia
-	{
-		x -= ((x >> 1) & 0x5555555555555555ull);
-		x = (x & 0x3333333333333333ull) + (x >> 2 & 0x3333333333333333ull);
-		return ((x + (x >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
-	}
-#endif
-    ASSERT(0);
+
+inline uint32_t PopCount32(uint32_t x) {
+	x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
+	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
+	x = (x + (x >> 4)) & 0x0F0F0F0F;        // groups of 8
+	return (x * 0x01010101) >> 24;          // horizontal sum of bytes	
 }
 
-template<typename T>
-__forceinline __constexpr T TrailingZeroCount(T x) 
-{
-#ifdef _MSC_VER
-	if_constexpr (sizeof(T) == 4) return (T)_tzcnt_u32(x);
-	else if (sizeof(T) == 8) return (T)_tzcnt_u64(x);
-#elif defined(__GNUC__) || !defined(__MINGW32__)
-	if_constexpr (sizeof(T) == 4) return (T)__builtin_ctz(x);
-	else if (sizeof(T) == 8) return (T)__builtin_ctzll(x);
-#else
-	return (T)PopCount((x & -x) - 1);
-#endif
+// standard popcount; from wikipedia
+inline uint64_t PopCount64(uint64_t x) {
+	x -= ((x >> 1) & 0x5555555555555555ull);
+	x = (x & 0x3333333333333333ull) + (x >> 2 & 0x3333333333333333ull);
+	return ((x + (x >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
 }
+#endif
 
-template<typename T>
-__forceinline __constexpr T LeadingZeroCount(T x)
-{
 #ifdef _MSC_VER
-	if_constexpr (sizeof(T) == 4) return _lzcnt_u32(x);
-	else if (sizeof(T) == 8) return _lzcnt_u64(x);
+    #define TrailingZeroCount32(x) _tzcnt_u32(x)
+    #define TrailingZeroCount64(x) _tzcnt_u64(x)
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	if_constexpr (sizeof(T) == 4) return __builtin_clz(x);
-	else if (sizeof(T) == 8) return __builtin_clzll(x);
+    #define TrailingZeroCount32(x) __builtin_ctz(x)
+    #define TrailingZeroCount64(x) __builtin_ctzll(x)
 #else
+    #define TrailingZeroCount32(x) PopCount64((x & -x) - 1u)
+    #define TrailingZeroCount64(x) PopCount64((x & -x) - 1ull)
+#endif
+
+#define TrailingZeroCountWord(x) (sizeof(unsigned long long) == 8 ? TrailingZeroCount64(x) : TrailingZeroCount32(x))
+
+#ifdef _MSC_VER
+	#define LeadingZeroCount32(x) _lzcnt_u32(x)
+	#define LeadingZeroCount64(x) _lzcnt_u64(x)
+#elif defined(__GNUC__) || !defined(__MINGW32__)
+	#define LeadingZeroCount32(x) __builtin_clz(x)
+	#define LeadingZeroCount64(x) __builtin_clzll(x)
+#else
+template<typename T> inline T LeadingZeroCount64(T x)
+{
 	x |= (x >> 1);
 	x |= (x >> 2);
 	x |= (x >> 4);
@@ -345,14 +411,16 @@ __forceinline __constexpr T LeadingZeroCount(T x)
 	x |= (x >> 16);
     if (sizeof(T) == 8) x |= (x >> 32); 
 	return (sizeof(T) * 8) - PopCount(x);
-#endif
 }
+#endif
+
+#define LeadingZeroCountWord(x) (sizeof(unsigned long long) == 8 ? LeadingZeroCount64(x) : LeadingZeroCount32(x))
 
 template<typename T>
 __forceinline __constexpr T NextSetBit(T* bits)
 {
     *bits &= ~T(1);
-    T tz = TrailingZeroCount<T>(*bits);
+    T tz = sizeof(T) == 8 ? (T)TrailingZeroCount64((uint64_t)*bits) : (T)TrailingZeroCount32((uint32_t)*bits);
     *bits >>= tz;
     return tz;
 }
@@ -362,7 +430,7 @@ __forceinline __constexpr T NextSetBit(T* bits)
 template<typename To, typename From>
 __forceinline __constexpr To BitCast(const From& _Val) 
 {
-#if AX_CPP_VERSION < AX_CPP17
+#if defined(_MSC_VER) && AX_CPP_VERSION < AX_CPP17
   return *reinterpret_cast<const To*>(&_Val);
 #else
   return __builtin_bit_cast(To, _Val);
@@ -432,14 +500,48 @@ inline uint PointerDistance(const T* begin, const T* end)
     return uint((char*)end - (char*)begin) / sizeof(T);
 }
 
-inline __constexpr int CalculateArrayGrowth(int _size)
+inline int CalculateArrayGrowth(int _size)
 {
     const int addition = _size >> 1;
-    if (AX_UNLIKELY(_size > (INT32_MAX - addition))) {
+    if (_size + addition < 0) {
         return INT32_MAX; // growth would overflow
     }
     return _size + addition; // growth is sufficient
 }
+
+#if (defined(__GNUC__) || defined(__clang__)) || \
+    (defined(_MSC_VER) && (AX_CPP_VERSION >= AX_CPP17))
+    #define StringLength(s) (int)__builtin_strlen(s)
+#elif 
+typedef unsigned long long unsignedLongLong;
+// http://www.lrdev.com/lr/c/strlen.c
+inline int StringLength(char const* s)
+{
+    char const* p = s;
+    const unsignedLongLong m = 0x7efefefefefefeffull; 
+    const unsignedLongLong n = ~m;
+
+    for (; (unsignedLongLong)p & (sizeof(unsignedLongLong) - 1); p++) 
+        if (!*p) 
+            return (int)(unsignedLongLong)(p - s);
+
+    for (;;) 
+    {
+        // memory is aligned from now on
+        unsignedLongLong i = *(const unsignedLongLong*)p;
+
+        if (!(((i + m) ^ ~i) & n)) {
+            p += sizeof(unsignedLongLong);
+        }
+        else
+        {
+            for (i = sizeof(unsignedLongLong); i; p++, i--) 
+                if (!*p) return (int)(unsignedLongLong)(p - s);
+        }
+    }
+}
+#endif
+
 
 template<typename A, typename B>
 struct Pair

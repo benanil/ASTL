@@ -22,23 +22,6 @@ inline bool StringEqual(const char *a, const char *b, int n)
 
 // https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
 #ifdef AX_SUPPORT_SSE
-inline int StringLength(const char* s)
-{
-    __m128i* mem = reinterpret_cast<__m128i*>(const_cast<char*>(s));
-    const __m128i zeros = _mm_setzero_si128();
-    
-    for (int result = 0; /**/; mem++, result += 16) 
-    {
-        const __m128i data = _mm_loadu_si128(mem);
-        const uint8_t mode = _SIDD_UBYTE_OPS | _SIDD_CMP_EQUAL_EACH | _SIDD_LEAST_SIGNIFICANT;
-
-        if (_mm_cmpistrc(data, zeros, mode)) 
-        {
-            int idx = _mm_cmpistri(data, zeros, mode);
-            return result + idx;
-        }
-    }
-}
 
 // returns 0 if equal
 inline int StringCompare(const char* s1, const char* s2)
@@ -105,12 +88,6 @@ inline char* FindCharInString(const char* s, int c)
 }
 
 #else
-inline int StringLength(const char* s)
-{
-    const char* begin = s;
-    while (*s) s++;
-    return s - begin;
-}
 
 inline int StringCompare(const char* a, const char* b)
 {

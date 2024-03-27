@@ -7,7 +7,7 @@
 *    Author:                                                     *
 *        Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com          *
 *    Restrictions:                                               *
-*        No animation and extension support yet.                 *
+*        No extension support.                                   *
 *    License:                                                    *
 *        No License whatsoever do Whatever you want.             *
 *                                                                *
@@ -15,11 +15,8 @@
 
 #include "GLTFParser.hpp"
 
-#include "../Memory.hpp"
 #include "../IO.hpp"
-#include "../Algorithms.hpp"
 #include "../Array.hpp"
-#include "../String.hpp"
 #include "../Math/Matrix.hpp"
 
 #define __private static
@@ -46,31 +43,24 @@ struct GLTFBufferView
 typedef FixedSizeGrowableAllocator<char> AStringAllocator;
 typedef FixedSizeGrowableAllocator<int>  AIntAllocator;
 
-
-#if 0 // AX_SUPPORT_SSE
-// _otr must be const char*
-// generates bitmask for comparison for example if _otr == "names" 3rd argument is 0x11111
-#define StrCMP16(_str, _otr) StrCmp16(_str, _otr, (1 << (sizeof(_otr) - 1)) - 1)
-// compares strings length less than 16
-// Return 1 if strings are equal, 0 otherwise
-inline int StrCmp16(const char* a, const char* b, int cmpMask)
+#define StrCMP16(_str, _otr) (sizeof(_otr) <= 9 ? StrCmp8(_str, _otr, sizeof(_otr)) : \
+                                                  StrCmp16(_str, _otr, sizeof(_otr))) 
+ 
+bool StrCmp8(const char* RESTRICT a, const char* b, uint64_t n)
 {
-    __m128i va = _mm_loadu_si128((const __m128i*)a);
-    __m128i vb = _mm_loadu_si128((const __m128i*)b);
-    int movemask = _mm_movemask_epi8(_mm_cmpeq_epi8(va, vb));
-    return (movemask & cmpMask) == cmpMask;  
+    uint64_t al, bl;
+    uint64_t mask = ~0ull >> (64 - ((n-1) * 8));
+    al = UnalignedLoad64(a);
+    bl = UnalignedLoad64(b);
+    return ((al ^ bl) & mask) == 0;
 }
-#else
-#define StrCMP16(_str, _otr) StrCmp16(_str, _otr, 0)
-// 1 means equal
-inline int StrCmp16(const char* a, const char* b, int cmpMask)
+
+bool StrCmp16(const char* RESTRICT a, const char* b, uint64_t bSize)
 {
-    bool equal = true;
-    while (*b)
-        equal &= *a++ == *b++;
+    bool equal = StrCmp8(a, b, 9);
+    equal &= StrCmp8(a + 8, b + 8, bSize - 8);
     return equal;
 }
-#endif
 
 inline const char* SkipUntill(const char* curr, char character)
 {
@@ -124,6 +114,7 @@ constexpr uint64_t AHashString8(const char* curr)
 {
     uint64_t h = 0ull;
     uint64_t shift = 0;
+
     while (*curr != '\0') 
     { 
         h |= uint64_t(*curr++) << shift; 
@@ -447,20 +438,19 @@ __private const char* ParseAttributes(const char* curr, APrimitive* primitive)
         if (*curr++ == '}') return curr;
         
         curr++; // skip "
-        int maskBefore = primitive->attributes;
-        if      (StrCMP16(curr, "POSITION"))   { primitive->attributes |= AAttribType_POSITION; }
-        else if (StrCMP16(curr, "NORMAL"))     { primitive->attributes |= AAttribType_NORMAL; }
-        else if (StrCMP16(curr, "TEXCOORD_0")) { primitive->attributes |= AAttribType_TEXCOORD_0; }
-        else if (StrCMP16(curr, "TANGENT"))    { primitive->attributes |= AAttribType_TANGENT; }
-        else if (StrCMP16(curr, "TEXCOORD_1")) { primitive->attributes |= AAttribType_TEXCOORD_1; }
-        else if (StrCMP16(curr, "JOINTS_0"))   { primitive->attributes |= AAttribType_JOINTS; }
-        else if (StrCMP16(curr, "WEIGHTS_0"))  { primitive->attributes |= AAttribType_WEIGHTS; }
-        else if (StrCMP16(curr, "TEXCOORD_"))  { curr = SkipAfter(curr, '"'); continue; } // < NO more than two texture coords
+        unsigned maskBefore = primitive->attributes;
+        if      (StrCMP16(curr, "POSITION"))   { primitive->attributes |= AAttribType_POSITION;   curr += sizeof("POSITION'");   }
+        else if (StrCMP16(curr, "NORMAL"))     { primitive->attributes |= AAttribType_NORMAL;     curr += sizeof("NORMAL'");     }
+        else if (StrCMP16(curr, "TEXCOORD_0")) { primitive->attributes |= AAttribType_TEXCOORD_0; curr += sizeof("TEXCOORD_0'"); }
+        else if (StrCMP16(curr, "TANGENT"))    { primitive->attributes |= AAttribType_TANGENT;    curr += sizeof("TANGENT'");    }
+        else if (StrCMP16(curr, "TEXCOORD_1")) { primitive->attributes |= AAttribType_TEXCOORD_1; curr += sizeof("TEXCOORD_1'"); }
+        else if (StrCMP16(curr, "JOINTS_0"))   { primitive->attributes |= AAttribType_JOINTS;     curr += sizeof("JOINTS_0'");   }
+        else if (StrCMP16(curr, "WEIGHTS_0"))  { primitive->attributes |= AAttribType_WEIGHTS;    curr += sizeof("WEIGHTS_0'");  }
+        else if (StrCMP16(curr, "TEXCOORD_"))  { curr += sizeof("TEXCOORD_X'"); continue; } // < NO more than two texture coords
         else { ASSERT(0 && "attribute variable unknown!"); return (const char*)AError_UNKNOWN_ATTRIB; }
 
-        curr = SkipUntill(curr, '"'); curr++;// skip quote because attribute in double quotes
         // using bitmask will help us to order attributes correctly(sort) Position, Normal, TexCoord
-        int newIndex = TrailingZeroCount(maskBefore ^ primitive->attributes);
+        unsigned newIndex = TrailingZeroCount32(maskBefore ^ primitive->attributes);
         primitive->vertexAttribs[newIndex] = (void*)(uint64_t)ParsePositiveNumber(curr);
     }
 }
@@ -490,8 +480,27 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
             curr = CopyStringInQuotes(mesh.name, curr, stringAllocator); 
             continue; 
         }
+        else if (StrCMP16(text, "weights"))
+        {
+            curr = SkipAfter(curr, '[');
+            const char* begin = curr;
+            
+            int numWeights = 1;
+            while (*curr != ']')
+                numWeights += *curr++ == ',';
+            
+            curr = begin;
+            mesh.numMorphWeights = numWeights;
+            mesh.morphWeights = new float[numWeights];
+            for (int i = 0; i < numWeights; i++)
+            {
+                mesh.morphWeights[i] = ParseFloat(curr);
+            }
+            curr = SkipAfter(curr, ']');
+            continue;
+        }
         else if (!StrCMP16(text, "primitives")) { 
-            ASSERT(0 && "only primitives and name allowed"); 
+            ASSERT(0 && "only primitives, name and weights allowed"); 
             return (const char*)AError_UNKNOWN_MESH_VAR; 
         }
 
@@ -518,6 +527,36 @@ __private const char* ParseMeshes(const char* curr, Array<AMesh>& meshes, AStrin
             else if (StrCMP16(curr, "indices"))    { primitive.indiceIndex = ParsePositiveNumber(curr); }
             else if (StrCMP16(curr, "mode"))       { primitive.mode        = ParsePositiveNumber(curr); }
             else if (StrCMP16(curr, "material"))   { primitive.material    = ParsePositiveNumber(curr); }
+            else if (StrCMP16(curr, "targets"))    
+            {
+                curr += sizeof("targets'");
+                AMorphTarget morphTarget = {};
+                while (*curr)
+                {
+                    while (*curr != '"')
+                    {
+                        if (*curr == '}') {
+                            SBPush(primitive.morphTargets, morphTarget);
+                            MemsetZero(&morphTarget, sizeof(AMorphTarget));
+                        }
+                        if (*curr++ == ']') goto end_morphs;
+                    }
+                    curr++; // skip "
+
+                    unsigned maskBefore = morphTarget.attributes;
+                    if      (StrCMP16(curr, "POSITION"))   { morphTarget.attributes |= AAttribType_POSITION;   curr += sizeof("POSITION'"); }
+                    else if (StrCMP16(curr, "TEXCOORD_0")) { morphTarget.attributes |= AAttribType_TEXCOORD_0; curr += sizeof("TEXCOORD_0'"); }
+                    else if (StrCMP16(curr, "NORMAL"))     { morphTarget.attributes |= AAttribType_NORMAL;     curr += sizeof("NORMAL'"); }
+                    else if (StrCMP16(curr, "TANGENT"))    { morphTarget.attributes |= AAttribType_TANGENT;    curr += sizeof("TANGENT'"); }
+                    else if (StrCMP16(curr, "TEXCOORD_"))  { curr = SkipAfter(curr, '"'); continue; } // < NO more than one texture coords
+                    else { ASSERT(0 && "attribute variable unknown!"); return (const char*)AError_UNKNOWN_ATTRIB; }
+                 
+                    // detect changed attribute.
+                    unsigned addedAttribute = TrailingZeroCount32(maskBefore ^ morphTarget.attributes);
+                    morphTarget.indexes[addedAttribute] = (short)ParsePositiveNumber(curr);
+                }
+                end_morphs:{}
+            }
             else { ASSERT(0); return (const char*)AError_UNKNOWN_MESH_PRIMITIVE_VAR; }
         }
         end_primitives:{}
@@ -590,7 +629,7 @@ __private const char* ParseNodes(const char* curr,
         ASSERT(*curr != '\0' && "parsing nodes not possible, probably forgot to close brackets!");
         curr++; // skips the "
         
-        // mesh, name, children, matrix, translation, rotation, scale
+        // mesh, name, children, matrix, translation, rotation, scale, skin
         if      (StrCMP16(curr, "mesh"))   { node.type = 0; node.index = ParsePositiveNumber(curr); continue; } // don't want to skip ] that's why continue
         else if (StrCMP16(curr, "camera")) { node.type = 1; node.index = ParsePositiveNumber(curr); continue; } // don't want to skip ] that's why continue
         else if (StrCMP16(curr, "children"))
@@ -613,8 +652,8 @@ __private const char* ParseNodes(const char* curr,
             node.translation[2] = matrix[14];
             QuaternionFromMatrix(node.rotation, matrix);
 
-            Vector3f v = Matrix4::ExtractScale(m) * scale;
-            SmallMemCpy(node.scale, &v.x, sizeof(Vector3f));  
+            vec_t v = VecMulf(Matrix4::ExtractScaleV(m), scale);
+            Vec3Store(node.scale, v);
         }
         else if (StrCMP16(curr, "translation"))
         {
@@ -814,6 +853,7 @@ __private const char* ParseMaterialTexture(const char* curr, AMaterial::Texture&
 {
     curr = SkipUntill(curr, '{');
     curr++;
+    texture.strength = AMaterial::MakeFloat16(1.0f);
     while (true)
     {
         while (*curr && *curr != '"')
@@ -864,6 +904,8 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
                 materials.Add(material);
                 MemsetZero(&material, sizeof(AMaterial));
                 material.baseColorTexture.index = -1;
+                material.metallicFactor = PackUnorm16(1.0f);
+                material.roughnessFactor = PackUnorm16(1.0f);
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
@@ -906,11 +948,11 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
                 }
                 else if (StrCMP16(curr, "metallicFact"))
                 {
-                    curr = ParseFloat16(curr, material.metallicFactor);
+                    material.metallicFactor = PackUnorm16(ParseFloat(curr));
                 }
                 else if (StrCMP16(curr, "roughnessFact"))
                 {
-                    curr = ParseFloat16(curr, material.roughnessFactor);
+                    material.roughnessFactor = PackUnorm16(ParseFloat(curr));
                 }
                 else
                 {
@@ -949,7 +991,18 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         {
             material.alphaCutoff = ParseFloat(curr);
         }
-        else {
+        else if (StrCMP16(curr, "extras"))
+        {
+            curr = SkipAfter(curr, '{');
+            int balance = 1;
+            while (balance > 0) {
+                balance += *curr == '{';
+                balance -= *curr == '}';
+                curr++;
+            }
+        }
+        else
+        {
             ASSERT(0 && "undefined material variable!");
             return (const char*)AError_UNKNOWN_MATERIAL_VAR;
         }
@@ -1076,6 +1129,7 @@ static const char* ParseAnimations(const char* curr, Array<AAnimation>& animatio
                             case 't': channel.targetPath = AAnimTargetPath_Translation; curr += sizeof("translation'"); break;
                             case 'r': channel.targetPath = AAnimTargetPath_Rotation;    curr += sizeof("rotation'"); break;
                             case 's': channel.targetPath = AAnimTargetPath_Scale;       curr += sizeof("scale'"); break;
+                            case 'w': channel.targetPath = AAnimTargetPath_Weight;      curr += sizeof("weights'"); break;
                             default: ASSERT(0 && "Unknown animation path value");
                         };
                         break;
@@ -1135,7 +1189,7 @@ __public int ParseGLTF(const char* path, SceneBundle* result, float scale)
 {
     ASSERT(result && path);
     uint64_t sourceSize = 0;
-    char* source = ReadAllText(path, nullptr, &sourceSize);
+    char* source = ReadAllFile(path, nullptr);
     MemsetZero(result, sizeof(SceneBundle));
 
     if (source == nullptr) { result->error = AError_FILE_NOT_FOUND; ASSERT(0); return 0; }
@@ -1214,14 +1268,14 @@ __public int ParseGLTF(const char* path, SceneBundle* result, float scale)
             primitive.indexType = accessor.componentType;
             
             // get joint data that we need for creating vertices
-            const int jointIndex = TrailingZeroCount(AAttribType_JOINTS);
+            const uint32_t jointIndex = TrailingZeroCount32(AAttribType_JOINTS);
             accessor = accessors[(int)(size_t)primitive.vertexAttribs[jointIndex]];
             primitive.jointType   = (short)accessor.componentType;
             primitive.jointCount  = (short)accessor.type;
             primitive.jointStride = (short)bufferViews[accessor.bufferView].byteStride;
 
             // get weight data that we need for creating vertices
-            const int weightIndex = TrailingZeroCount(AAttribType_WEIGHTS);
+            const uint32_t weightIndex = TrailingZeroCount32(AAttribType_WEIGHTS);
             accessor = accessors[(int)(size_t)primitive.vertexAttribs[weightIndex]];
             primitive.weightType   = (short)accessor.componentType;
             primitive.weightStride = (short)bufferViews[accessor.bufferView].byteStride;
@@ -1252,6 +1306,7 @@ __public int ParseGLTF(const char* path, SceneBundle* result, float scale)
         skin.inverseBindMatrices = (float*)((char*)buffers[view.buffer].uri + offset);
     }
 
+    result->numAnimations = (short)animations.Size();
     for (int a = 0; a < animations.Size(); a++)
     {
         AAnimation& animation = animations[a];
@@ -1321,7 +1376,19 @@ __public int ParseGLTF(const char* path, SceneBundle* result, float scale)
     return 1;
 }
 
-__public void FreeParsedGLTF(SceneBundle* gltf)
+__public void FreeGLTFBuffers(SceneBundle* gltf)
+{
+    for (int i = 0; i < gltf->numBuffers; i++)
+    {
+        FreeAllText((char*)gltf->buffers[i].uri);
+        gltf->buffers[i].uri = nullptr;
+    }
+    delete[] gltf->buffers;
+    gltf->numBuffers = 0;
+    gltf->buffers = nullptr;
+}
+
+__public void FreeSceneBundle(SceneBundle* gltf)
 {
     struct CharFragment { 
         CharFragment* next; char* ptr; int64_t   size;

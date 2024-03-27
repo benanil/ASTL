@@ -93,18 +93,11 @@ struct Matrix3
         return m.x * v.x + m.y * v.y + m.z * v.z;
     }
     
-    static Matrix3 FromQuaternion(const Quaternion& quat)
+    static Matrix3 FromQuaternion(const Quaternion quat)
     {
-        const float num9 = VecGetX(quat) * VecGetX(quat), num8 = VecGetY(quat) * VecGetY(quat),
-                    num7 = VecGetZ(quat) * VecGetZ(quat), num6 = VecGetX(quat) * VecGetY(quat),
-                    num5 = VecGetZ(quat) * VecGetW(quat), num4 = VecGetZ(quat) * VecGetX(quat),
-                    num3 = VecGetY(quat) * VecGetW(quat), num2 = VecGetY(quat) * VecGetZ(quat),
-                    num  = VecGetX(quat) * VecGetW(quat);
-        return Make(
-            1.0f - (2.0f * (num8 + num7)), 2.0f * (num6 + num5), 2.0f * (num4 - num3),
-            2.0f * (num6 - num5), 1.0f - (2.0f * (num7 + num9)), 2.0f * (num2 + num) ,
-            2.0f * (num4 + num3), 2.0f * (num2 - num), 1.0f - (2.0f * (num8 + num9)) 
-        );
+        Matrix3 mat = {};
+        MatrixFromQuaternion<3>(mat.GetPtr(), quat);
+        return mat;
     }
     
     Quaternion ToQuaternion() const
@@ -119,9 +112,9 @@ static vec_t VECTORCALL Vector4Transform(vec_t v, const vec_t r[4])
 {
     vec_t m0;
     m0 = VecMul(r[0], VecSplatX(v));
-    m0 = VecFmadLane(r[1], v, m0, 1);
-    m0 = VecFmadLane(r[2], v, m0, 2); 
-    m0 = VecFmadLane(r[3], v, m0, 3);
+    m0 = VecFmaddLane(r[1], v, m0, 1);
+    m0 = VecFmaddLane(r[2], v, m0, 2); 
+    m0 = VecFmaddLane(r[3], v, m0, 3);
     return m0;
 }
 
@@ -129,8 +122,8 @@ static vec_t VECTORCALL Vector3Transform(vec_t vec, const vec_t r[4])
 {
     vec_t m0;
     m0 = VecMul(r[0], VecSplatX(vec));
-    m0 = VecFmadLane(r[1], vec, m0, 1);
-    m0 = VecFmadLane(r[2], vec, m0, 2); 
+    m0 = VecFmaddLane(r[1], vec, m0, 1);
+    m0 = VecFmaddLane(r[2], vec, m0, 2); 
     m0 = VecAdd(r[3], m0);
     return m0;
 }
@@ -147,8 +140,8 @@ struct alignas(16) Matrix4
           vec_t& operator [] (int index)       { return r[index]; }
     
     vec_t    VECTORCALL operator *  (vec_t v)          { vec_t x; x = ::Vector4Transform(v, r); return x; };
-    Matrix4  VECTORCALL operator *  (const Matrix4& M) { return Matrix4::Multiply(M, *this); };
-    Matrix4& VECTORCALL operator *= (const Matrix4& M) { *this = Matrix4::Multiply(M, *this); return *this; };
+    Matrix4  VECTORCALL operator *  (const Matrix4 M) { return Matrix4::Multiply(M, *this); };
+    Matrix4& VECTORCALL operator *= (const Matrix4 M) { *this = Matrix4::Multiply(M, *this); return *this; };
     
           float* GetPtr()        { return &m[0][0]; }
     const float* GetPtr() const  { return &m[0][0]; }
@@ -298,12 +291,35 @@ struct alignas(16) Matrix4
     
     static Matrix4 PositionRotationScale(Vector3f position, Quaternion rotation, const Vector3f& scale)
     {
-    	return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
+        Matrix4 res = {};
+        // Export rotation to matrix
+        MatrixFromQuaternion<4>(res.GetPtr(), rotation);
+        // Scale 3x3 matrix by given scale
+        res.r[0] = VecMulf(res.r[0], scale.x);
+        res.r[1] = VecMulf(res.r[1], scale.y);
+        res.r[2] = VecMulf(res.r[2], scale.z);
+        // Third row is position, x, y, z, 1.0f
+        res.r[3] = VecLoad(&position.x);
+        VecSetW(res.r[3], 1.0f);
+        return res; 
+        // return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
     }
     
-    static Matrix4 PositionRotationScale(float* position, float* rotation, float* scale)
+    static Matrix4 PositionRotationScale(const float* position, const float* rotation, const float* scale)
     {
-    	return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
+        Matrix4 res = {};
+        // Export rotation to matrix
+        MatrixFromQuaternion<4>(res.GetPtr(), VecLoad(rotation));
+        // Scale 3x3 matrix by given scale
+        vec_t vecScale = VecLoad(scale);
+        res.r[0] = VecMul(res.r[0], VecSplatX(vecScale));
+        res.r[1] = VecMul(res.r[1], VecSplatY(vecScale));
+        res.r[2] = VecMul(res.r[2], VecSplatZ(vecScale));
+        // Third row is position, x, y, z, 1.0f
+        res.r[3] = VecLoad(position);
+        VecSetW(res.r[3], 1.0f);
+        return res; 
+    	// return FromQuaternion(rotation) * CreateScale(scale) * FromPosition(position);
     }
     
     static Vector3f VECTORCALL ExtractPosition(Matrix4 matrix)
@@ -325,6 +341,11 @@ struct alignas(16) Matrix4
     	return MakeVec3(Vec3Lenf(matrix.r[0]), Vec3Lenf(matrix.r[2]), Vec3Lenf(matrix.r[1]));
     }
         
+    static vec_t VECTORCALL ExtractScaleV(const Matrix4 matrix) 
+    {
+    	return VecSetR(Vec3Lenf(matrix.r[0]), Vec3Lenf(matrix.r[2]), Vec3Lenf(matrix.r[1]), 0.0f);
+    }
+
     static Matrix4 RotationX(float angleRadians) {
     	Matrix4 out_matrix = Identity();
     	float s, c;
@@ -509,27 +530,27 @@ struct alignas(16) Matrix4
     {
         vec_t m0;
         m0 = VecMul(in1.r[0], VecSplatX(in2.r[0]));
-        m0 = VecFmadLane(in1.r[1], in2.r[0], m0, 1);
-        m0 = VecFmadLane(in1.r[2], in2.r[0], m0, 2); 
-        m0 = VecFmadLane(in1.r[3], in2.r[0], m0, 3); 
+        m0 = VecFmaddLane(in1.r[1], in2.r[0], m0, 1);
+        m0 = VecFmaddLane(in1.r[2], in2.r[0], m0, 2); 
+        m0 = VecFmaddLane(in1.r[3], in2.r[0], m0, 3); 
         in2.r[0] = m0;
         
         m0 = VecMul(in1.r[0], VecSplatX(in2.r[1]));
-        m0 = VecFmadLane(in1.r[1], in2.r[1], m0, 1); 
-        m0 = VecFmadLane(in1.r[2], in2.r[1], m0, 2); 
-        m0 = VecFmadLane(in1.r[3], in2.r[1], m0, 3); 
+        m0 = VecFmaddLane(in1.r[1], in2.r[1], m0, 1); 
+        m0 = VecFmaddLane(in1.r[2], in2.r[1], m0, 2); 
+        m0 = VecFmaddLane(in1.r[3], in2.r[1], m0, 3); 
         in2.r[1] = m0;
         
         m0 = VecMul(in1.r[0], VecSplatX(in2.r[2]));
-        m0 = VecFmadLane(in1.r[1], in2.r[2], m0, 1); 
-        m0 = VecFmadLane(in1.r[2], in2.r[2], m0, 2); 
-        m0 = VecFmadLane(in1.r[3], in2.r[2], m0, 3); 
+        m0 = VecFmaddLane(in1.r[1], in2.r[2], m0, 1); 
+        m0 = VecFmaddLane(in1.r[2], in2.r[2], m0, 2); 
+        m0 = VecFmaddLane(in1.r[3], in2.r[2], m0, 3); 
         in2.r[2] = m0;
         
         m0 = VecMul(in1.r[0], VecSplatX(in2.r[3]));
-        m0 = VecFmadLane(in1.r[1], in2.r[3], m0, 1); 
-        m0 = VecFmadLane(in1.r[2], in2.r[3], m0, 2); 
-        m0 = VecFmadLane(in1.r[3], in2.r[3], m0, 3); 
+        m0 = VecFmaddLane(in1.r[1], in2.r[3], m0, 1); 
+        m0 = VecFmaddLane(in1.r[2], in2.r[3], m0, 2); 
+        m0 = VecFmaddLane(in1.r[3], in2.r[3], m0, 3); 
         in2.r[3] = m0;
         return in2;
     }
@@ -537,17 +558,10 @@ struct alignas(16) Matrix4
     static Matrix4 VECTORCALL FromQuaternion(Quaternion q)
     {
         #if defined(AX_ARM)
-        const float num9 = VecGetX(q) * VecGetX(q), num8 = VecGetY(q) * VecGetY(q),
-                    num7 = VecGetZ(q) * VecGetZ(q), num6 = VecGetX(q) * VecGetY(q),
-                    num5 = VecGetZ(q) * VecGetW(q), num4 = VecGetZ(q) * VecGetX(q),
-                    num3 = VecGetY(q) * VecGetW(q), num2 = VecGetY(q) * VecGetZ(q),
-                    num  = VecGetX(q) * VecGetW(q);
-        return Make(
-            1.0f - (2.0f * (num8 + num7)), 2.0f * (num6 + num5), 2.0f * (num4 - num3), 0.0f,
-            2.0f * (num6 - num5), 1.0f - (2.0f * (num7 + num9)), 2.0f * (num2 + num) , 0.0f,
-            2.0f * (num4 + num3), 2.0f * (num2 - num), 1.0f - (2.0f * (num8 + num9)) , 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f
-        );
+        Matrix4 mat = {};
+        MatrixFromQuaternion<4>(mat.GetPtr(), q);
+        mat.m[3][3] = 1.0f;
+        return mat;
         #else
         Matrix4 M;
         const vec_t  Constant1110 = VecSetR(1.0f, 1.0f, 1.0f, 0.0f);
@@ -592,7 +606,7 @@ struct alignas(16) Matrix4
     
     static Matrix4 VECTORCALL FromQuaternion(const float* quaternion)
     {
-        return FromQuaternion({ quaternion[0], quaternion[1], quaternion[2], quaternion[3] });
+        return FromQuaternion(MakeQuat(quaternion[0], quaternion[1], quaternion[2], quaternion[3]));
     }
     
     static Matrix4 VECTORCALL Transpose(Matrix4 M)

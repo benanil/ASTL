@@ -136,7 +136,7 @@ __forceinline __constexpr float Pow(float a, float b) {
         double d;
         int x[2];
     } u = { (double)a };
-    u.x[1] = (int)((b - e) * (u.x[1] - 1072632447) + 1072632447);
+    u.x[1] = (int)((b - e) * (u.x[1] - 1072632447) + 1072632447.0f);
     u.x[0] = 0;
     
     // exponentiation by squaring with the exponent's integer part
@@ -200,8 +200,11 @@ __forceinline __constexpr bool AlmostEqual(float x, float  y) {
     return Abs(x-y) <= 0.001f;
 }
 
-__forceinline __constexpr float Sign(float x) {
-    return x > 0.0f; // no zero >  || x != 0.0f
+__forceinline __constexpr float Sign(float x) 
+{
+    int res = BitCast<int>(1.0f);
+    res |= BitCast<int>(x) & 0x80000000;
+    return BitCast<float>(res);
 } 
 
 __forceinline __constexpr float CopySign(float x, float y) {
@@ -217,16 +220,18 @@ __forceinline __constexpr bool IsNan(float f) {
     return (exponent == 0xFF) && (fraction != 0);
 }
 
-__forceinline __constexpr float FMod(float x, float y) {
-    float quotient = x / y;
-    float whole = (float)((int)quotient);  // truncate quotient to integer
-    float remainder = x - whole * y;
-    remainder += (remainder < 0.0f) * y;
+template<typename T>
+__forceinline __constexpr T FMod(T x, T y) {
+    T quotient = x / y;
+    T whole = (T)((int)quotient);  // truncate quotient to integer
+    T remainder = x - whole * y;
+    remainder += (remainder < (T)0.0) * y;
     return remainder;
 }
 
-__forceinline __constexpr float Floor(float x) {
-    float whole = (float)(int)x;  // truncate quotient to integer
+template<typename T>
+__forceinline __constexpr T Floor(T x) {
+    T whole = (T)(int)x;  // truncate quotient to integer
     return x - (x-whole);
 }
 
@@ -248,8 +253,8 @@ __forceinline __constexpr float ATan2(float y, float x) {
     int invert = ay > ax;
     float z = invert ? ax/ay : ay/ax;// [0,1]
     float th = ATan(z);              // [0,π/4]
-    if(invert) th = PIDiv2 - th;     // [0,π/2]
-    if(x < 0)  th = PI - th;         // [0,π]
+    if (invert)   th = PIDiv2 - th;  // [0,π/2]
+    if (x < 0.0f) th = PI - th;      // [0,π]
     return CopySign(th, y);          // [-π,π] 
 }
 
@@ -261,7 +266,7 @@ __forceinline float ASin(float z) {
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
 
 __forceinline __constexpr float RepeatPI(float x) {
-  return  FMod(x + PI, TwoPI) - PI;
+  return FMod(x + PI, TwoPI) - PI;
 }
 
 __forceinline __constexpr float Sin(float x) {
@@ -343,7 +348,7 @@ __forceinline float ConvertHalfToFloat(half x) {
     }
     
     Result = ((x & 0x8000) << 16) | ((Exponent + 112) << 23) | (Mantissa << 13);
-    return *(float*)&Result;
+    return BitCast<float>(Result);
 #endif
 }
 // faster but not always safe version. taken from: https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
@@ -374,32 +379,20 @@ __forceinline half ConvertFloatToHalf(float Value) {
 #elif defined(__ARM_NEON__)
 	return _cvtss_sh(Value, 0);
 #else
-    uint32 x = BitCast<uint32_t>(Value);
-    uint32 sign = (unsigned short)(x >> 31);
-    uint16 hf;
+    uint32_t Result; // branch removed version of DirectxMath function
+    uint32_t IValue = BitCast<uint32_t>(Value);
+    uint32_t Sign = (IValue & 0x80000000u) >> 16U;
+    IValue = IValue & 0x7FFFFFFFu;      // Hack off the sign
+    // if (IValue > 0x47FFEFFFu) { 
+    //     return 0x7FFFU | Sign; // The number is too large to be represented as a half.  Saturate to infinity.
+    // }
+    uint32_t mask = 0u - (IValue < 0x38800000u);
+    uint32_t b = IValue + 0xC8000000U;
+    uint32_t a = (0x800000u | (IValue & 0x7FFFFFu)) >> (113u - (IValue >> 23u));
     
-    uint32 mantissa = x & ((1 << 23) - 1);
-    uint32 exp = x & (0xFF << 23);
-    if (exp >= 0x47800000) {
-        // check if the original number is a NaN
-        if (mantissa && (exp == (0xFF << 23))) {
-            // single precision NaN
-            mantissa = (1 << 23) - 1;
-        } else {
-            // half-float will be Inf
-            mantissa = 0;
-        }
-        hf = (((uint16_t)sign) << 15) | (uint16_t)((0x1F << 10)) |
-             (uint16_t)(mantissa >> 13);
-    }
-    // check if exponent is <= -15
-    else if (exp <= 0x38000000) {
-        hf = 0;  // too small to be represented
-    } else {
-        hf = (((uint16_t)sign) << 15) | (uint16_t)((exp - 0x38000000) >> 13) |
-               (uint16_t)(mantissa >> 13);
-    }
-    return hf;
+    IValue = (mask & a) | (~mask & b);
+    Result = ((IValue + 0x0FFFu + ((IValue >> 13u) & 1u)) >> 13u) & 0x7FFFu; 
+    return (half)(Result | Sign);
 #endif
 }
 
@@ -435,9 +428,22 @@ __forceinline float UnpackSnorm16(short x) {
     return (float)x / (float)INT16_MAX;
 }
 
+// packs 0,1 range float to short
+__forceinline short PackUnorm16(float x) {
+    return (short)Clamp(x * (float)INT16_MAX, (float)INT16_MIN, (float)INT16_MAX);
+}
+
+__forceinline float UnpackUnorm16(short x) {
+    return (float)x / (float)UINT16_MAX;
+}
+
 //  ######################################  
 //  #####      [COLOR FUNCTINS]      #####  
 //  ######################################  
+
+__forceinline uint MakeColorRGBAU32(uint8 r, uint8 g, uint8 b, uint8 a) {
+    return r | (uint(g) << 8) | (uint(b) << 16) | (uint(a) << 24);
+}
 
 __forceinline uint PackColorRGBU32(float r, float g, float b) {
     return (uint)(r * 255.0f) | ((uint)(g * 255.0f) << 8) | ((uint)(b * 255.0f) << 16);
@@ -452,14 +458,14 @@ __forceinline uint PackColorRGBAU32(float* c) {
 }
 
 __forceinline void UnpackColorRGBf(unsigned color, float* colorf) {
-    static const float toFloat = 1.0f / 255.0f;
+    const float toFloat = 1.0f / 255.0f;
     colorf[0] = float(color >> 0  & 0xFF) * toFloat;
     colorf[1] = float(color >> 8  & 0xFF) * toFloat;
     colorf[2] = float(color >> 16 & 0xFF) * toFloat;
 }
 
 __forceinline void UnpackColorRGBAf(unsigned color, float* colorf) {
-    static const float toFloat = 1.0f / 255.0f;
+    const float toFloat = 1.0f / 255.0f;
     colorf[0] = float(color >> 0  & 0xFF) * toFloat;
     colorf[1] = float(color >> 8  & 0xFF) * toFloat;
     colorf[2] = float(color >> 16 & 0xFF) * toFloat;
@@ -474,39 +480,6 @@ template<typename T> __forceinline __constexpr T Min3(T a, T b, T c) {
 template<typename T> __forceinline __constexpr T Max3(T a, T b, T c) {
     T res = a > b ? a : b;
     return res > c ? res : c;
-}
-
-template<int numCol = 4> // number of columns of matrix, 3 or 4
-inline void QuaternionFromMatrix(float* Orientation, const float* m) {
-    int i, j, k = 0;
-    float root, trace = m[0*numCol+0] + m[1 * numCol + 1] + m[2 * numCol + 2];
-    
-    if (trace > 0.0f)
-    {
-        root = Sqrt(trace + 1.0f);
-        Orientation[3] = 0.5f * root;
-        root = 0.5f / root;
-        Orientation[0] = root * (m[1 * numCol + 2] - m[2 * numCol + 1]);
-        Orientation[1] = root * (m[2 * numCol + 0] - m[0 * numCol + 2]);
-        Orientation[2] = root * (m[0 * numCol + 1] - m[1 * numCol + 0]);
-    }
-    else
-    {
-        static const int Next[3] = { 1, 2, 0 };
-        i = 0;
-        i += m[1 * numCol + 1] > m[0 * numCol + 0]; // if (M.m[1][1] > M.m[0][0]) i = 1
-        if (m[2 * numCol + 2] > m[i * numCol + i]) i = 2;
-        j = Next[i];
-        k = Next[j];
-        
-        root = Sqrt(m[i * numCol + i] - m[j * numCol + j] - m[k * numCol + k] + 1.0f);
-        
-        Orientation[i] = 0.5f * root;
-        root = 0.5f / root;
-        Orientation[j] = root * (m[i * numCol + j] + m[j * numCol + i]);
-        Orientation[k] = root * (m[i * numCol + k] + m[k * numCol + i]);
-        Orientation[3] = root * (m[j * numCol + k] - m[k*numCol+j]);
-    } 
 }
 
 AX_END_NAMESPACE 

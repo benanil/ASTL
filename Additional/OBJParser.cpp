@@ -25,7 +25,7 @@ inline void ChangeExtension(char* path, const char* newExt, size_t len)
     path[len - 1] = newExt[2]; path[len - 2] = newExt[1]; path[len - 3] = newExt[0];
 }
 
-inline float ParseFloat2(char*& text)
+inline float ParseFloatNonConst(char*& text)
 {
     char* ptr = text;
     while (!IsNumber(*ptr) && *ptr != '-') ptr++;
@@ -54,7 +54,7 @@ inline float ParseFloat2(char*& text)
 
 static void ParseFloat162(char*& curr, short& flt)
 {
-    flt = (short)(ParseFloat2(curr) * 400.0f);
+    flt = (short)(ParseFloatNonConst(curr) * 400.0f);
 }
 
 struct OBJVertex { float pos[3]; float texCoord[2]; float normal[3]; };
@@ -139,21 +139,21 @@ int ParseObj(const char* path, ParsedObj* scene)
         else if (curr[0] == 'N' && curr[1] == 's') 
         {
             // shininess
-            ParseFloat162(curr, materials.Back().specularFactor);
+            materials.Back().specularFactor = PackUnorm16(ParseFloatNonConst(curr));
         }
         else if (curr[0] == 'd') 
         {
             // roughness
-            ParseFloat162(curr, materials.Back().roughnessFactor);
+            materials.Back().roughnessFactor = PackUnorm16(ParseFloatNonConst(curr));
         }
         else if (curr[0] == 'K' && curr[1] == 'd') 
         { 
             // diffuse color
-            float colorf[3] = { ParseFloat2(curr), ParseFloat2(curr), ParseFloat2(curr)};
+            float colorf[3] = { ParseFloatNonConst(curr), ParseFloatNonConst(curr), ParseFloatNonConst(curr)};
             materials.Back().baseColorFactor = PackColorRGBU32(colorf);
         }
         else if (curr[0] == 'K' && curr[1] == 's') { // specular color
-            float colorf[3] = { ParseFloat2(curr), ParseFloat2(curr), ParseFloat2(curr)};
+            float colorf[3] = { ParseFloatNonConst(curr), ParseFloatNonConst(curr), ParseFloatNonConst(curr)};
             materials.Back().specularColor = PackColorRGBU32(colorf);
         }
         else if (curr[0] == 'm') // map_bla
@@ -208,9 +208,9 @@ int ParseObj(const char* path, ParsedObj* scene)
 
             while (*curr != '#' && curr[1] == ' ') { // vertex=position 
                 curr += 2; 
-                positions.Add(ParseFloat2(curr));
-                positions.Add(ParseFloat2(curr));
-                positions.Add(ParseFloat2(curr));
+                positions.Add(ParseFloatNonConst(curr));
+                positions.Add(ParseFloatNonConst(curr));
+                positions.Add(ParseFloatNonConst(curr));
                 // skip line&whiteSpace
                 while (*curr == '\n' || IsWhitespace(*curr)) curr++;
             }
@@ -219,10 +219,10 @@ int ParseObj(const char* path, ParsedObj* scene)
                 attributes |= AAttribType_TEXCOORD_0;
 
                 curr += 2;
-                texCoords.Add(ParseFloat2(curr));
-                texCoords.Add(ParseFloat2(curr));
+                texCoords.Add(ParseFloatNonConst(curr));
+                texCoords.Add(ParseFloatNonConst(curr));
                 // if it has 3 component for texcoord skip the third
-                if (IsNumber(curr[1])) ParseFloat2(curr);
+                if (IsNumber(curr[1])) ParseFloatNonConst(curr);
                 // skip line&whiteSpace
                 while (*curr == '\n' || IsWhitespace(*curr)) curr++;
             }
@@ -230,9 +230,9 @@ int ParseObj(const char* path, ParsedObj* scene)
             while (curr[1] == 'n') {
                 attributes |= AAttribType_NORMAL;
                 curr += 2; 
-                normals.Add(ParseFloat2(curr));
-                normals.Add(ParseFloat2(curr));
-                normals.Add(ParseFloat2(curr));
+                normals.Add(ParseFloatNonConst(curr));
+                normals.Add(ParseFloatNonConst(curr));
+                normals.Add(ParseFloatNonConst(curr));
                 // skip line&whiteSpace
                 while (*curr == '\n' || IsWhitespace(*curr)) curr++;
             }

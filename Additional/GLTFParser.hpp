@@ -1,6 +1,8 @@
 
-#pragma once
+#ifndef ASTL_GLTF_PARSER
+#define ASTL_GLTF_PARSER
 
+// Warning! order is important, dependent in functions: ParseMeshes, ParseAttributes, ParseGLTF... 
 enum AAttribType_
 {
     AAttribType_POSITION   = 1 << 0,
@@ -10,7 +12,8 @@ enum AAttribType_
     AAttribType_TEXCOORD_1 = 1 << 4,
     AAttribType_JOINTS     = 1 << 5,
     AAttribType_WEIGHTS    = 1 << 6,
-    AAttribType_Count      = 7
+    AAttribType_Count      = 7 ,
+    AAttribType_MAKE32BIT  = 1 << 31
 };
 typedef int AAttribType;
 
@@ -62,8 +65,8 @@ typedef struct AMaterial_
     Texture baseColorTexture;
     Texture specularTexture;
     Texture metallicRoughnessTexture;
-    float16 metallicFactor;
-    float16 roughnessFactor;
+    unsigned short metallicFactor;  // (float)(metallicFactor) / UINT16_MAX to get value
+    unsigned short roughnessFactor; // (float)(roughnessFactor) / UINT16_MAX to get value
 
     char* name;
     float16 emissiveFactor[3];
@@ -94,7 +97,7 @@ typedef struct AImage_
 
 typedef struct ANode_
 {
-    // Warning! order is important, we copy memory in assetmanager.cpp from fbx transform
+    // Warning! order is important, we copy memory in assetmanager.cpp from fbx transform(pos,rot, scale)
     float translation[3];
     float rotation[4];
     float scale[3];
@@ -106,6 +109,13 @@ typedef struct ANode_
     char* name;
     int*  children;
 } ANode;
+
+typedef struct AMorphTarget_
+{
+    AAttribType attributes;
+    // accessor indices of: position, texcoord, tangent respectively
+    unsigned short indexes[4]; 
+} AMorphTarget;
 
 typedef struct APrimitive_
 {
@@ -122,9 +132,10 @@ typedef struct APrimitive_
     short jointCount;  // per vertex bone count (joint), 1-4
     short jointStride; // lets say index data is rgba16u  [r, g, b, a, .......] stride might be bigger than joint
 
+    // weight count is equal to joint count
     short weightType;   // GraphicType_UnsignedInt, GraphicType_UnsignedShort.. 
     short weightStride; // lets say index data is rgba16u  [r, g, b, a, .......] stride might be bigger than joint
-
+    
     // internal use only. after parsing this is useless
     short indiceIndex; // indice index to accessor
     short material;    // material index
@@ -139,6 +150,8 @@ typedef struct APrimitive_
     // AABB min and max
     float min[4];
     float max[4];
+
+    AMorphTarget* morphTargets; // num morph targets is equal to mesh.num numMorphWeights
 } APrimitive;
 
 typedef struct AMesh_
@@ -146,6 +159,8 @@ typedef struct AMesh_
     char* name;  
     APrimitive* primitives;
     int numPrimitives;
+    int numMorphWeights;
+    float* morphWeights;
 } AMesh;
 
 typedef struct ATexture_
@@ -202,7 +217,9 @@ typedef struct ASkin_
 enum AAnimTargetPath_ {
     AAnimTargetPath_Translation, 
     AAnimTargetPath_Rotation, 
-    AAnimTargetPath_Scale
+    AAnimTargetPath_Scale,
+    AAnimTargetPath_Weight,
+    AAnimTargetPath_Make32Bit = 1 << 31
 };
 typedef int AAnimTargetPath;
 
@@ -218,6 +235,7 @@ typedef struct AAnimChannel_
     int sampler;
     int targetNode;
     AAnimTargetPath targetPath; 
+    int pad;
 } AAnimChannel;
 
 typedef struct AAnimSampler_
@@ -267,16 +285,16 @@ typedef struct SceneBundle_
 
     GLTFBuffer* buffers;
 
-    AMesh      *meshes;
-    ANode      *nodes;
-    AMaterial  *materials;
-    ATexture   *textures;
-    AImage     *images;
-    ASampler   *samplers;
-    ACamera    *cameras;
-    AScene     *scenes;
-    AAnimation *animations;
-    ASkin      *skins;
+    AMesh *     meshes;
+    ANode*      nodes;
+    AMaterial*  materials;
+    ATexture*   textures;
+    AImage*     images;
+    ASampler*   samplers;
+    ACamera*    cameras;
+    AScene*     scenes;
+    AAnimation* animations;
+    ASkin*      skins;
 } SceneBundle;
 
 typedef struct ParsedObj_
@@ -297,15 +315,16 @@ typedef struct ParsedObj_
     AImage*    images;
 } ParsedObj;
 
-// if there is an error error will be minus GLTFErrorType
-// out scene should not be null
-int ParseGLTF(const char* path, SceneBundle* scene, float scale);
+// outScene should not be null
+int ParseGLTF(const char* path, SceneBundle* outScene, float scale);
 
 int ParseObj(const char* path, ParsedObj* scene);
 
 
-// Free
+void FreeGLTFBuffers(SceneBundle* gltf);
 
-void FreeParsedGLTF(SceneBundle* gltf);
+void FreeSceneBundle(SceneBundle* gltf);
 
 const char* ParsedSceneGetError(AErrorType error);
+
+#endif // ASTL_GLTF_PARSER

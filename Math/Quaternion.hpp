@@ -60,14 +60,14 @@ inline Quaternion VECTORCALL QSlerp(Quaternion Q0, Quaternion Q1, float t)
 {
     const vec_t T = VecSet1(t);
     // Result = Q0 * sin((1.0 - t) * Omega) / sin(Omega) + Q1 * sin(t * Omega) / sin(Omega)
-    static const vec_t OneMINusEpsilon = VecSetR(1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f);
+    static const vec_t OneMinusEpsilon = VecSetR(1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f);
     static const veci_t SignMask2 = VecFromInt(0x80000000, 0x00000000, 0x00000000, 0x00000000);
     
     vec_t CosOmega = VecDot(Q0, Q1);
     vec_t Control = VecCmpLt(CosOmega, VecZero());
     vec_t Sign = VecSelect(VecOne(), VecNegativeOne(), Control);
     CosOmega = VecMul(CosOmega, Sign);
-    Control = VecCmpLt(CosOmega, OneMINusEpsilon);
+    Control = VecCmpLt(CosOmega, OneMinusEpsilon);
     
     vec_t SinOmega = VecMul(CosOmega, CosOmega);
     SinOmega = VecSub(VecOne(), SinOmega);
@@ -94,8 +94,7 @@ inline Quaternion VECTORCALL QSlerp(Quaternion Q0, Quaternion Q1, float t)
     S1 = VecMul(S1, Sign);
     
     vec_t Result = VecMul(Q0, S0);
-    S1 = VecMul(S1, Q1); // _mm_fmadd_ps(S1, Q1.vec, Result) ?
-    return VecAdd(Result, S1);
+    return VecFmadd(S1, Q1, Result);
 }
 
 __forceinline Quaternion static QFromEuler(float x, float y, float z)
@@ -107,7 +106,7 @@ __forceinline Quaternion static QFromEuler(float x, float y, float z)
     VecStore(c, cv);
     VecStore(s, sv);
     
-    Quaternion q = VecSet(
+    Quaternion q = VecSetR(
     s[0] * c[1] * c[2] - c[0] * s[1] * s[2],
     c[0] * s[1] * c[2] + s[0] * c[1] * s[2],
     c[0] * c[1] * s[2] - s[0] * s[1] * c[2],
@@ -126,12 +125,70 @@ inline Vector3f QToEulerAngles(Quaternion qu)
     return eulerAngles;
 }
 
-__forceinline Quaternion  VECTORCALL QFromEuler(Vector3f euler)
+__forceinline Quaternion VECTORCALL QFromEuler(Vector3f euler)
 {
     return QFromEuler(euler.x, euler.y, euler.z);
 }
 
- inline Quaternion FromLookRotation(Vector3f direction, const Vector3f& up)
+template<int numCol = 4> // number of columns of matrix, 3 or 4
+inline void QuaternionFromMatrix(float* Orientation, const float* m) {
+    int i, j, k = 0;
+    float root, trace = m[0*numCol+0] + m[1 * numCol + 1] + m[2 * numCol + 2];
+    
+    if (trace > 0.0f)
+    {
+        root = Sqrt(trace + 1.0f);
+        Orientation[3] = 0.5f * root;
+        root = 0.5f / root;
+        Orientation[0] = root * (m[1 * numCol + 2] - m[2 * numCol + 1]);
+        Orientation[1] = root * (m[2 * numCol + 0] - m[0 * numCol + 2]);
+        Orientation[2] = root * (m[0 * numCol + 1] - m[1 * numCol + 0]);
+    }
+    else
+    {
+        static const int Next[3] = { 1, 2, 0 };
+        i = 0;
+        i += m[1 * numCol + 1] > m[0 * numCol + 0]; // if (M.m[1][1] > M.m[0][0]) i = 1
+        if (m[2 * numCol + 2] > m[i * numCol + i]) i = 2;
+        j = Next[i];
+        k = Next[j];
+        
+        root = Sqrt(m[i * numCol + i] - m[j * numCol + j] - m[k * numCol + k] + 1.0f);
+        
+        Orientation[i] = 0.5f * root;
+        root = 0.5f / root;
+        Orientation[j] = root * (m[i * numCol + j] + m[j * numCol + i]);
+        Orientation[k] = root * (m[i * numCol + k] + m[k * numCol + i]);
+        Orientation[3] = root * (m[j * numCol + k] - m[k*numCol+j]);
+    } 
+}
+
+template<int numCol = 4> // number of columns of matrix, 3 or 4
+void MatrixFromQuaternion(float* mat, Quaternion quat)
+{
+    const float num9 = VecGetX(quat) * VecGetX(quat), num8 = VecGetY(quat) * VecGetY(quat),
+                num7 = VecGetZ(quat) * VecGetZ(quat), num6 = VecGetX(quat) * VecGetY(quat),
+                num5 = VecGetZ(quat) * VecGetW(quat), num4 = VecGetZ(quat) * VecGetX(quat),
+                num3 = VecGetY(quat) * VecGetW(quat), num2 = VecGetY(quat) * VecGetZ(quat),
+                num  = VecGetX(quat) * VecGetW(quat);
+
+    mat[numCol * 0 + 0] = 1.0f - (2.0f * (num8 + num7));
+    mat[numCol * 0 + 1] = 2.0f * (num6 + num5);
+    mat[numCol * 0 + 2] = 2.0f * (num4 - num3);
+    
+    mat[numCol * 1 + 0] = 2.0f * (num6 - num5);
+    mat[numCol * 1 + 1] = 1.0f - (2.0f * (num7 + num9));
+    mat[numCol * 1 + 2] = 2.0f * (num2 + num);
+    
+    mat[numCol * 2 + 0] = 2.0f * (num4 + num3);
+    mat[numCol * 2 + 1] = 2.0f * (num2 - num);
+    mat[numCol * 2 + 2] = 1.0f - (2.0f * (num8 + num9));
+    
+    if_constexpr(numCol == 4)
+        mat[numCol * 3 + 3] = 1.0f;
+}
+
+inline Quaternion FromLookRotation(Vector3f direction, const Vector3f& up)
 {
     xyzw result;
     Vector3f matrix[3] {

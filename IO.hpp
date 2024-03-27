@@ -29,7 +29,21 @@
 
 #include "Algorithms.hpp"
 #include <stdio.h>
+#include <stdint.h>
 #include <sys/stat.h>
+
+#ifdef _WIN32
+    #include <io.h>
+    #include <direct.h> 
+    #define F_OK 0
+#else 
+    #include <unistd.h>
+    #include <sys/types.h>
+    #include <fcntl.h>
+    #define _mkdir mkdir
+    #define _fileno fileno
+    #define _filelengthi64 filelength
+#endif
 
 #if defined __WIN32__ || defined _WIN32 || defined _Windows
     #if !defined S_ISDIR
@@ -42,8 +56,6 @@
 #include <game-activity/native_app_glue/android_native_app_glue.h>
 
 extern android_app* g_android_app;
-#else
-#include <direct.h> // mkdir
 #endif
 
 #ifdef _WIN32
@@ -112,19 +124,11 @@ struct ScopedFILE
 {
     FILE* file;
     ScopedFILE(FILE* _file) : file(_file) {}
-    ~ScopedFILE()
-    {
+    ~ScopedFILE() {
         fclose(file); 
     }
 };
 
-#ifdef _WIN32
-#include <io.h>
-#define F_OK 0
-#define access _access
-#else 
-#include <unistd.h>
-#endif
 
 // these functions works fine with file and folders
 inline bool FileExist(const char* file)
@@ -133,6 +137,8 @@ inline bool FileExist(const char* file)
     AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, file, 0);
     AAsset_close(asset);
     return asset != nullptr;
+#elif defined(_WIN32)
+    return _access(file, F_OK) == 0;
 #else
     return access(file, F_OK) == 0;
 #endif
@@ -142,8 +148,7 @@ inline uint64_t FileSize(const char* file)
 {
 #ifdef __ANDROID__
     AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, file, 0);
-    if (asset != nullptr)
-    {
+    if (asset != nullptr) {
         off64_t sz = AAsset_getLength64(asset);
         AAsset_close(asset);
         return sz;
@@ -154,8 +159,13 @@ inline uint64_t FileSize(const char* file)
     if (stat(file, &sb) == 0) return 0;
     return sb.st_size;
 #else
-    ScopedFILE f = fopen(file, "rb");
-    return _filelengthi64(fileno(f.file));
+    if (fseek(file.file, 0, SEEK_END) != 0) 
+        return 0; // Or handle the error as appropriate
+
+    long fileSize = ftell(file.file);
+    if (fileSize == -1) 
+        return 0; // Or handle the error as appropriate
+    return (uint64_t)fileSize;
 #endif
 }
 
@@ -192,53 +202,44 @@ enum AOpenFlag_
 typedef int AOpenFlag;
 
 #ifdef __ANDROID__
-struct AFile
-{
+struct AFile {
     AAsset* asset;
 };
 
-inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
-{
+inline AFile AFileOpen(const char* fileName, AOpenFlag flag) {
     return { AAssetManager_open(g_android_app->activity->assetManager, fileName, 0) };
 }
 
-inline void AFileRead(void* dst, uint64_t size, AFile file)
-{
+inline void AFileRead(void* dst, uint64_t size, AFile file, int alignment = 0) {
     AAsset_read(file.asset, dst, size);
 }
 
-inline void AFileSeekBegin(long size, AFile file)
-{
+inline void AFileSeekBegin(AFile file) {
     AAsset_seek(file.asset, 0, SEEK_SET);
 }
 
-inline void AFileSeek(long offset, AFile file)
-{
+inline void AFileSeek(long offset, AFile file) {
     AAsset_seek(file.asset, offset, SEEK_CUR);
 }
 
-inline void AFileWrite(const void* src, uint64_t size, AFile file)
+inline void AFileWrite(const void* src, uint64_t size, AFile file, int alignment = 0)
 { }
 
-inline void AFileClose(AFile file)
-{
+inline void AFileClose(AFile file) {
     AAsset_close(file.asset);
 }
 
-inline bool AFileExist(AFile file)
-{
+inline bool AFileExist(AFile file) {
     return file.asset != nullptr;
 }
 
-inline uint64_t AFileSize(AFile file)
-{
+inline uint64_t AFileSize(AFile file) {
     return AAsset_getLength(file.asset);
 }
 
 #else
 
-struct AFile
-{
+struct AFile {
     FILE* file;
 };
 
@@ -256,33 +257,27 @@ inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
     return afile;
 }
 
-inline void AFileRead(void* dst, uint64_t size, AFile file)
-{
-    fread(dst, 1, size, file.file);
+inline void AFileRead(void* dst, uint64_t size, AFile file, int alignment = 1) {
+    fread(dst, alignment, size, file.file);
 }
 
-inline void AFileWrite(const void* src, uint64_t size, AFile file)
-{ 
-    fwrite(src, 1, size, file.file);
+inline void AFileWrite(const void* src, uint64_t size, AFile file, int alignment = 1) { 
+    fwrite(src, alignment, size, file.file);
 }
 
-inline void AFileSeekBegin(AFile file)
-{
+inline void AFileSeekBegin(AFile file) {
     fseek(file.file, 0, SEEK_SET);
 }
 
-inline void AFileSeek(long offset, AFile file)
-{
+inline void AFileSeek(long offset, AFile file) {
     fseek(file.file, offset, SEEK_CUR);
 }
 
-inline void AFileClose(AFile file)
-{
+inline void AFileClose(AFile file) {
     fclose(file.file);
 }
 
-inline bool AFileExist(AFile file)
-{ 
+inline bool AFileExist(AFile file) { 
     return file.file != nullptr;
 }
 

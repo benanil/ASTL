@@ -98,6 +98,13 @@ public:
 		return ptr[size++];
 	}
 
+	void PushArray(const T* arr, int cnt) 
+	{
+		GrowIfNecessarry(cnt);
+		Copy(ptr + size, arr, cnt);
+		size += cnt;
+	}
+
 	void Push(const T& value) 
 	{
 		GrowIfNecessarry();
@@ -118,11 +125,11 @@ public:
 		return size > 0;
 	}
 private:
-	void GrowIfNecessarry()
+	void GrowIfNecessarry(int add = 1)
 	{
-		if (size + 1 >= capacity)
+		if (size + add >= capacity)
 		{
-			int newSize = size + 1 <= InitialSize ? InitialSize : CalculateArrayGrowth(capacity);
+			int newSize = size + add <= InitialSize ? InitialSize : CalculateArrayGrowth(capacity);
 			if (ptr) ptr = allocator.Reallocate(ptr, capacity, newSize);
 			else     ptr = allocator.Allocate(newSize);
 			capacity    = newSize; 
