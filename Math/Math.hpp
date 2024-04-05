@@ -1,5 +1,13 @@
+
 // most of the functions are accurate and faster than stl 
-// convinient for game programming
+// convinient for game programming, be aware of speed and preciseness tradeoffs because cstd has more accurate functions
+
+// Sections of this file are:
+// Essential    : square, sqrt, exp, pow...
+// Trigonometry : sin, cos, tan, atan, atan2...
+// Half         : IEEE 16bit float, conversion functions
+// Color        : packing and unpacking rgba8 color
+// Ease         : easeIn, easeOut...
 
 #pragma once
 
@@ -12,7 +20,7 @@ constexpr float PI       = 3.14159265358f;
 constexpr float RadToDeg = 180.0f / PI;
 constexpr float DegToRad = PI / 180.0f;
 constexpr float OneDivPI = 1.0f / PI;
-constexpr float PIDiv2   = PI / 2.0f;
+constexpr float HalfPI   = PI / 2.0f;
 constexpr float TwoPI    = PI * 2.0f;
 constexpr float Sqrt2    = 1.414213562f;
 constexpr float Epsilon  = 0.0001f;
@@ -20,18 +28,22 @@ constexpr float Epsilon  = 0.0001f;
 // for float constants use float.h's FLT_MAX, FLT_MIN, DBL_MAX, DBL_MIN
 
 /*//////////////////////////////////////////////////////////////////////////*/
-/*                           Base Functions                                 */
+/*                              Essential                                   */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-__forceinline __constexpr float Lerp(float x, float y, float t) {
+inline_constexpr float sqr(float x) {
+    return x * x;
+}
+
+inline_constexpr float Lerp(float x, float y, float t) {
 	return x + (y - x) * t;
 }
 
-__forceinline __constexpr double Lerp(double x, double y, double t) {
+inline_constexpr double Lerp(double x, double y, double t) {
 	return x + (y - x) * t;
 }
 
-__forceinline __constexpr float SqrtConstexpr(float a) {
+inline_constexpr double SqrtConstexpr(double a) {
     // from: Jack W. Cerenshaw's math toolkit for real time development book: page 63 Listing 4.3
     // I've removed some of the branches. slightly slower than sqrtf
     // double version is also here: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
@@ -58,7 +70,11 @@ __forceinline __constexpr float SqrtConstexpr(float a) {
     expo += 0x3feu;
     x.hi &= 0x000fffffu;
     x.hi += expo << 20u;
-    return (float)x.fp;
+    return x.fp;
+}
+
+inline_constexpr float SqrtConstexpr(float a) {
+    return (float)SqrtConstexpr((double)a);
 }
 
 __forceinline float Sqrt(float a) {
@@ -93,35 +109,31 @@ __forceinline float RSqrt(float x) {
 #endif
 }
 
-__forceinline __constexpr float Fract(float a) { a = Abs(a); return a - int(a); }
-
 // https://github.com/id-Software/DOOM-3/blob/master/neo/idlib/math/Math.h
-__forceinline float Exp(float f) {
+inline_constexpr float Exp(float f) {
     const int IEEE_FLT_MANTISSA_BITS  =	23;
     const int IEEE_FLT_EXPONENT_BITS  =	8;
     const int IEEE_FLT_EXPONENT_BIAS  =	127;
     const int IEEE_FLT_SIGN_BIT       =	31;
-    int i, s, e, m, exponent;
-    float x, x2, y, p, q;
     
-    x = f * 1.44269504088896340f;		// multiply with ( 1 / log( 2 ) )
+    float x = f * 1.44269504088896340f;		// multiply with ( 1 / log( 2 ) )
     
-    i = BitCast<int>(x);
-    s = ( i >> IEEE_FLT_SIGN_BIT );
-    e = ( ( i >> IEEE_FLT_MANTISSA_BITS ) & ( ( 1 << IEEE_FLT_EXPONENT_BITS ) - 1 ) ) - IEEE_FLT_EXPONENT_BIAS;
-    m = ( i & ( ( 1 << IEEE_FLT_MANTISSA_BITS ) - 1 ) ) | ( 1 << IEEE_FLT_MANTISSA_BITS );
+    int i = BitCast<int>(x);
+    int s = ( i >> IEEE_FLT_SIGN_BIT );
+    int e = ( ( i >> IEEE_FLT_MANTISSA_BITS ) & ( ( 1 << IEEE_FLT_EXPONENT_BITS ) - 1 ) ) - IEEE_FLT_EXPONENT_BIAS;
+    int m = ( i & ( ( 1 << IEEE_FLT_MANTISSA_BITS ) - 1 ) ) | ( 1 << IEEE_FLT_MANTISSA_BITS );
     i = ( ( m >> ( IEEE_FLT_MANTISSA_BITS - e ) ) & ~( e >> 31 ) ) ^ s;
     
-    exponent = ( i + IEEE_FLT_EXPONENT_BIAS ) << IEEE_FLT_MANTISSA_BITS;
-    y = BitCast<float>(exponent);
+    int exponent = ( i + IEEE_FLT_EXPONENT_BIAS ) << IEEE_FLT_MANTISSA_BITS;
+    float y = BitCast<float>(exponent);
     x -= (float) i;
     if ( x >= 0.5f ) {
         x -= 0.5f;
         y *= 1.4142135623730950488f;	// multiply with sqrt( 2 )
     }
-    x2 = x * x;
-    p = x * ( 7.2152891511493f + x2 * 0.0576900723731f );
-    q = 20.8189237930062f + x2;
+    float x2 = x * x;
+    float p = x * ( 7.2152891511493f + x2 * 0.0576900723731f );
+    float q = 20.8189237930062f + x2;
     x = y * ( q + p ) / ( q - p );
     return x;
 }
@@ -129,7 +141,7 @@ __forceinline float Exp(float f) {
 // https://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/
 // https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81
 // should be much more precise with large b
-__forceinline __constexpr float Pow(float a, float b) {
+inline_constexpr float Pow(float a, float b) {
     // calculate approximation with fraction of the exponent
     int e = (int) b;
     union {
@@ -154,23 +166,22 @@ __forceinline __constexpr float Pow(float a, float b) {
 }
 
 // https://github.com/ekmett/approximate/blob/master/cbits/fast.c#L81 <--you can find double versions
-__forceinline __constexpr float Log(float x) {
+inline_constexpr float Log(float x) {
     return (BitCast<int>(x) - 1064866805) * 8.262958405176314e-8f;
 }
 
 // if you want log10 for integer you can look at Algorithms.hpp
-__forceinline __constexpr float Log10(float x) { 
+inline_constexpr float Log10(float x) { 
     return Log(x) / 2.30258509299f; // ln(x) / ln(10)
 } 
 
 // you might look at this link as well: https://tech.ebayinc.com/engineering/fast-approximate-logarithms-part-i-the-basics/
-__forceinline __constexpr float Log2(float x) {
+inline_constexpr float Log2(float x) {
     return Log(x) / 0.6931471805599453094f; // ln(x) / ln(2) 
 }
 
 // https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
-__forceinline __constexpr unsigned int Log2(unsigned int v)
-{
+inline_constexpr unsigned int Log2(unsigned int v) {
     constexpr int MultiplyDeBruijnBitPosition[32] = 
     {
         0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30,
@@ -182,8 +193,8 @@ __forceinline __constexpr unsigned int Log2(unsigned int v)
     return MultiplyDeBruijnBitPosition[(uint32_t)(v * 0x07C4ACDDU) >> 27];
 }
 
-inline __constexpr unsigned int Log10(unsigned int v)
-{                                                   // this would work too
+inline_constexpr unsigned int Log10(unsigned int v) {
+                                                    // this would work too
     unsigned int const PowersOf10[] = {             // if (n <= 9) return 1;
         1, 10, 100, 1000, 10000, 100000,            // if (n <= 99) return 2;
         1000000, 10000000, 100000000, 1000000000    // if (n <= 999) return 3;
@@ -192,28 +203,31 @@ inline __constexpr unsigned int Log10(unsigned int v)
     return t - (v < PowersOf10[t]);                                                      
 }                                                                                        
 
-__forceinline __constexpr bool IsZero(float x) {
+inline_constexpr bool IsZero(float x) {
     return Abs(x) <= 0.0001f; 
 }
 
-__forceinline __constexpr bool AlmostEqual(float x, float  y) {
+inline_constexpr bool AlmostEqual(float x, float  y) {
     return Abs(x-y) <= 0.001f;
 }
 
-__forceinline __constexpr float Sign(float x) 
-{
+inline_constexpr float Sign(float x) {
     int res = BitCast<int>(1.0f);
     res |= BitCast<int>(x) & 0x80000000;
     return BitCast<float>(res);
 } 
 
-__forceinline __constexpr float CopySign(float x, float y) {
+inline_constexpr int Sign(int x) {
+    return 1 | (x & 0x80000000); // equal to above float version
+} 
+
+inline_constexpr float CopySign(float x, float y) {
     int ix = BitCast<int>(x) & 0x7fffffff;
     int iy = BitCast<int>(y) & 0x80000000;
     return BitCast<float>(ix | iy);
 }
 
-__forceinline __constexpr bool IsNan(float f) {
+inline_constexpr bool IsNan(float f) {
     uint32 intValue = BitCast<uint32>(f);
     uint32 exponent = (intValue >> 23) & 0xFF;
     uint32 fraction = intValue & 0x7FFFFF;
@@ -221,7 +235,7 @@ __forceinline __constexpr bool IsNan(float f) {
 }
 
 template<typename T>
-__forceinline __constexpr T FMod(T x, T y) {
+inline_constexpr T FMod(T x, T y) {
     T quotient = x / y;
     T whole = (T)((int)quotient);  // truncate quotient to integer
     T remainder = x - whole * y;
@@ -230,46 +244,50 @@ __forceinline __constexpr T FMod(T x, T y) {
 }
 
 template<typename T>
-__forceinline __constexpr T Floor(T x) {
+inline_constexpr T Floor(T x) {
     T whole = (T)(int)x;  // truncate quotient to integer
     return x - (x-whole);
 }
 
-//  ######################################  
-//  #####  [TRIGONOMETRIC FUNCTINS]  #####  
-//  ######################################  
+inline_constexpr float Fract(float a) {
+    return a - int(a); 
+}
+
+/*//////////////////////////////////////////////////////////////////////////*/
+/*                      Trigonometric Functions                             */
+/*//////////////////////////////////////////////////////////////////////////*/
 
 // https://mazzo.li/posts/vectorized-atan2.html
-__forceinline __constexpr float ATan(float x) {
+inline_constexpr float ATan(float x) {
     const float x_sq = x * x;
     const float a1 =  0.99997726f, a3 = -0.33262347f, a5  = 0.19354346f,
                 a7 = -0.11643287f, a9 =  0.05265332f, a11 = -0.01172120f;
     return x * (a1 + x_sq * (a3 + x_sq * (a5 + x_sq * (a7 + x_sq * (a9 + x_sq * a11)))));
 }
 
-__forceinline __constexpr float ATan2(float y, float x) {
+inline_constexpr float ATan2(float y, float x) {
     // from here: https://yal.cc/fast-atan2/  
     float ay = Abs(y), ax = Abs(x);
     int invert = ay > ax;
     float z = invert ? ax/ay : ay/ax;// [0,1]
     float th = ATan(z);              // [0,π/4]
-    if (invert)   th = PIDiv2 - th;  // [0,π/2]
+    if (invert)   th = HalfPI - th;  // [0,π/2]
     if (x < 0.0f) th = PI - th;      // [0,π]
     return CopySign(th, y);          // [-π,π] 
 }
 
-__forceinline float ASin(float z) {
-	return ATan2(z, Sqrt(1.0f-(z * z)));
+inline_constexpr float ASin(float z) {
+	return ATan2(z, SqrtConstexpr(1.0f-(z * z)));
 }
 
 // https://en.wikipedia.org/wiki/Sine_and_cosine
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
 
-__forceinline __constexpr float RepeatPI(float x) {
+inline_constexpr float RepeatPI(float x) {
   return FMod(x + PI, TwoPI) - PI;
 }
 
-__forceinline __constexpr float Sin(float x) {
+inline_constexpr float Sin(float x) {
     float xx = x * x * x;                // x^3
     float t = x - (xx * 0.16666666666f); // x3/!3  6 = !3 = 1.6666 = rcp(3)
     t += (xx *= x * x) * 0.00833333333f; // x5/!5  120 = !5 = 0.0083 = rcp(5)
@@ -279,7 +297,7 @@ __forceinline __constexpr float Sin(float x) {
 }
 
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
-__forceinline __constexpr float Cos(float x) {
+inline_constexpr float Cos(float x) {
     float xx = x * x;                    // x^2
     float t = 1.0f - (xx * 0.5f);        // 1-(x2/!2) 0.5f = rcp(!2)
     t += (xx *= x * x) * 0.04166666666f; // t + (x4/!4) 0.04166 = rcp(24) = 24.0f = !4
@@ -288,11 +306,11 @@ __forceinline __constexpr float Cos(float x) {
     return t;
 }
 
-__forceinline __constexpr void SinCos(float x, float* s, float* c) {
+inline_constexpr void SinCos(float x, float* s, float* c) {
 	*s = Sin(x); *c = Cos(x); 
 }
 
-__forceinline __constexpr float Tan(float radians) {
+inline_constexpr float Tan(float radians) {
     float rr = radians * radians;
     float a = 9.5168091e-03f;
     a *= rr; a += 2.900525e-03f;
@@ -306,16 +324,16 @@ __forceinline __constexpr float Tan(float radians) {
 
 // inspired from Casey Muratori's performance aware programming
 // this functions makes the code more readable. OpenCL and Cuda has the same functions as well
-__forceinline float ATan2PI(float y, float x) { return ATan2(y, x) / PI; }
-__forceinline float ASinPI(float z) { return ASin(z) / PI; }
-__forceinline float ACos(float x)   { return PIDiv2 - ASin(x); }
-__forceinline float ACosPI(float x) { return ACos(x) / PI; }
-__forceinline __constexpr float CosPI(float x)  { return Cos(x) / PI; }
-__forceinline __constexpr float SinPI(float x)  { return Sin(x) / PI; }
+inline_constexpr float ATan2PI(float y, float x) { return ATan2(y, x) / PI; }
+inline_constexpr float ASinPI(float z) { return ASin(z) / PI; }
+inline_constexpr float ACos(float x)   { return HalfPI - ASin(x); }
+inline_constexpr float ACosPI(float x) { return ACos(x) / PI; }
+inline_constexpr float CosPI(float x)  { return Cos(x) / PI; }
+inline_constexpr float SinPI(float x)  { return Sin(x) / PI; }
 
-//  ######################################  
-//  #####      [HALF FUNCTINS]       #####  
-//  ######################################  
+/*//////////////////////////////////////////////////////////////////////////*/
+/*                             Half                                         */
+/*//////////////////////////////////////////////////////////////////////////*/
 
 typedef ushort half;
 
@@ -410,8 +428,7 @@ __forceinline void ConvertFloatToHalf(half* res, const float* x, short n) {
 #endif
 }
 
-__forceinline void ConvertFloatToHalf4(half* res, const float* x)
-{
+__forceinline void ConvertFloatToHalf4(half* res, const float* x) {
 #if defined(AX_SUPPORT_SSE) 
     _mm_store_si128((__m128i*)res, _mm_cvtps_ph(_mm_loadu_ps(x), _MM_FROUND_TO_NEAREST_INT)); 
 #else
@@ -420,51 +437,51 @@ __forceinline void ConvertFloatToHalf4(half* res, const float* x)
 }
 
 // packs -1,1 range float to short
-__forceinline short PackSnorm16(float x) {
+inline_constexpr short PackSnorm16(float x) {
     return (short)Clamp(x * (float)INT16_MAX, (float)INT16_MIN, (float)INT16_MAX);
 }
 
-__forceinline float UnpackSnorm16(short x) {
+inline_constexpr float UnpackSnorm16(short x) {
     return (float)x / (float)INT16_MAX;
 }
 
 // packs 0,1 range float to short
-__forceinline short PackUnorm16(float x) {
+inline_constexpr short PackUnorm16(float x) {
     return (short)Clamp(x * (float)INT16_MAX, (float)INT16_MIN, (float)INT16_MAX);
 }
 
-__forceinline float UnpackUnorm16(short x) {
+inline_constexpr float UnpackUnorm16(short x) {
     return (float)x / (float)UINT16_MAX;
 }
 
-//  ######################################  
-//  #####      [COLOR FUNCTINS]      #####  
-//  ######################################  
+/*//////////////////////////////////////////////////////////////////////////*/
+/*                            Color                                         */
+/*//////////////////////////////////////////////////////////////////////////*/
 
-__forceinline uint MakeColorRGBAU32(uint8 r, uint8 g, uint8 b, uint8 a) {
+inline_constexpr uint MakeColorRGBAU32(uint8 r, uint8 g, uint8 b, uint8 a) {
     return r | (uint(g) << 8) | (uint(b) << 16) | (uint(a) << 24);
 }
 
-__forceinline uint PackColorRGBU32(float r, float g, float b) {
+inline_constexpr uint PackColorRGBU32(float r, float g, float b) {
     return (uint)(r * 255.0f) | ((uint)(g * 255.0f) << 8) | ((uint)(b * 255.0f) << 16);
 }
 
-__forceinline uint PackColorRGBU32(float* c) {
+inline_constexpr uint PackColorRGBU32(float* c) {
     return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16);
 }
 
-__forceinline uint PackColorRGBAU32(float* c) {
+inline_constexpr uint PackColorRGBAU32(float* c) {
     return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16) | ((uint)(c[3] * 255.0f) << 24);
 }
 
-__forceinline void UnpackColorRGBf(unsigned color, float* colorf) {
+inline_constexpr void UnpackColorRGBf(unsigned color, float* colorf) {
     const float toFloat = 1.0f / 255.0f;
     colorf[0] = float(color >> 0  & 0xFF) * toFloat;
     colorf[1] = float(color >> 8  & 0xFF) * toFloat;
     colorf[2] = float(color >> 16 & 0xFF) * toFloat;
 }
 
-__forceinline void UnpackColorRGBAf(unsigned color, float* colorf) {
+inline_constexpr void UnpackColorRGBAf(unsigned color, float* colorf) {
     const float toFloat = 1.0f / 255.0f;
     colorf[0] = float(color >> 0  & 0xFF) * toFloat;
     colorf[1] = float(color >> 8  & 0xFF) * toFloat;
@@ -472,14 +489,62 @@ __forceinline void UnpackColorRGBAf(unsigned color, float* colorf) {
     colorf[3] = float(color >> 24) * toFloat;
 }
 
-template<typename T> __forceinline __constexpr T Min3(T a, T b, T c) {
-    T res = a < b ? a : b;
-    return res < c ? c : res;
+/*//////////////////////////////////////////////////////////////////////////*/
+/*                                 Easing                                   */
+/*//////////////////////////////////////////////////////////////////////////*/
+
+// to see visually: https://easings.net/ 
+inline_constexpr float EaseIn(float x) {
+    return x * x;
 }
 
-template<typename T> __forceinline __constexpr T Max3(T a, T b, T c) {
-    T res = a > b ? a : b;
-    return res > c ? res : c;
+inline_constexpr float EaseOut(float x) { 
+    float r = 1.0f - x;
+    return 1.0f - (r * r); 
 }
+
+inline_constexpr float EaseInOut(float x) {
+    return x < 0.5f ? 2.0f * x * x : 1.0f - sqr(-2.0f * x + 2.0f) / 2.0f;
+}
+
+inline_constexpr float EaseInSine(float x) {
+  return 1.0f - Cos((x * PI) * 0.5f);
+}
+
+inline_constexpr float EaseOutSine(float x) {
+  return Sin((x * PI) * 0.5f);
+}
+
+ // Gradually changes a value towards a desired goal over time.
+inline float SmoothDamp(float current, float target, float& currentVelocity, float smoothTime, float maxSpeed, float deltaTime)
+{
+    // Based on Game Programming Gems 4 Chapter 1.10
+    smoothTime = MAX(0.0001f, smoothTime);
+    float omega = 2.0f / smoothTime;
+
+    float x = omega * deltaTime;
+    float exp = 1.0f / (1.0f + x + 0.48f * x * x + 0.235f * x * x * x);
+    float change = current - target;
+    float originalTo = target;
+
+    // Clamp maximum speed
+    float maxChange = maxSpeed * smoothTime;
+    change = Clamp(change, -maxChange, maxChange);
+    target = current - change;
+
+    float temp = (currentVelocity + omega * change) * deltaTime;
+    currentVelocity = (currentVelocity - omega * temp) * exp;
+    float output = target + (change + temp) * exp;
+
+    // Prevent overshooting
+    if (originalTo - current > 0.0f == output > originalTo)
+    {
+        output = originalTo;
+        currentVelocity = (output - originalTo) / deltaTime;
+    }
+
+    return output;
+}
+
 
 AX_END_NAMESPACE 

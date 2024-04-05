@@ -205,9 +205,9 @@ struct alignas(16) Matrix4
     static Matrix4 CreateScale(float ScaleX, float ScaleY, float ScaleZ)
     {
         Matrix4 M;
-        M.r[0] = VecSet(0.0f, 0.0f, 0.0f, ScaleX);
-        M.r[1] = VecSet(0.0f, 0.0f, ScaleY, 0.0f);
-        M.r[2] = VecSet(0.0f, ScaleZ, 0.0f, 0.0f);
+        M.r[0] = VecSetR(ScaleX, 0.0f, 0.0f, 0.0f);
+        M.r[1] = VecSetR(0.0f, ScaleY, 0.0f, 0.0f);
+        M.r[2] = VecSetR(0.0f, 0.0f, ScaleZ, 0.0f);
         M.r[3] = VecIdentityR3;
         return M;
     }
@@ -354,6 +354,7 @@ struct alignas(16) Matrix4
     	out_matrix.m[1][2] = s;
     	out_matrix.m[2][1] = -s;
     	out_matrix.m[2][2] = c;
+        // out_matrix.m[3][3] = 1.0f;
     	return out_matrix;
     }
     
@@ -365,6 +366,7 @@ struct alignas(16) Matrix4
         out_matrix.m[0][2] = -s;
         out_matrix.m[2][0] = s;
         out_matrix.m[2][2] = c;
+        // out_matrix.m[3][3] = 1.0f;
         return out_matrix;
     }
     
@@ -376,6 +378,7 @@ struct alignas(16) Matrix4
         out_matrix.m[0][1] = s;
         out_matrix.m[1][0] = -s;
         out_matrix.m[1][1] = c;
+        // out_matrix.m[3][3] = 1.0f;
         return out_matrix;
     }
     
@@ -386,7 +389,7 @@ struct alignas(16) Matrix4
     
     static Matrix4 RotationFromEuler(float x, float y, float z)
     {
-      return FromQuaternion(QFromEuler(MakeVec3(x, y, z)));
+      return FromQuaternion(QFromEuler(x, y, z));
     }
     
     static Matrix3 VECTORCALL ConvertToMatrix3(const Matrix4 M)
@@ -433,9 +436,9 @@ struct alignas(16) Matrix4
         
         // (SizeSqr(mVec[0]), SizeSqr(mVec[1]), SizeSqr(mVec[2]), 0)
         vec_t sizeSqr;
-        sizeSqr =                 VecMul(out.r[0], out.r[0]);
-        sizeSqr = VecAdd(sizeSqr, VecMul(out.r[1], out.r[1]));
-        sizeSqr = VecAdd(sizeSqr, VecMul(out.r[2], out.r[2]));
+        sizeSqr = VecMul(out.r[0], out.r[0]);
+        sizeSqr = VecFmadd(out.r[1], out.r[1], sizeSqr);
+        sizeSqr = VecFmadd(out.r[2], out.r[2], sizeSqr);
         
         // optional test to avoid divide by 0
         const vec_t one = VecOne();
@@ -449,9 +452,9 @@ struct alignas(16) Matrix4
         out.r[1] = VecMul(out.r[1], rSizeSqr);
         out.r[2] = VecMul(out.r[2], rSizeSqr);
         // last line
-        out.r[3] =                  VecMul(out.r[0], VecSplatX(inM.r[3]));
-        out.r[3] = VecAdd(out.r[3], VecMul(out.r[1], VecSplatY(inM.r[3])));
-        out.r[3] = VecAdd(out.r[3], VecMul(out.r[2], VecSplatZ(inM.r[3])));
+        out.r[3] =       VecMul(out.r[0], VecSplatX(inM.r[3]));
+        out.r[3] = VecFmaddLane(out.r[1], inM.r[3], out.r[3], 1);
+        out.r[3] = VecFmaddLane(out.r[2], inM.r[3], out.r[3], 2);
         out.r[3] = VecSub(VecSetR(0.f, 0.f, 0.f, 1.f), out.r[3]);
         return out;
     }
@@ -482,7 +485,7 @@ struct alignas(16) Matrix4
         vec_t Y_   = VecSub(VecMul(detB, C), Mat2MulAdj(D, A_B));
         vec_t Z_   = VecSub(VecMul(detC, B), Mat2MulAdj(A, D_C));
         
-        detM = VecAdd(detM, VecMul(detB, detC));
+        detM = VecFmadd(detB, detC, detM);
         
         vec_t tr = VecMul(A_B, VecSwizzle(D_C, 0, 2, 1, 3));
         tr   = VecHadd(tr, tr);

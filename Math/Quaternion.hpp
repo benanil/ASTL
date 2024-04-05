@@ -2,6 +2,7 @@
 
 #include "Vector.hpp"
 #include "SIMDVectorMath.hpp"
+#include <math.h>
 
 AX_NAMESPACE
 
@@ -40,6 +41,14 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
     return vResult;
 }
 
+inline vec_t QFromAxisAngle(Vector3f axis, float angle)
+{
+    angle = 0.5f * angle;
+    float SinV = sinf(angle);
+    float CosV = cosf(angle);
+    return VecSetR(axis.x * SinV, axis.y * SinV, axis.z * SinV, CosV);
+}
+
 inline vec_t VECTORCALL QMulVec3(vec_t vec, vec_t quat)
 {
     vec_t temp0 = Vec3Cross(quat, vec);
@@ -56,48 +65,64 @@ inline Vector3f VECTORCALL QMulVec3(Vector3f vec, Quaternion quat)
     return res;
 }
 
-inline Quaternion VECTORCALL QSlerp(Quaternion Q0, Quaternion Q1, float t)
+inline Quaternion VECTORCALL QSlerp(Quaternion q0, Quaternion q1, float t)
 {
-    const vec_t T = VecSet1(t);
-    // Result = Q0 * sin((1.0 - t) * Omega) / sin(Omega) + Q1 * sin(t * Omega) / sin(Omega)
-    static const vec_t OneMinusEpsilon = VecSetR(1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f, 1.0f - 0.00001f);
-    static const veci_t SignMask2 = VecFromInt(0x80000000, 0x00000000, 0x00000000, 0x00000000);
-    
-    vec_t CosOmega = VecDot(Q0, Q1);
-    vec_t Control = VecCmpLt(CosOmega, VecZero());
-    vec_t Sign = VecSelect(VecOne(), VecNegativeOne(), Control);
-    CosOmega = VecMul(CosOmega, Sign);
-    Control = VecCmpLt(CosOmega, OneMinusEpsilon);
-    
-    vec_t SinOmega = VecMul(CosOmega, CosOmega);
-    SinOmega = VecSub(VecOne(), SinOmega);
-    SinOmega = VecSqrt(SinOmega);
-    
-    vec_t Omega = VecAtan2(SinOmega, CosOmega);
-    vec_t V01 = VecSwizzle(T, 2, 3, 0, 1);
-    V01 = VecMask(V01, VecMaskXY);
-    #if !defined(AX_SUPPORT_SSE) && !defined(AX_ARM)
-    uint uf = BitCast<uint>(V01.x) ^ 0x80000000;
-    V01.x = BitCast<float>(uf);
-    #else
-    V01 = VecXor(V01, SignMask2);
-    #endif
-    V01 = VecAdd(VecIdentityR0, V01);
-    
-    vec_t S0 = VecMul(V01, Omega);
-    S0 = VecSin(S0);
-    S0 = VecDiv(S0, SinOmega);
-    S0 = VecSelect(V01, S0, Control);
-    
-    vec_t S1 = VecSplatY(S0);
-    S0 = VecSplatX(S0);
-    S1 = VecMul(S1, Sign);
-    
-    vec_t Result = VecMul(Q0, S0);
-    return VecFmadd(S1, Q1, Result);
+    const vec_t one = VecSet1(1.0f);
+    // from paper: "A Fast and Accurate Estimate for SLERP" by David Eberly
+    // but I have used fused instructions and I've made optimizations on sign part for ARM cpu's
+
+    // Common code for computing the scalar coefficients of SLERP
+    auto CalculateCoefficient = [one] (vec_t vT, vec_t xm1)
+    {
+        constexpr float const mu = 1.85298109240830f;
+        // Precomputed constants
+        const vec_t u0123 = VecSetR( 1.f / ( 1 * 3 ), 1.f / ( 2 * 5 ), 1.f / ( 3 * 7 ), 1.f / ( 4 * 9 ) );
+        const vec_t u4567 = VecSetR( 1.f / ( 5 * 11 ), 1.f / ( 6 * 13 ), 1.f / ( 7 * 15 ), mu / ( 8 * 17 ) );
+        const vec_t v0123 = VecSetR( 1.f / 3, 2.f / 5, 3.f / 7, 4.f / 9 );
+        const vec_t v4567 = VecSetR( 5.f / 11, 6.f / 13, 7.f / 15, mu * 8 / 17 );
+
+        vec_t vTSquared = VecMul(vT, vT);
+        vec_t b4567 = VecFmsub(u4567, vTSquared, v4567);
+        b4567 = VecMul(b4567, xm1);
+
+        vec_t c = VecAdd(VecSplatW(b4567), one);
+        c = VecFmaddLane(c, b4567, one, 2); // multiply by lane is faster with ARM cpu's
+        c = VecFmaddLane(c, b4567, one, 1);
+        c = VecFmaddLane(c, b4567, one, 0);
+
+        vec_t b0123 = VecFmsub(u0123, vTSquared, v0123);
+        b0123 = VecMul(b0123, xm1);
+        c = VecFmaddLane(c, b0123, one, 3);
+        c = VecFmaddLane(c, b0123, one, 2);
+        c = VecFmaddLane(c, b0123, one, 1);
+        c = VecFmaddLane(c, b0123, one, 0);
+        c = VecMul(c, vT);
+        return c;
+    };
+
+    vec_t x = VecDot(q0, q1); // cos ( theta ) in all components
+    vec_t control = VecCmpLt(x, VecZero());
+    vec_t sign = VecSelect(VecOne(), VecNegativeOne(), control);
+    q1 = VecMul(sign, q1); // do mul instead of xor
+
+    vec_t xm1 = VecFmsub(x, sign, one);
+    vec_t cT = CalculateCoefficient(VecSet1(t), xm1);
+    vec_t cD = CalculateCoefficient(VecSet1(1.0f - t), xm1);
+    cT = VecMul(cT, q1);
+    return VecFmadd(cD, q0, cT);
 }
 
-__forceinline Quaternion static QFromEuler(float x, float y, float z)
+// faster but less precise, more error prone version of slerp
+__forceinline Quaternion VECTORCALL QNLerp(Quaternion a, Quaternion b, float t)
+{
+    if (VecDotf(a, b) < 0.0f)
+        a = VecNeg(a);
+    
+    a = VecLerp(a, b, t);
+    return VecNorm(a);
+}
+
+__forceinline Quaternion QFromEuler(float x, float y, float z)
 {
     x *= 0.5f; y *= 0.5f; z *= 0.5f;
     float c[4], s[4];
@@ -114,6 +139,11 @@ __forceinline Quaternion static QFromEuler(float x, float y, float z)
     return q;
 }
 
+__forceinline Quaternion VECTORCALL QFromEuler(Vector3f euler)
+{
+    return QFromEuler(euler.x, euler.y, euler.z);
+}
+
 inline Vector3f QToEulerAngles(Quaternion qu)
 {
     xyzw q;
@@ -125,10 +155,6 @@ inline Vector3f QToEulerAngles(Quaternion qu)
     return eulerAngles;
 }
 
-__forceinline Quaternion VECTORCALL QFromEuler(Vector3f euler)
-{
-    return QFromEuler(euler.x, euler.y, euler.z);
-}
 
 template<int numCol = 4> // number of columns of matrix, 3 or 4
 inline void QuaternionFromMatrix(float* Orientation, const float* m) {
@@ -188,12 +214,12 @@ void MatrixFromQuaternion(float* mat, Quaternion quat)
         mat[numCol * 3 + 3] = 1.0f;
 }
 
-inline Quaternion FromLookRotation(Vector3f direction, const Vector3f& up)
+inline Quaternion QFromLookRotation(Vector3f direction, const Vector3f& up)
 {
-    xyzw result;
-    Vector3f matrix[3] {
+    Vector3f matrix[3] = {
         Vector3f::Cross(up, direction), up, direction 
     };
+    xyzw result;
     QuaternionFromMatrix<3>(&result.x, &matrix[0].x);
     return VecLoad(&result.x);
 }
@@ -203,10 +229,10 @@ __forceinline Quaternion VECTORCALL QConjugate(Quaternion vec)
     return VecMul(vec, VecSetR(-1.0f, -1.0f, -1.0f, 1.0f));
 }
 
-__forceinline static Quaternion QInverse(Quaternion q)
+__forceinline Quaternion QInverse(Quaternion q)
 {
     const float lengthSq = VecDotf(q, q);
-    if (lengthSq == 1.0f)
+    if (AlmostEqual(lengthSq, 1.0f))
     {
         q = QConjugate(q);
         return q;

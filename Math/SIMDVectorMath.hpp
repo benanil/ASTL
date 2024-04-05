@@ -1,4 +1,13 @@
+
+// this is a helper file for working with ARM neon and SSE-SSE4.2 intrinsics, 
+// But everytime writing both versions can be pain, so I’ve used macros for this purpose,.
+// another reason why I’ve used macros is if I use operator overriding or functions for abstracting intrinsics,
+// in debug mode, code compiles down to call instruction which is slower than instruction itself
+// and macro's allows many more optimizations that compiler can do.
+// a bit more explanation here: https://medium.com/@anilcangulkaya7/what-is-simd-and-how-to-use-it-3d1125faac89
+
 #pragma once
+
 #include "Math.hpp"
 
 AX_NAMESPACE 
@@ -100,6 +109,7 @@ inline vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecMulf(a, b) _mm_mul_ps(a, VecSet1(b))
 #define VecDivf(a, b) _mm_div_ps(a, VecSet1(b))
 
+// a * b[l] + c
 #define VecFmaddLane(a, b, c, l) _mm_fmadd_ps(a, _mm_permute_ps(b, MakeShuffleMask(l, l, l, l)), c)
 
 #define VecFmadd(a, b, c) _mm_fmadd_ps(a, b, c)
@@ -241,6 +251,7 @@ typedef uint32x4_t vecu_t;
 #define VecMulf(a, b) vmulq_n_f32(a, b)
 #define VecDivf(a, b) ARMVectorDevide(a, VecSet1(b))
 
+// a * b[l] + c
 #define VecFmaddLane(a, b, c, l) vfmaq_laneq_f32(c, a, b, l)
 #define VecFmadd(a, b, c)  vfmaq_f32(c, a, b)
 #define VecFmsub(a, b, c) vfmsq_f32(a, b, c)
@@ -591,6 +602,7 @@ __forceinline veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecHadd(a, b)     MakeVec4(a.x + b.y, a.z + a.w, b.x + b.y, b.z + b.w)
 #define VecFmadd(a, b, c) MakeVec4(a.x * b.x + c.x, a.y * b.y + c.y, a.z * b.z + c.z, a.w * b.w + c.w)
 #define VecFmsub(a, b, c) MakeVec4(a.x * b.x - c.x, a.y * b.y - c.y, a.z * b.z - c.z, a.w * b.w - c.w)
+#define VecFmaddLane(a, b, c, l) MakeVec4(a.x * b[l] + c.x, a.y * b[l] + c.y, a.z * b[l] + c.z, a.w * b[l] + c.w)
 
 #define VecRcp(a) MakeVec4(1.0f / a.x, 1.0f / a.y, 1.0f / a.z, 1.0f / a.w)
 #define VecNeg(a) MakeVec4(-a.x, -a.y, -a.z, -a.w)
@@ -608,7 +620,7 @@ __forceinline veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecMax(a, b)   MakeVec4(MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z), MAX(a.w, b.w))
 #define VecMin(a, b)   MakeVec4(MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z), MIN(a.w, b.w))
 
-#define VecCmpGt(a, b) MakeVec4i(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w) /* greater or equal */
+#define VecCmpGt(a, b) MakeVec4i(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w)     /* greater or equal */
 #define VecCmpGe(a, b) MakeVec4i(a.x >= b.x, a.y >= b.y, a.z >= b.z, a.w >= b.w) /* greater or equal */
 #define VecCmpLt(a, b) MakeVec4i(a.x <  b.x, a.y <  b.y, a.z <  b.z, a.w <  b.w) /* less than */
 #define VecCmpLe(a, b) MakeVec4i(a.x <= b.x, a.y <= b.y, a.z <= b.z, a.w <= b.w) /* less or equal */
@@ -696,16 +708,10 @@ __forceinline vec_t VECTORCALL VecClamp(vec_t v, vec_t vmin, vec_t vmax)
 
 __forceinline void VECTORCALL Vec3Store(float* f, vec_t v)
 {
-    // #if defined(__ARM_NEON__) || defined(_M_ARM64)
-    // vst1_f32(f, vget_low_f32(v));
-    // vst1q_lane_f32(f + 2, v, 2);
-    // #else
     f[0] = VecGetX(v);
     f[1] = VecGetY(v);
     f[2] = VecGetZ(v);
-    // #endif
 }
-
 
 __forceinline vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
 {
@@ -809,7 +815,7 @@ inline vec_t VECTORCALL VecAtan2(vec_t y, vec_t x)
     veci_t swapMask = VecCmpGt(ay, ax);
     vec_t z  = VecDiv(VecBlend(ay, ax, swapMask), VecBlend(ax, ay, swapMask));
     vec_t th = VecAtan(z);
-    th = VecSelect(th, VecSub(VecSet1(PIDiv2), th), swapMask);
+    th = VecSelect(th, VecSub(VecSet1(HalfPI), th), swapMask);
     th = VecSelect(th, VecSub(VecSet1(PI), th), VecCmpLt(x, VecZero()));
     return VecCopySign(th, y);
 }

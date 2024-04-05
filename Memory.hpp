@@ -44,7 +44,7 @@ template<typename T>
 __forceinline T&& Forward(typename RemoveRef<T>::Type&& obj) { return (T&&)obj; }
 
 template<class T, class U = T>
-__forceinline __constexpr T Exchange(T& obj, U&& new_value)
+inline_constexpr T Exchange(T& obj, U&& new_value)
 {
   T old_value = Move(obj);
   obj = Forward<U>(new_value);

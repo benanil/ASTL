@@ -252,6 +252,7 @@ typedef struct AAnimation_
     int numSamplers;
     int numChannels;
     float duration; // total duration
+    float speed;
     AAnimChannel* channels;
     AAnimSampler* samplers;
     char* name;

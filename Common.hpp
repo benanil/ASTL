@@ -1,3 +1,6 @@
+
+// Almost all macros are here, most of them are agressively inlined for debug time performance
+
 #ifndef ASTL_COMMON
 #define ASTL_COMMON
 
@@ -240,6 +243,8 @@ typedef uint32_t uint;
     #define __constexpr constexpr
 #endif
 
+#define inline_constexpr __forceinline __constexpr
+
 #if AX_CPP_VERSION >= AX_CPP17
 #   define if_constexpr if constexpr
 #else
@@ -307,7 +312,7 @@ typedef uint32_t uint;
 AX_NAMESPACE
 
 // change it as is mobile maybe?
-inline constexpr bool IsAndroid()
+inline_constexpr bool IsAndroid()
 {
 #ifdef __ANDROID__
     return true;
@@ -417,7 +422,7 @@ template<typename T> inline T LeadingZeroCount64(T x)
 #define LeadingZeroCountWord(x) (sizeof(unsigned long long) == 8 ? LeadingZeroCount64(x) : LeadingZeroCount32(x))
 
 template<typename T>
-__forceinline __constexpr T NextSetBit(T* bits)
+inline_constexpr T NextSetBit(T* bits)
 {
     *bits &= ~T(1);
     T tz = sizeof(T) == 8 ? (T)TrailingZeroCount64((uint64_t)*bits) : (T)TrailingZeroCount32((uint32_t)*bits);
@@ -428,7 +433,7 @@ __forceinline __constexpr T NextSetBit(T* bits)
 #define EnumHasBit(_enum, bit) !!(_enum & bit)
 
 template<typename To, typename From>
-__forceinline __constexpr To BitCast(const From& _Val) 
+inline_constexpr To BitCast(const From& _Val) 
 {
 #if defined(_MSC_VER) && AX_CPP_VERSION < AX_CPP17
   return *reinterpret_cast<const To*>(&_Val);
@@ -439,8 +444,8 @@ __forceinline __constexpr To BitCast(const From& _Val)
 
 #ifndef MIN
     #if AX_CPP_VERSION >= AX_CPP17
-    template<typename T> __forceinline __constexpr T MIN(T a, T b) { return a < b ? a : b; }
-    template<typename T> __forceinline __constexpr T MAX(T a, T b) { return a > b ? a : b; }
+    template<typename T> inline_constexpr T MIN(T a, T b) { return a < b ? a : b; }
+    template<typename T> inline_constexpr T MAX(T a, T b) { return a > b ? a : b; }
     #else
     // using macro if less than 17 because we want this to be constexpr
     #   ifndef MIN
@@ -450,43 +455,58 @@ __forceinline __constexpr To BitCast(const From& _Val)
     #endif
 #endif
 
-template<typename T> __forceinline __constexpr T Clamp(T x, T a, T b) { return MAX(a, MIN(b, x)); }
+template<typename T> 
+inline_constexpr T Min3(T a, T b, T c) {
+    T res = a < b ? a : b;
+    return res < c ? c : res;
+}
 
-__forceinline __constexpr int64_t Abs(int64_t x) 
+template<typename T> 
+inline_constexpr T Max3(T a, T b, T c) {
+    T res = a > b ? a : b;
+    return res > c ? res : c;
+}
+
+template<typename T> 
+inline_constexpr T Clamp(T x, T a, T b) {
+    return MAX(a, MIN(b, x));
+}
+
+inline_constexpr int64_t Abs(int64_t x) 
 {
     return x & ~(1ull << 63ull);
 }
 
-__forceinline __constexpr int Abs(int x)
+inline_constexpr int Abs(int x)
 {
     return x & ~(1 << 31);
 }
 
-__forceinline __constexpr float Abs(float x)
+inline_constexpr float Abs(float x)
 {
     int ix = BitCast<int>(x) & 0x7FFFFFFF; // every bit except sign mask
     return BitCast<float>(ix);
 }
 
-__forceinline __constexpr double Abs(double x)
+inline_constexpr double Abs(double x)
 {
     uint64_t  ix = BitCast<uint64_t >(x) & (~(1ull << 63ull));// every bit except sign mask
     return BitCast<double>(ix);
 }
 
-template<typename T> __forceinline __constexpr 
-bool IsPowerOfTwo(T x) { return (x != 0) && ((x & (x - 1)) == 0); }
+template<typename T>
+inline_constexpr bool IsPowerOfTwo(T x) { 
+    return (x != 0) && ((x & (x - 1)) == 0); 
+}
 
-__forceinline __constexpr int NextPowerOf2(int x)
-{
+inline_constexpr int NextPowerOf2(int x) {
     x--;
     x |= x >> 1; x |= x >> 2; x |= x >> 4;
     x |= x >> 8; x |= x >> 16;
     return ++x;
 }
 
-__forceinline __constexpr int64_t NextPowerOf2(int64_t x)
-{
+inline_constexpr int64_t NextPowerOf2(int64_t x) {
     x--;
     x |= x >> 1; x |= x >> 2;  x |= x >> 4;
     x |= x >> 8; x |= x >> 16; x |= x >> 32;
@@ -541,7 +561,6 @@ inline int StringLength(char const* s)
     }
 }
 #endif
-
 
 template<typename A, typename B>
 struct Pair

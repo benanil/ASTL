@@ -1066,6 +1066,7 @@ static const char* ParseAnimations(const char* curr, Array<AAnimation>& animatio
     Array<AAnimSampler> samplers;
 
     AAnimation animation{};
+    animation.speed = 1.0f;
     // read each node
     while (true)
     {
@@ -1080,6 +1081,7 @@ static const char* ParseAnimations(const char* curr, Array<AAnimation>& animatio
                 animation.channels = channels.TakeOwnership();
                 animations.Add(animation);
                 MemsetZero(&animation, sizeof(AAnimation));
+                animation.speed = 1.0f;
             }
             if (*curr++ == ']') 
                 return curr; // end all nodes
