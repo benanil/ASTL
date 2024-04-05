@@ -28,6 +28,12 @@ inline constexpr void Swap(T& a, T& b)
 }
 
 template<typename T>
+inline bool IsLess(const T& a, const T& b)
+{
+    return a < b;
+}
+
+template<typename T>
 inline void BubbleSort(T* arr, int len)
 {
     for (int i = 0; i < len-1; ++i)
@@ -58,24 +64,23 @@ inline void ShellSort(T* arr, int n)
     }
 }
 
-
 // left is beginning of the list(usually 0)
 // right is end of the list usually size -1
 // for simd: https://github.com/WojciechMula/simd-sort
 template<typename T>
-inline void QuickSort(T* arr, int left, int right)
+inline void QuickSortFn(T* arr, int left, int right, bool(*compareFn)(const T&, const T&))
 {
     int i, j;
     while (right > left)
     {
         j = right;
         i = left - 1;
-        T v = arr[right];
+        const T& v = arr[right];
             
         while (true)
         {
-            do i++; while (arr[i] < v && i < j);
-            do j--; while (arr[j] > v && i < j);
+            do i++; while ( compareFn(arr[i], v) && i < j);
+            do j--; while (!compareFn(arr[j], v) && i < j);
             
             if (i >= j) break;
             Swap(arr[i], arr[j]);
@@ -96,6 +101,13 @@ inline void QuickSort(T* arr, int left, int right)
     }
 }
 
+// left is beginning of the list(usually 0), right is end of the list usually size -1
+template<typename T>
+inline void QuickSort(T* arr, int left, int right)
+{
+    bool(*compareFn)(const T&, const T&) = IsLess<T>;
+    QuickSortFn(arr, left, right, compareFn);
+}
 
 template<typename T>
 inline void Reverse(T* begin, T* end)

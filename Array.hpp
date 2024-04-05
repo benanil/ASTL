@@ -19,7 +19,8 @@ struct Array
     using Iterator = ValueT*;
     using ConstIterator = const ValueT*;
 	static const int InitialSize = AllocatorT::InitialSize;
-       
+
+	// all variables are public but:
 	// don't change this variables if you don't know what are you doing
 	ValueT* arr    = nullptr;
 	int m_count    = 0;
