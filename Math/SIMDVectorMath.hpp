@@ -254,7 +254,7 @@ typedef uint32x4_t vecu_t;
 // a * b[l] + c
 #define VecFmaddLane(a, b, c, l) vfmaq_laneq_f32(c, a, b, l)
 #define VecFmadd(a, b, c)  vfmaq_f32(c, a, b)
-#define VecFmsub(a, b, c) vfmsq_f32(a, b, c)
+#define VecFmsub(a, b, c) vfmsq_f32(c, a, b)
 #define VecHadd(a, b)    vpaddq_f32(a, b)
 #define VecSqrt(a)       vsqrtq_f32(a)
 #define VecRcp(a)        vrecpeq_f32(a)
@@ -333,9 +333,8 @@ __forceinline vec_t ARMVector3Load(float* src)
 }
 
 __forceinline vec_t ARMCreateVec(float x, float y, float z, float w) {
-    float32x2_t V0 = vcreate_f32((uint64_t)__builtin_bit_cast(uint, x) | ((uint64)__builtin_bit_cast(uint, y) << 32));
-    float32x2_t V1 = vcreate_f32((uint64_t)__builtin_bit_cast(uint, z) | ((uint64)__builtin_bit_cast(uint, w) << 32));
-    return vcombine_f32(V0, V1);
+    alignas(16) float v[4] = {x, y, z, w};
+    return vld1q_f32(v);
 }
 
 __forceinline veci_t ARMCreateVecI(uint x, uint y, uint z, uint w) {
@@ -737,10 +736,9 @@ __forceinline vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
     #endif
 }
 
-__forceinline float VECTORCALL VecHSum(vec_t v) {
+__forceinline vec_t VECTORCALL VecHSum(vec_t v) {
     v = VecHadd(v, v); // high half -> low half
-    v = VecHadd(v, v);
-    return VecGetX(v);
+    return VecHadd(v, v);
 }
 
 #if defined(AX_ARM)

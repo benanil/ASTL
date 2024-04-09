@@ -9,7 +9,7 @@
 *    Restrictions:                                               *
 *        No extension support.                                   *
 *    License:                                                    *
-*        No License whatsoever do Whatever you want.             *
+*        No License whatsoever do whatever you want.             *
 *                                                                *
 *****************************************************************/
 

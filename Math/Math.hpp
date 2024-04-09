@@ -218,7 +218,7 @@ inline_constexpr float Sign(float x) {
 } 
 
 inline_constexpr int Sign(int x) {
-    return 1 | (x & 0x80000000); // equal to above float version
+    return x < 0 ? -1 : 1; // equal to above float version
 } 
 
 inline_constexpr float CopySign(float x, float y) {
@@ -265,6 +265,7 @@ inline_constexpr float ATan(float x) {
     return x * (a1 + x_sq * (a3 + x_sq * (a5 + x_sq * (a7 + x_sq * (a9 + x_sq * a11)))));
 }
 
+// is not working negative angles
 inline_constexpr float ATan2(float y, float x) {
     // from here: https://yal.cc/fast-atan2/  
     float ay = Abs(y), ax = Abs(x);
@@ -287,6 +288,7 @@ inline_constexpr float RepeatPI(float x) {
   return FMod(x + PI, TwoPI) - PI;
 }
 
+// Accepts input between -TwoPi and TwoPi, use SinR if value is bigger than this range
 inline_constexpr float Sin(float x) {
     float xx = x * x * x;                // x^3
     float t = x - (xx * 0.16666666666f); // x3/!3  6 = !3 = 1.6666 = rcp(3)
@@ -296,7 +298,7 @@ inline_constexpr float Sin(float x) {
     return t;
 }
 
-// warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
+// Accepts input between -TwoPi and TwoPi, use CosR if value is bigger than this range  
 inline_constexpr float Cos(float x) {
     float xx = x * x;                    // x^2
     float t = 1.0f - (xx * 0.5f);        // 1-(x2/!2) 0.5f = rcp(!2)
@@ -304,6 +306,16 @@ inline_constexpr float Cos(float x) {
     t -= (xx *= x * x) * 0.00138888888f; // t - (x6/!6) 720.0f = !6
     t += (xx * x * x)  * 2.48016e-05f;   // t + (x8/!8) 40320 = !8
     return t;
+}
+
+// R suffix allows us to use with greater range than -TwoPI, TwoPI
+inline_constexpr float SinR(float x) {
+    return Sin(FMod(x + PI, TwoPI) - PI);
+}
+
+// R suffix allows us to use with greater range than -TwoPI, TwoPI
+inline_constexpr float CosR(float x) {
+    return Cos(FMod(x + PI, TwoPI) - PI);
 }
 
 inline_constexpr void SinCos(float x, float* s, float* c) {
@@ -515,7 +527,7 @@ inline_constexpr float EaseOutSine(float x) {
   return Sin((x * PI) * 0.5f);
 }
 
- // Gradually changes a value towards a desired goal over time.
+// Gradually changes a value towards a desired goal over time.
 inline float SmoothDamp(float current, float target, float& currentVelocity, float smoothTime, float maxSpeed, float deltaTime)
 {
     // Based on Game Programming Gems 4 Chapter 1.10
@@ -546,5 +558,14 @@ inline float SmoothDamp(float current, float target, float& currentVelocity, flo
     return output;
 }
 
+inline float Remap(float in, float inMin, float inMax, float outMin, float outMax)
+{
+    return outMin + (in - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+inline float Repeat(float t, float length)
+{
+    return Clamp(t - Floor(t / length) * length, 0.0f, length);
+}
 
 AX_END_NAMESPACE 

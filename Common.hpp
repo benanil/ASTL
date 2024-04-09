@@ -472,14 +472,19 @@ inline_constexpr T Clamp(T x, T a, T b) {
     return MAX(a, MIN(b, x));
 }
 
+template<typename T> 
+inline_constexpr T Clamp01(T x) {
+    return MAX(0.0f, MIN(1.0f, x));
+}
+
 inline_constexpr int64_t Abs(int64_t x) 
 {
-    return x & ~(1ull << 63ull);
+    return x < 0 ? -x : x;
 }
 
 inline_constexpr int Abs(int x)
 {
-    return x & ~(1 << 31);
+    return x < 0 ? -x : x;
 }
 
 inline_constexpr float Abs(float x)

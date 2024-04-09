@@ -243,6 +243,14 @@ typedef Vector2f float2;
 typedef Vector3h half3;
 typedef Vector2h half2;
 
+inline Vector2f Normalize(Vector2f v) {
+	return v / Sqrt(v.x * v.x + v.y * v.y);
+}
+
+inline Vector3f Normalize(Vector3f v) {
+	return v / Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
 __forceinline float2 ConvertToFloat2(const half* h) {
 	float2 res; ConvertHalfToFloat(&res.x, h, 2); return res;
 }

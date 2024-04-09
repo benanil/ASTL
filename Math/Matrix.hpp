@@ -507,25 +507,74 @@ struct alignas(16) Matrix4
         return out;        
     }
     #else
-    static Matrix4 VECTORCALL Inverse(Matrix4 m)
+    static Matrix4 VECTORCALL Inverse(Matrix4 mat)
     {
-        float det = -m.m[0][2] * m.m[1][1] * m.m[2][0] + m.m[0][1] * m.m[1][2] * m.m[2][0] + m.m[0][2] * m.m[1][0] * m.m[2][1]
-                    -m.m[0][0] * m.m[1][2] * m.m[2][1] - m.m[0][1] * m.m[1][0] * m.m[2][2] + m.m[0][0] * m.m[1][1] * m.m[2][2];
-        float rcpDet = 1.0f / det;
-        Matrix4 r;
-        r.m[0][0] = (-m.m[1][2] * m.m[2][1] + m.m[1][1] * m.m[2][2]) * rcpDet;
-        r.m[1][0] = (+m.m[1][2] * m.m[2][0] - m.m[1][0] * m.m[2][2]) * rcpDet;
-        r.m[2][0] = (-m.m[1][1] * m.m[2][0] + m.m[1][0] * m.m[2][1]) * rcpDet;
-        r.m[0][1] = (+m.m[0][2] * m.m[2][1] - m.m[0][1] * m.m[2][2]) * rcpDet;
-        r.m[1][1] = (-m.m[0][2] * m.m[2][0] + m.m[0][0] * m.m[2][2]) * rcpDet;
-        r.m[2][1] = (+m.m[0][1] * m.m[2][0] - m.m[0][0] * m.m[2][1]) * rcpDet;
-        r.m[0][2] = (-m.m[0][2] * m.m[1][1] + m.m[0][1] * m.m[1][2]) * rcpDet;
-        r.m[1][2] = (+m.m[0][2] * m.m[1][0] - m.m[0][0] * m.m[1][2]) * rcpDet;
-        r.m[2][2] = (-m.m[0][1] * m.m[1][0] + m.m[0][0] * m.m[1][1]) * rcpDet;
-        r.m[0][3] = (m.m[0][3] * m.m[1][2] * m.m[2][1] - m.m[0][2] * m.m[1][3] * m.m[2][1] - m.m[0][3] * m.m[1][1] * m.m[2][2] + m.m[0][1] * m.m[1][3]*m.m[2][2] + m.m[0][2] * m.m[1][1] * m.m[2][3] - m.m[0][1] * m.m[1][2] * m.m[2][3]) * rcpDet;
-        r.m[1][3] = (m.m[0][2] * m.m[1][3] * m.m[2][0] - m.m[0][3] * m.m[1][2] * m.m[2][0] + m.m[0][3] * m.m[1][0] * m.m[2][2] - m.m[0][0] * m.m[1][3]*m.m[2][2] - m.m[0][2] * m.m[1][0] * m.m[2][3] + m.m[0][0] * m.m[1][2] * m.m[2][3]) * rcpDet;
-        r.m[2][3] = (m.m[0][3] * m.m[1][1] * m.m[2][0] - m.m[0][1] * m.m[1][3] * m.m[2][0] - m.m[0][3] * m.m[1][0] * m.m[2][1] + m.m[0][0] * m.m[1][3]*m.m[2][1] + m.m[0][1] * m.m[1][0] * m.m[2][3] - m.m[0][0] * m.m[1][1] * m.m[2][3]) * rcpDet;
-        return r;
+        float32x4_t v0, v1, v2, v3,
+                    t0, t1, t2, t3, t4, t5,
+                    x0, x1, x2, x3, x4, x5, x6, x7, x8;
+        float32x4x2_t a1;
+        float32x2_t   lp, ko, hg, jn, im, fe, ae, bf, cg, dh;
+        float32x4_t   x9 = VecSetR(-0.f,  0.f, -0.f,  0.f);
+        
+        x8 = vrev64q_f32(x9);
+        /* l p k o, j n i m */
+        a1  = vzipq_f32(mat.r[3], mat.r[2]);
+        jn  = vget_high_f32(a1.val[0]);
+        im  = vget_low_f32(a1.val[0]);
+        lp  = vget_high_f32(a1.val[1]);
+        ko  = vget_low_f32(a1.val[1]);
+        hg  = vget_high_f32(mat.r[1]);
+        
+        x1  = vcombine_f32(vdup_lane_f32(lp, 0), lp);                   /* l p p p */
+        x2  = vcombine_f32(vdup_lane_f32(ko, 0), ko);                   /* k o o o */
+        x0  = vcombine_f32(vdup_lane_f32(lp, 1), vdup_lane_f32(hg, 1)); /* h h l l */
+        x3  = vcombine_f32(vdup_lane_f32(ko, 1), vdup_lane_f32(hg, 0)); /* g g k k */
+        
+        t0 = vmlsq_f32(vmulq_f32(x3, x1), x2, x0);
+        fe = vget_low_f32(mat.r[1]);
+        x4 = vcombine_f32(vdup_lane_f32(jn, 0), jn);                   /* j n n n */
+        x5 = vcombine_f32(vdup_lane_f32(jn, 1), vdup_lane_f32(fe, 1)); /* f f j j */
+        
+        t1 = vmlsq_f32(vmulq_f32(x5, x1), x4, x0);
+        t2 = vmlsq_f32(vmulq_f32(x5, x2), x4, x3);
+        
+        x6 = vcombine_f32(vdup_lane_f32(im, 1), vdup_lane_f32(fe, 0)); /* e e i i */
+        x7 = vcombine_f32(vdup_lane_f32(im, 0), im);                   /* i m m m */
+        
+        t3 = vmlsq_f32(vmulq_f32(x6, x1), x7, x0);
+        t4 = vmlsq_f32(vmulq_f32(x6, x2), x7, x3);
+        t5 = vmlsq_f32(vmulq_f32(x6, x4), x7, x5);
+        
+        /* h d f b, g c e a */
+        a1 = vtrnq_f32(mat.r[0], mat.r[1]);
+        x4 = vrev64q_f32(a1.val[0]); /* c g a e */
+        x5 = vrev64q_f32(a1.val[1]); /* d h b f */
+        
+        ae = vget_low_f32(x4);
+        cg = vget_high_f32(x4);
+        bf = vget_low_f32(x5);
+        dh = vget_high_f32(x5);
+        
+        x0 = vcombine_f32(ae, vdup_lane_f32(ae, 1)); /* a a a e */
+        x1 = vcombine_f32(bf, vdup_lane_f32(bf, 1)); /* b b b f */
+        x2 = vcombine_f32(cg, vdup_lane_f32(cg, 1)); /* c c c g */
+        x3 = vcombine_f32(dh, vdup_lane_f32(dh, 1)); /* d d d h */
+        
+        v0 = VecXor(vmlaq_f32(vmlsq_f32(vmulq_f32(x1, t0), x2, t1), x3, t2), x8);
+        v2 = VecXor(vmlaq_f32(vmlsq_f32(vmulq_f32(x0, t1), x1, t3), x3, t5), x8);
+        v1 = VecXor(vmlaq_f32(vmlsq_f32(vmulq_f32(x0, t0), x2, t3), x3, t4), x9);
+        v3 = VecXor(vmlaq_f32(vmlsq_f32(vmulq_f32(x0, t2), x1, t4), x2, t5), x9);
+        /* determinant */
+        x0 = vcombine_f32(vget_low_f32(vzipq_f32(v0, v1).val[0]),
+                          vget_low_f32(vzipq_f32(v2, v3).val[0]));
+
+        Matrix4 dest;
+        x0 = VecDiv(VecOne(), VecHSum(vmulq_f32(x0, mat.r[0])));
+        dest.r[0] = vmulq_f32(v0, x0);
+        dest.r[1] = vmulq_f32(v1, x0);
+        dest.r[2] = vmulq_f32(v2, x0);
+        dest.r[3] = vmulq_f32(v3, x0);
+        return dest;
     }
     #endif
     

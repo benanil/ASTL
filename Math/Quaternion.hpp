@@ -155,7 +155,6 @@ inline Vector3f QToEulerAngles(Quaternion qu)
     return eulerAngles;
 }
 
-
 template<int numCol = 4> // number of columns of matrix, 3 or 4
 inline void QuaternionFromMatrix(float* Orientation, const float* m) {
     int i, j, k = 0;
@@ -229,7 +228,7 @@ __forceinline Quaternion VECTORCALL QConjugate(Quaternion vec)
     return VecMul(vec, VecSetR(-1.0f, -1.0f, -1.0f, 1.0f));
 }
 
-__forceinline Quaternion QInverse(Quaternion q)
+inline Quaternion QInverse(Quaternion q)
 {
     const float lengthSq = VecDotf(q, q);
     if (AlmostEqual(lengthSq, 1.0f))
@@ -250,7 +249,7 @@ __forceinline Quaternion QInverse(Quaternion q)
 
 inline Vector3f VECTORCALL QGetForward(Quaternion vec) {
     Vector3f res;
-    Vec3Store(&res.x, QMulVec3(VecSetR( 0.0f, 0.0f, -1.0f, 0.0f), QConjugate(vec)));
+    Vec3Store(&res.x, QMulVec3(VecSetR( 0.0f, 0.0f, 1.0f, 0.0f), QConjugate(vec)));
     return res; 
 }
 

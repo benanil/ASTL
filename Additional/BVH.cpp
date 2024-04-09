@@ -46,7 +46,7 @@ struct aabb
 	{ 
 		vec_t e = VecSub(bmax, bmin); // box extent
 		vec_t eSurface = VecMask(VecMul(e, VecSwizzle(e, 1, 2, 0, 0)), VecSelect1110);
-		return VecHSum(eSurface);
+		return VecGetX(VecHSum(eSurface));
 	}
 };
 
@@ -82,7 +82,7 @@ __forceinline float CalculateCost(const BVHNode* node)
 { 
 	vec_t e = VecSub(node->maxv, node->minv); // box extent
 	vec_t eSurface = VecMask(VecMul(e, VecSwizzle(e, 1, 2, 0, 0)), VecSelect1110);
-	return node->triCount * VecHSum(eSurface);
+	return node->triCount * VecGetX(VecHSum(eSurface));
 }
 
 static float EvaluateSAH(const BVHNode* node, Tri* tris, int axis, float pos)

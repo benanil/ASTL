@@ -29,7 +29,7 @@ public:
 	Semaphore(int initialCount = 0)
 	{
 		assert(initialCount >= 0);
-		const long maxLong = 0x7fffffff;
+		const long maxLong = 0x7fffffffffffffffll;
 		m_hSema = CreateSemaphoreW(nullptr, initialCount, maxLong, nullptr);
 	}
 
