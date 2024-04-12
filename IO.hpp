@@ -135,8 +135,12 @@ inline bool FileExist(const char* file)
 {
 #ifdef __ANDROID__
     AAsset* asset = AAssetManager_open(g_android_app->activity->assetManager, file, 0);
-    AAsset_close(asset);
-    return asset != nullptr;
+    if (asset == nullptr) {
+        return false;
+    } else {
+        AAsset_close(asset);
+        return true;
+    }
 #elif defined(_WIN32)
     return _access(file, F_OK) == 0;
 #else
