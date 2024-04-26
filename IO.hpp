@@ -290,6 +290,7 @@ inline uint64_t AFileSize(AFile file)
 #ifdef _WIN32
     return _filelengthi64(_fileno(file.file));
 #elif defined(__ANDROID__)
+    if (file.asset == nullptr) return 0;
     return AAsset_getLength(file.asset);
 #else
     struct stat sb; stat(file.file, &sb);
@@ -302,9 +303,15 @@ inline uint64_t AFileSize(AFile file)
 inline char* ReadAllFile(const char* fileName, char* buffer = 0)
 {
     AFile file = AFileOpen(fileName, AOpenFlag_Read);
+    if (!AFileExist(file))
+        return nullptr;
+
     uint64_t fileSize = AFileSize(file);
-    if (buffer == nullptr) 
-        buffer = new char[fileSize]{}; // +1 for null terminator
+
+    if (buffer == nullptr) {
+        buffer = new char[fileSize+1]{}; // +1 for null terminator
+    }
+
     AFileRead(buffer, fileSize, file);
     AFileClose(file);
     return buffer;

@@ -389,18 +389,11 @@ __forceinline float ConvertHalfToFloat(half x) {
 // a |= ((e == 0) & (m != 0)) * ((v - 37) << 23 | ((m << (150 - v)) & 0x007FE000));
 // return BitCast<float>(a); // sign : normalized : denormalized
 
-// converts maximum 4 float
-__forceinline void ConvertHalfToFloat(float* res, const half* x, short n) {
-#if defined(AX_SUPPORT_SSE)
-	alignas(16) float a[4];
-    half b[8]; 
-	SmallMemCpy(b, x, n * sizeof(half));
-	_mm_store_ps(a, _mm_cvtph_ps(_mm_loadu_si16(b))); // MSVC does not have scalar instructions.
-	SmallMemCpy(res, a, n * sizeof(float));
-#else
+// maybe write 4 quantity version that is faster 
+__forceinline void ConvertHalfToFloat(float* res, const half* x, short n) 
+{
 	for (int i = 0; i < n; i++)
 		res[i] = ConvertHalfToFloat(x[i]);
-#endif
 }
 
 __forceinline half ConvertFloatToHalf(float Value) {

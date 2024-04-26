@@ -2,7 +2,6 @@
 
 #include "Vector.hpp"
 #include "SIMDVectorMath.hpp"
-#include <math.h>
 
 AX_NAMESPACE
 
@@ -44,8 +43,8 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
 inline vec_t QFromAxisAngle(Vector3f axis, float angle)
 {
     angle = 0.5f * angle;
-    float SinV = sinf(angle);
-    float CosV = cosf(angle);
+    float SinV = SinR(angle);
+    float CosV = CosR(angle);
     return VecSetR(axis.x * SinV, axis.y * SinV, axis.z * SinV, CosV);
 }
 
