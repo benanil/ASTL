@@ -267,7 +267,7 @@ struct alignas(16) Matrix4
         const float rad = fov;
         const float h = cosf(0.5f * rad) / sinf(0.5f * rad);
         const float w = h * height / width; /// max(width , Height) / min(width , Height)?
-        Matrix4 M = Identity();
+        Matrix4 M = {};
         M.m[0][0] = w;
         M.m[1][1] = h;
         M.m[2][2] = -(zFar + zNear) / (zFar - zNear);
@@ -279,19 +279,20 @@ struct alignas(16) Matrix4
     
     static Matrix4 OrthoRH(float left, float right, float bottom, float top, float zNear, float zFar)
     {
-        Matrix4 Result = Identity();
+        Matrix4 Result = {};
         Result.m[0][0] =  2.0f / (right - left);
         Result.m[1][1] =  2.0f / (top - bottom);
         Result.m[2][2] = -2.0f / (zFar - zNear);
         Result.m[3][0] = -(right + left) / (right - left);
         Result.m[3][1] = -(top + bottom) / (top - bottom);
         Result.m[3][2] = -(zFar + zNear) / (zFar - zNear);
+        Result.m[3][3] = 1.0f;
         return Result;
     }
     
     static Matrix4 PositionRotationScale(Vector3f position, Quaternion rotation, const Vector3f& scale)
     {
-        Matrix4 res = {};
+        Matrix4 res;
         // Export rotation to matrix
         MatrixFromQuaternion<4>(res.GetPtr(), rotation);
         // Scale 3x3 matrix by given scale

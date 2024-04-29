@@ -120,16 +120,6 @@ inline char* PathGoBackwards(char* path, int end, bool skipSeparator)
     return path + end + 1; // Return the new starting point of the path.
 }
 
-struct ScopedFILE
-{
-    FILE* file;
-    ScopedFILE(FILE* _file) : file(_file) {}
-    ~ScopedFILE() {
-        fclose(file); 
-    }
-};
-
-
 // these functions works fine with file and folders
 inline bool FileExist(const char* file)
 {

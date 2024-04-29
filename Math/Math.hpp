@@ -512,6 +512,11 @@ inline_constexpr float EaseInOut(float x) {
     return x < 0.5f ? 2.0f * x * x : 1.0f - sqr(-2.0f * x + 2.0f) / 2.0f;
 }
 
+// integral symbol shaped interpolation, similar to EaseInOut
+inline_constexpr float SmoothStep(float x) {
+    return x * x * (3.0f - x * 2.0f);
+}
+
 inline_constexpr float EaseInSine(float x) {
   return 1.0f - Cos((x * PI) * 0.5f);
 }
