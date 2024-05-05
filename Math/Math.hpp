@@ -31,7 +31,7 @@ constexpr float Epsilon  = 0.0001f;
 /*                              Essential                                   */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-inline_constexpr float sqr(float x) {
+inline_constexpr float Sqr(float x) {
     return x * x;
 }
 
@@ -509,7 +509,7 @@ inline_constexpr float EaseOut(float x) {
 }
 
 inline_constexpr float EaseInOut(float x) {
-    return x < 0.5f ? 2.0f * x * x : 1.0f - sqr(-2.0f * x + 2.0f) / 2.0f;
+    return x < 0.5f ? 2.0f * x * x : 1.0f - Sqr(-2.0f * x + 2.0f) / 2.0f;
 }
 
 // integral symbol shaped interpolation, similar to EaseInOut
@@ -564,6 +564,14 @@ inline float Remap(float in, float inMin, float inMax, float outMin, float outMa
 inline float Repeat(float t, float length)
 {
     return Clamp(t - Floor(t / length) * length, 0.0f, length);
+}
+
+// https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+// position(x0, y0), linePos1(x1, y1), linePos2(x2, y2) 
+inline float LineDistance(float x0, float y0, float x1, float y1, float x2, float y2)
+{
+    float a = ((x2 - x1) * (y0 - y1)) - ((x0 - x1) * (y2 - y1));
+    return Abs(a) / Sqrt(Sqr(x2 - x1) + Sqr(y2 - y1));
 }
 
 AX_END_NAMESPACE 
