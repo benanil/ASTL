@@ -479,12 +479,14 @@ inline_constexpr T Clamp01(T x) {
 
 inline_constexpr int64_t Abs(int64_t x) 
 {
-    return x < 0 ? -x : x;
+	int64_t temp = x >> 63;
+    return (x ^ temp) - temp;
 }
 
 inline_constexpr int Abs(int x)
 {
-    return x < 0 ? -x : x;
+	int temp = x >> 31;
+    return (x ^ temp) - temp;
 }
 
 inline_constexpr float Abs(float x)

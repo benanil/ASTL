@@ -270,11 +270,11 @@ inline_constexpr float ATan2(float y, float x) {
     // from here: https://yal.cc/fast-atan2/  
     float ay = Abs(y), ax = Abs(x);
     int invert = ay > ax;
-    float z = invert ? ax/ay : ay/ax;// [0,1]
-    float th = ATan(z);              // [0,π/4]
-    if (invert)   th = HalfPI - th;  // [0,π/2]
-    if (x < 0.0f) th = PI - th;      // [0,π]
-    return CopySign(th, y);          // [-π,π] 
+    float z = invert ? ax/ay : ay/ax;// [ 0 , 1]
+    float th = ATan(z);              // [ 0 , pi/4]
+    if (invert)   th = HalfPI - th;  // [ 0 , pi/2]
+    if (x < 0.0f) th = PI - th;      // [ 0 , pi]
+    return CopySign(th, y);          // [-pi, pi] 
 }
 
 inline_constexpr float ASin(float z) {
@@ -289,23 +289,53 @@ inline_constexpr float RepeatPI(float x) {
 }
 
 // Accepts input between -TwoPi and TwoPi, use SinR if value is bigger than this range
-inline_constexpr float Sin(float x) {
-    float xx = x * x * x;                // x^3
-    float t = x - (xx * 0.16666666666f); // x3/!3  6 = !3 = 1.6666 = rcp(3)
-    t += (xx *= x * x) * 0.00833333333f; // x5/!5  120 = !5 = 0.0083 = rcp(5)
-    t -= (xx *= x * x) * 0.00019841269f; // x7/!7  5040 = !7
-    t += (xx * x * x)  * 2.75573e-06f;   // 362880 = !9
-    return t;
+// https://x.com/nthnblair/status/1790836310531559701
+// https://www.desmos.com/calculator/owkgky7wh4
+// https://github.com/LancePutnam/Gamma/blob/master/Gamma/scl.h  :function sinfast
+inline_constexpr float Sin(float x) 
+{
+    union fi32 { float f; int i; } u = {x};
+    
+    int lz = 0, gtpi = 0;
+    lz = u.i >> 31; // get less than zero
+    u.i &= 0x7fffffff; // make positive
+    gtpi = u.f > PI;
+    
+    u.f -= gtpi * PI; // subtract pi if greater than pi
+    u.f *= 0.63655f; // constant founded using desmos
+    u.f *= 2.0f - u.f;
+    u.f *= 0.225f * u.f + 0.775f; 
+    
+    u.i |= gtpi << 31; // negate if was bigger than PI
+    u.i ^= lz << 31; // flip sign if was negative
+    return u.f; 
 }
 
 // Accepts input between -TwoPi and TwoPi, use CosR if value is bigger than this range  
-inline_constexpr float Cos(float x) {
-    float xx = x * x;                    // x^2
-    float t = 1.0f - (xx * 0.5f);        // 1-(x2/!2) 0.5f = rcp(!2)
-    t += (xx *= x * x) * 0.04166666666f; // t + (x4/!4) 0.04166 = rcp(24) = 24.0f = !4
-    t -= (xx *= x * x) * 0.00138888888f; // t - (x6/!6) 720.0f = !6
-    t += (xx * x * x)  * 2.48016e-05f;   // t + (x8/!8) 40320 = !8
-    return t;
+inline_constexpr float Cos(float a)
+{
+    int lz = 0, greater = 0;
+    lz = a < 0.0f;
+    a *= -2.0f * lz + 1.0f; // make positive
+    greater = a > PI;
+
+    a -= PI * greater;
+    a *= 0.159f;
+    a = 1.0f - 32.0f * a * a * (0.75f - a);
+	return greater ? -a : a; // sqrt(1.0f - (Sin(a)*Sin(a))); // for better approximation
+}
+
+// calculates sin(x) between [0,pi]
+inline_constexpr float Sin0pi(float x) {
+    x *= 0.63655f; // constant founded using desmos
+    x *= 2.0f - x;
+    return x * (0.225f * x + 0.775f); 
+}
+
+// calculates cos(x) between [0,pi]
+inline_constexpr float Cos0pi(float a) {
+    a *= 0.159f;
+	return 1.0f - 32.0f * a * a * (0.75f - a);
 }
 
 // R suffix allows us to use with greater range than -TwoPI, TwoPI
@@ -318,8 +348,10 @@ inline_constexpr float CosR(float x) {
     return Cos(FMod(x + PI, TwoPI) - PI);
 }
 
-inline_constexpr void SinCos(float x, float* s, float* c) {
-	*s = Sin(x); *c = Cos(x); 
+inline void SinCos(float x, float* sp, float* cp) 
+{
+	*sp = Sin(x);
+	*cp = Cos(x);
 }
 
 inline_constexpr float Tan(float radians) {

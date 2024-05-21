@@ -42,9 +42,8 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
 
 inline vec_t QFromAxisAngle(Vector3f axis, float angle)
 {
-    angle = 0.5f * angle;
-    float SinV = SinR(angle);
-    float CosV = CosR(angle);
+	float SinV = SinR(0.5f * angle);
+	float CosV = CosR(0.5f * angle);
     return VecSetR(axis.x * SinV, axis.y * SinV, axis.z * SinV, CosV);
 }
 

@@ -764,37 +764,41 @@ __forceinline vec_t VecLerp(vec_t x, vec_t y, float t)
 
 inline vec_t VECTORCALL VecSin(vec_t x)
 { 
-    // https://www.unknowncheats.me/forum/c-and-c-/57668-fast-sine-cosine-simd.html
-    return VecAdd(VecMul(VecSet1(4.0f / PI), x), VecMul(VecSet1(-4.0f / (PI*PI)), VecMul(x, VecFabs(x))));
-    // my implementation: tylor approximation
-    vec_t xx = VecMul(x, VecMul(x, x));
-    vec_t t  = VecSub(x, VecMulf(xx, 0.16666666666f)); 
-    xx = VecMul(x, VecMul(x, x));
-    t  = VecFmadd(xx, VecSet1(0.00833333333f), t);
-    xx = VecMul(x, VecMul(x, x));
-    t  = VecSub(t, VecMulf(xx, 0.00019841269f));
-    xx = VecMul(x, VecMul(x, x));
-    t  = VecFmadd(xx, VecSet1(2.75573e-06f), t);
-    return t;
+	veci_t lz, gtpi; 
+	vec_t vpi = VecSet1(PI);
+	lz = VecCmpLt(x, VecZero());
+	x  = VecFabs(x);
+	gtpi = VecCmpGt(x, vpi);
+
+	x = VecSelect(x, VecSub(x, vpi), gtpi);
+	x = VecMul(x, VecSet1(0.63655f));
+	x = VecMul(x, VecSub(VecSet1(2.0f), x));
+	x = VecFmadd(x, VecSet1(0.225f), VecSet1(0.775f));
+
+	x = VecSelect(x, VecNeg(x), gtpi);
+	x = VecSelect(x, VecNeg(x), lz);
+	return x;
 }
 
 inline vec_t VECTORCALL VecCos(vec_t x)
 {
-    vec_t xx = VecMul(x, x);
-    vec_t t  = VecSub(VecSet1(1.0f), VecMulf(xx, 0.5f)); 
-    xx = VecMul(x, VecMul(x, x));
-    t  = VecFmadd(xx, VecSet1(0.04166666666f), t);
-    xx = VecMul(x, VecMul(x, x));
-    t  = VecSub(t, VecMulf(xx, 0.00138888888f));
-    xx = VecMul(x, VecMul(x, x));
-    t  = VecFmadd(xx, VecSet1(2.48016e-05f), t);
-    return t;
+	veci_t lz, gtpi;
+	vec_t a;
+	vec_t vpi = VecSet1(PI);
+	lz = VecCmpLt(VecZero(), x);
+	x = VecFabs(x);
+	gtpi = VecCmpGt(x, vpi);
+	x = VecSelect(x, VecSub(x, vpi), gtpi);
+	x = VecMul(x, VecSet1(0.159f));
+	a = VecMul(VecMul(VecSet1(32.0f), x), x);
+	x = VecSub(VecSet1(1.0f), VecMul(a, VecSub(VecSet1(0.75f), x)));
+	return VecSelect(x, VecNeg(x), gtpi);
 }
 
 __forceinline vec_t VECTORCALL VecAtan(vec_t x)
 {
     const float sa1 =  0.99997726f, sa3 = -0.33262347f, sa5  = 0.19354346f,
-                       sa7 = -0.11643287f, sa9 =  0.05265332f, sa11 = -0.01172120f;
+                sa7 = -0.11643287f, sa9 =  0.05265332f, sa11 = -0.01172120f;
       
     const vec_t xx = VecMul(x, x);
     // (a9 + x_sq * a11
@@ -820,26 +824,9 @@ inline vec_t VECTORCALL VecAtan2(vec_t y, vec_t x)
 
 inline vec_t VECTORCALL VecSinCos(vec_t* cv, vec_t x)
 {
-    vec_t xx = VecMul(x, x);
-    vec_t t  = VecSub(VecSet1(1.0f), VecMul(xx, VecSet1(0.5f))); 
-    xx = VecMul(x, x);
-    vec_t st = VecSub(x, VecMul(xx, VecSet1(0.16666666666f))); 
-    
-    xx = VecMul(x, x);
-    t  = VecFmadd(xx, VecSet1(0.04166666666f), t);
-    xx = VecMul(x, x);
-    st = VecFmadd(xx, VecSet1(0.00833333333f), st);
-    
-    xx = VecMul(x, x);
-    t  = VecSub(t, VecMul(xx, VecSet1(0.00138888888f)));
-    xx = VecMul(x, x);
-    st = VecSub(st, VecMul(xx, VecSet1(0.00019841269f)));
-    
-    xx = VecMul(x, x);
-    t  = VecFmadd(xx, VecSet1(2.48016e-05f), t);
-    st = VecFmadd(VecMul(x, x), VecSet1(2.75573e-06f), st);
-    *cv = t;
-    return st;
+	vec_t s = VecSin(x);
+	*cv = VecCos(x);
+	return s;
 }
 
 #else //__clang__ || __gnu

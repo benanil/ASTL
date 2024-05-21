@@ -13,7 +13,6 @@
 #pragma once
 
 #include "Quaternion.hpp"
-#include <math.h> // < sinf, cosf for more preciseness
 
 AX_NAMESPACE 
 
@@ -264,9 +263,10 @@ struct alignas(16) Matrix4
     
     static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
     {
-        const float rad = fov;
-        const float h = cosf(0.5f * rad) / sinf(0.5f * rad);
-        const float w = h * height / width; /// max(width , Height) / min(width , Height)?
+        float rad = Sin0pi(0.5f * fov);
+		AX_ASSUME(rad > 0.01f);
+        float h = Sqrt(1.0f - (rad * rad)) / rad;
+        float w = h * height / width; /// max(width , Height) / min(width , Height)?
         Matrix4 M = {};
         M.m[0][0] = w;
         M.m[1][1] = h;
