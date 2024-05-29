@@ -186,7 +186,7 @@ private:
 
     void IncreaseSize()
     {
-        ASSERT(m_max_bucket_capacity != MAXSize());
+        ASSERTR(m_max_bucket_capacity != MAXSize(), return);
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts)); // DeallocateBuckets(); AllocateBuffersFromShift();
         ClearAndFillBucketsFromValues();

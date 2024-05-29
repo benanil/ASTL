@@ -318,11 +318,11 @@ inline_constexpr float Cos(float a)
     lz = a < 0.0f;
     a *= -2.0f * lz + 1.0f; // make positive
     greater = a > PI;
-
+    
     a -= PI * greater;
     a *= 0.159f;
     a = 1.0f - 32.0f * a * a * (0.75f - a);
-	return greater ? -a : a; // sqrt(1.0f - (Sin(a)*Sin(a))); // for better approximation
+    return greater ? -a : a; // sqrt(1.0f - (Sin(a)*Sin(a))); // for better approximation
 }
 
 // calculates sin(x) between [0,pi]
@@ -335,7 +335,7 @@ inline_constexpr float Sin0pi(float x) {
 // calculates cos(x) between [0,pi]
 inline_constexpr float Cos0pi(float a) {
     a *= 0.159f;
-	return 1.0f - 32.0f * a * a * (0.75f - a);
+    return 1.0f - 32.0f * a * a * (0.75f - a);
 }
 
 // R suffix allows us to use with greater range than -TwoPI, TwoPI
@@ -350,8 +350,8 @@ inline_constexpr float CosR(float x) {
 
 inline void SinCos(float x, float* sp, float* cp) 
 {
-	*sp = Sin(x);
-	*cp = Cos(x);
+    *sp = Sin(x);
+    *cp = Cos(x);
 }
 
 inline_constexpr float Tan(float radians) {

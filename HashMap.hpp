@@ -185,7 +185,7 @@ private:
 
     void IncreaseSize()
     {
-        ASSERT(m_max_bucket_capacity != MaxSize());
+        ASSERTR(m_max_bucket_capacity != MaxSize(), return);
         --m_shifts;
         ReallocateBuckets(CalcNumBuckets(m_shifts));
         ClearAndFillBucketsFromValues();
@@ -396,7 +396,7 @@ public:
         {
             return it->value;
         }
-        ASSERT(true); // key is not exist in array
+        ASSERT(0); // key is not exist in array
         return m_values[0].value;
     }
 
@@ -642,7 +642,7 @@ public:
         Iterator it = (Iterator)Find(key);
         if (AX_LIKELY(end() != it)) 
             return it->value;
-        ASSERT(true); // key is not exist in array
+        ASSERT(0); // key is not exist in array
         return m_values[0].value;
     }
 #endif

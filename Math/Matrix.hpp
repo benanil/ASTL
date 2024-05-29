@@ -263,7 +263,7 @@ struct alignas(16) Matrix4
     
     static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
     {
-        float rad = Sin0pi(0.5f * fov);
+        float rad = Sin0pi(0.5f * fov); 
 		AX_ASSUME(rad > 0.01f);
         float h = Sqrt(1.0f - (rad * rad)) / rad;
         float w = h * height / width; /// max(width , Height) / min(width , Height)?
@@ -303,7 +303,6 @@ struct alignas(16) Matrix4
         res.r[3] = VecLoad(&position.x);
         VecSetW(res.r[3], 1.0f);
         return res; 
-        // return CreateScale(scale) * FromQuaternion(rotation) * FromPosition(position);
     }
     
     static Matrix4 PositionRotationScale(const float* position, const float* rotation, const float* scale)
@@ -320,7 +319,6 @@ struct alignas(16) Matrix4
         res.r[3] = VecLoad(position);
         VecSetW(res.r[3], 1.0f);
         return res; 
-    	// return FromQuaternion(rotation) * CreateScale(scale) * FromPosition(position);
     }
     
     static Vector3f VECTORCALL ExtractPosition(Matrix4 matrix)

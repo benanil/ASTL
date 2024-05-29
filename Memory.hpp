@@ -91,7 +91,7 @@ inline void* AllocAligned(uint64_t bytes, uint64_t align)
 
 inline void FreeAligned(void* pMem)
 {
-    ASSERT(pMem);
+    ASSERTR(pMem, return);
     // Convert to U8 pointer.
     uint8* pAlignedMem = (uint8*)pMem;
     // Extract the shift.

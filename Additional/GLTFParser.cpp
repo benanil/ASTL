@@ -163,7 +163,7 @@ __private const char* ParseAccessors(const char* curr, Array<GLTFAccessor>& acce
             return ++curr;
             curr++;
         }
-        ASSERT(*curr != '\0' && "parsing accessors failed probably you forget to close brackets!");
+        ASSERTR(*curr != '\0' && "parsing accessors failed probably you forget to close brackets!", return (const char*)AError_CloseBrackets);
         curr++;
         if (StrCMP16(curr, "bufferView"))         accessor.bufferView = ParsePositiveNumber(curr);
         else if (StrCMP16(curr, "byteOffset"))    accessor.byteOffset = ParsePositiveNumber(curr);
@@ -222,7 +222,7 @@ __private const char* ParseBufferViews(const char* curr, Array<GLTFBufferView>& 
             }
             if (*curr++ == ']') return curr; // end all buffer views
         }
-        ASSERT(*curr != '0' && "buffer view parse failed, probably you forgot to close brackets!");
+        ASSERTR(*curr != '0' && "buffer view parse failed, probably you forgot to close brackets!", return (const char*)AError_CloseBrackets);
 
         uint64_t hash;
         curr = HashStringInQuotes(&hash, curr);
@@ -307,7 +307,7 @@ __private const char* ParseBuffers(const char* curr, const char* path, Array<GLT
 
             if (*curr++ == ']') return curr; // end all buffers
         }
-        ASSERT(*curr && "parsing buffers failed, probably you forgot to close braces");
+        ASSERTR(*curr && "parsing buffers failed, probably you forgot to close braces", return (const char*)AError_CloseBrackets);
         curr++;
         if (StrCMP16(curr, "uri")) // is uri
         {
@@ -362,7 +362,7 @@ __private const char* ParseImages(const char* curr, const char* path, Array<AIma
             if (*curr++ == ']')
                 return curr; // end all images
         
-        ASSERT(*curr != '\0' && "parse images failed probably you forgot to close brackets");
+        ASSERTR(*curr != '\0' && "parse images failed probably you forgot to close brackets", return (const char*)AError_CloseBrackets);
 
         curr++;
         bool isUri = StrCMP16(curr, "uri");
@@ -407,7 +407,7 @@ __private const char* ParseTextures(const char* curr, Array<ATexture>& textures,
             return ++curr;
             curr++;
         }
-        ASSERT(*curr != '\0' && "parse images failed probably you forgot to close brackets");
+        ASSERTR(*curr != '\0' && "parse images failed probably you forgot to close brackets", return (const char*)AError_CloseBrackets);
         curr++;
         if (StrCMP16(curr, "sampler")) 
         {
@@ -626,7 +626,7 @@ __private const char* ParseNodes(const char* curr,
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
-        ASSERT(*curr != '\0' && "parsing nodes not possible, probably forgot to close brackets!");
+        ASSERTR(*curr != '\0' && "parsing nodes not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
         curr++; // skips the "
         
         // mesh, name, children, matrix, translation, rotation, scale, skin
@@ -771,7 +771,7 @@ __private const char* ParseScenes(const char* curr, Array<AScene>& scenes,
             }
             if (*curr++ == ']') return curr; // end all scenes
         }
-        ASSERT(*curr != '\0' && "parsing scenes not possible, probably forgot to close brackets!");
+        ASSERTR(*curr != '\0' && "parsing scenes not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
         curr++; // skips the "
         
         if (StrCMP16(curr, "nodes"))
@@ -838,7 +838,7 @@ __private const char* ParseSamplers(const char* curr, Array<ASampler>& samplers)
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
-        ASSERT(*curr != '\0' && "parsing nodes not possible, probably forgot to close brackets!");
+        ASSERTR(*curr != '\0' && "parsing nodes not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
         curr++; // skips the "
 
         if      (StrCMP16(curr, "magFilter")) sampler.magFilter = (char)(ParsePositiveNumber(curr) - 0x2600); // GL_NEAREST 9728, GL_LINEAR 0x2601 9729
@@ -860,7 +860,7 @@ __private const char* ParseMaterialTexture(const char* curr, AMaterial::Texture&
         {
             if (*curr++ == '}') return curr;
         }
-        ASSERT(*curr && "parsing material failed, probably forgot to close brackets");
+        ASSERTR(*curr && "parsing material failed, probably forgot to close brackets", return (const char*)AError_CloseBrackets);
         curr++;
 
         if (StrCMP16(curr, "scale")) {
@@ -909,7 +909,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
-        ASSERT(*curr && "parsing material failed, probably forgot to close brackets");
+        ASSERTR(*curr && "parsing material failed, probably forgot to close brackets", return (const char*)AError_CloseBrackets);
 
         int texture = -1;
         curr++; // skips the "
@@ -1003,8 +1003,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         }
         else
         {
-            ASSERT(0 && "undefined material variable!");
-            return (const char*)AError_UNKNOWN_MATERIAL_VAR;
+            ASSERTR(0 && "undefined material variable!", return (const char*)AError_UNKNOWN_MATERIAL_VAR);
         }
 
         if (texture != -1)
@@ -1037,7 +1036,7 @@ static const char* ParseSkins(const char* curr, Array<ASkin>& skins, AStringAllo
             }
             if (*curr++ == ']') return curr; // end all nodes
         }
-        ASSERT(*curr != '\0' && "parsing skins not possible, probably forgot to close brackets!");
+        ASSERTR(*curr != '\0' && "parsing skins not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
         curr++; // skips the "
 
         if (StrCMP16(curr, "inverseBindMatrices"))
@@ -1086,7 +1085,7 @@ static const char* ParseAnimations(const char* curr, Array<AAnimation>& animatio
             if (*curr++ == ']') 
                 return curr; // end all nodes
         }
-        ASSERT(*curr != '\0' && "parsing animations not possible, probably forgot to close brackets!");
+        ASSERTR(*curr != '\0' && "parsing animations not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
         curr++; // skips the "
 
         if (StrCMP16(curr, "name"))
@@ -1114,7 +1113,7 @@ static const char* ParseAnimations(const char* curr, Array<AAnimation>& animatio
                     }
                     curr++;
                 }
-                ASSERT(*curr != '\0' && "parsing anim channels not possible, probably forgot to close brackets!");
+                ASSERTR(*curr != '\0' && "parsing anim channels not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
 
                 uint64_t hash;
                 curr = HashStringInQuotes(&hash, curr);
@@ -1156,7 +1155,7 @@ static const char* ParseAnimations(const char* curr, Array<AAnimation>& animatio
                     }
                     curr++;
                 }
-                ASSERT(*curr != '\0' && "parsing anim channels not possible, probably forgot to close brackets!");
+                ASSERTR(*curr != '\0' && "parsing anim channels not possible, probably forgot to close brackets!", return (const char*)AError_CloseBrackets);
 
                 uint64_t hash;
                 curr = HashStringInQuotes(&hash, curr);

@@ -288,6 +288,12 @@ __forceinline Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (
 __forceinline Vector2f ToVector2f(const Vector2i& vec) { return {(float)vec.x, (float)vec.y }; }
 __forceinline Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec.y   }; }
 
+__forceinline bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
+{
+    return point.x <= max.x && point.y <= max.y &&
+           point.x >= min.x && point.y >= min.y;
+}
+
 // __forceinline uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
 // __forceinline uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
 // 

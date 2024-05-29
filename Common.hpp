@@ -103,6 +103,19 @@ typedef uint32_t uint;
 #  define ASSERT(c)
 #endif
 
+// https://nullprogram.com/blog/2022/06/26/
+#if defined(_DEBUG) || defined(Debug)
+#  if __GNUC__
+#    define ASSERTR(c, r) if (!(c)) { __builtin_trap(); r; }
+#  elif _MSC_VER
+#define ASSERTR(c, r) if (!(c)) { __debugbreak(); r; }
+#  else
+#    define ASSERTR(c, r) if (!(c)) { *(volatile int *)0 = 0; r }
+#  endif
+#else
+#  define ASSERTR(c) if (!(c)) { r; }
+#endif
+
 #if defined(__has_builtin)
 #   define AX_COMPILER_HAS_BUILTIN(x) __has_builtin(x)
 #else

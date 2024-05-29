@@ -178,7 +178,7 @@ public:
 
 	void Erase(Node* node)
 	{
-		ASSERT(m_root); // tree is already empty
+		ASSERTR(m_root, return); // tree is already empty
 		Node* replacement;
 
 		if (node->left == &m_protect || node->right == &m_protect)
@@ -312,7 +312,7 @@ public:
 
 	void InsertFixup(Node* new_node)
 	{
-		ASSERT(new_node->IsRed());
+		ASSERTR(new_node->IsRed(), return);
 		Node* iter = new_node;
 		
 		while (iter->GetParent()->IsRed())

@@ -130,7 +130,7 @@ struct Array
 
 	ValueT& operator[](int index)
 	{
-		ASSERT(index >= 0 && index < m_count);
+        ASSERTR(index >= 0 && index < m_count, return arr[0]);
 		return arr[index];
 	}
 
@@ -146,7 +146,7 @@ struct Array
 
 	const ValueT& operator[](int index) const
 	{
-		ASSERT(index >= 0 && index < m_count);
+        ASSERTR(index >= 0 && index < m_count, return arr[0]);
 		return arr[index];
 	}
 
@@ -174,7 +174,7 @@ struct Array
 
 	void Add(ConstIterator _begin, int _size)
 	{
-		ASSERT(m_count < INT32_MAX - _size); // array max size reached
+		ASSERTR(m_count < INT32_MAX - _size, return); // array max size reached
 		GrowIfNecessary(m_count + _size);
 		for (int i = 0; i < _size; i++)
 		{
@@ -184,7 +184,7 @@ struct Array
 
 	void AddUninitialized(int _size)
 	{
-		ASSERT(m_count < INT32_MAX - _size); // array max size reached
+		ASSERTR(m_count < INT32_MAX - _size, return); // array max size reached
 		GrowIfNecessary(m_count + _size);
 		m_count += _size;
 	}
@@ -252,6 +252,7 @@ struct Array
 	template<typename... Args>
 	ValueT& EmplaceAt(int index, Args&&... args)
 	{
+        ASSERTR(m_count != INT32_MAX, return arr[index])
 		OpenSpace(index, 1);
 		arr[index].~ValueT();
 		ValueT val(Forward<Args>(args)...);
@@ -262,6 +263,7 @@ struct Array
 	template<typename... Args>
 	ValueT& EmplaceBack(Args&&... args)
 	{
+        ASSERTR(m_count != INT32_MAX, return arr[m_count-1])
 		GrowIfNecessary(m_count + 1);
 		ValueT val(Forward<Args>(args)...);
 		arr[m_count] = (ValueT&&)val;
@@ -385,8 +387,6 @@ struct Array
 
 	void GrowIfNecessary(int _size)
 	{
-		ASSERT(_size <= INT32_MAX);
-		
 		if (AX_UNLIKELY(_size > m_capacity))
 		{
 			int oldCapacity = m_capacity;
@@ -403,7 +403,7 @@ struct Array
 	{
 		long i = m_count + _count;
 		int  j = m_count;
-		ASSERT(i <= INT32_MAX);
+		ASSERTR(i <= INT32_MAX, i = INT32_MAX);
 		
 		GrowIfNecessary((int)i);
 
@@ -416,7 +416,7 @@ struct Array
 
 	void RemoveSpace(int _index, int _count)
 	{
-		ASSERT((_index + _count) <= m_count);
+		ASSERTR((_index + _count) <= m_count, return);
 		int newSize = MAX(m_count - _count, 0);
 
 		int i = _index;

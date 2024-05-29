@@ -229,7 +229,7 @@ inline uint32_t murmur_32_scramble(uint32_t k) {
 }
 
 // https://en.wikipedia.org/wiki/MurmurHash
-inline uint32_t MurmurHash32(const uint8_t* key, size_t len, uint32_t seed)
+inline uint32_t MurmurHash32(const char* key, size_t len, uint32_t seed)
 {
 	uint32_t h = seed;
 	uint32_t k;
@@ -391,49 +391,6 @@ namespace WYHash
 	{
 		return mix(x, UINT64_C(0x9E3779B97F4A7C15));
 	}
-}
-
-__constexpr inline uint64_t StringToHash64(const char* str, uint64_t len)
-{
-	const uint64_t m = 0xc6a4a7935bd1e995ULL;
-	const uint64_t r = 47;
-	uint64_t h       = 0x9E3779B97F4A7C15ull ^ (len * m);
-	uint64_t shift   = 0ull;
-
-	while (len >= 10)
-	{
-		uint64_t k = 0ull;
-    
-		while (shift < 60)
-		{
-			k     |= uint64_t(ToUpper(*str++) - '0') << shift;
-			shift += 6ull;
-		}
-		// fill missing 4 bits, 10 is random shift to choose for last 4 bit
-		k |= (~0xFFFFFFFFFFFFFFF8) & (k << 10ull);
-
-		k *= m;
-		k ^= k >> r;
-		k *= m;
-
-		h ^= k;
-		h *= m;
-		shift = 0ull;
-		len  -= 10;
-	}
-
-	uint64_t d = 0ull;
-	while (*str)
-	{
-		d     |= uint64_t(ToUpper(*str++) - '0') << shift;
-		shift += 6ull;
-	}
-
-	h ^= d;
-	h *= 0xbf58476d1ce4e5b9ULL;
-	h ^= h >> 27ULL;
-	h *= 0x94d049bb133111ebULL;
-	return h ^ (h >> 31ULL);
 }
 
 __constexpr inline uint StringToHash(const char* str, uint hash = 0)

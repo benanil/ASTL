@@ -265,7 +265,7 @@ public:
 
 	void Dequeue(ValueT* result, uint count)
 	{
-		ASSERT(Size() + count <= capacity);
+		ASSERTR(Size() + count <= capacity, return);
 		uint r = rear, e = capacity-1;
 		for (uint i = 0; i < count; i++)
 		{
@@ -278,7 +278,7 @@ public:
 
 	ValueT Dequeue()
 	{	
-		ASSERT(rear != front);
+        ASSERTR(rear != front, return ptr[0]);
 		ValueT val = Forward<ValueT>(ptr[rear]);
 		rear = IncrementIndex(rear);
 		size--;
@@ -498,14 +498,14 @@ public:
 
 	void Pop()
 	{
-		ASSERT(!Empty());
+        ASSERTR(!Empty(), return heap[0]);
 		Swap(heap[0], heap[--size]);
 		heap[size].~T();
 		HeapifyDown(0);
 	}
 
 	const T& Top() const {
-		ASSERT(!Empty());
+		ASSERTR(!Empty(), return heap[0]);
 		return heap[0];
 	}
 

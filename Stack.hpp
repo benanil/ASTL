@@ -113,7 +113,7 @@ public:
 
 	T Pop() 
 	{
-		ASSERT(size != 0);
+		ASSERTR(size != 0, return);
 		return Forward<T>(ptr[--size]); 
 	}
 	

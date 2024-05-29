@@ -180,11 +180,12 @@ inline int UTF8StrLen(const char *s)
     return len;
 }
 
+// based on work of Christopher Wellons https://github.com/skeeto/branchless-utf8
 // https://github.com/ocornut/imgui/blob/master/imgui.cpp
 // Convert UTF-8 to 32-bit character, process single character input.
-// A nearly-branchless UTF-8 decoder, based on work of Christopher Wellons (https://github.com/skeeto/branchless-utf8).
+// A nearly-branchless UTF-8 decoder
 // We handle UTF-8 decoding error by skipping forward. Returns len of utf8
-inline int TextCharFromUtf8(unsigned int* out_char, const char* in_text, const char* in_text_end)
+inline int CodepointFromUtf8(unsigned int* out_unicode, const char* in_text, const char* in_text_end)
 {
     static const char lengths[32] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0 };
     static const int masks[]  = { 0x00, 0x7f, 0x1f, 0x0f, 0x07 };
@@ -206,18 +207,18 @@ inline int TextCharFromUtf8(unsigned int* out_char, const char* in_text, const c
     s[3] = in_text + 3 < in_text_end ? in_text[3] : 0;
 
     // Assume a four-byte character and load four bytes. Unused bits are shifted out.
-    *out_char  = (uint32_t)(s[0] & masks[len]) << 18;
-    *out_char |= (uint32_t)(s[1] & 0x3f) << 12;
-    *out_char |= (uint32_t)(s[2] & 0x3f) <<  6;
-    *out_char |= (uint32_t)(s[3] & 0x3f) <<  0;
-    *out_char >>= shiftc[len];
+    *out_unicode  = (uint32_t)(s[0] & masks[len]) << 18;
+    *out_unicode |= (uint32_t)(s[1] & 0x3f) << 12;
+    *out_unicode |= (uint32_t)(s[2] & 0x3f) <<  6;
+    *out_unicode |= (uint32_t)(s[3] & 0x3f) <<  0;
+    *out_unicode >>= shiftc[len];
     
     const int UNICODE_CODEPOINT_MAX = 0xFFFF;
     // Accumulate the various error conditions.
     int e = 0;
-    e  = (*out_char < mins[len]) << 6; // non-canonical encoding
-    e |= ((*out_char >> 11) == 0x1b) << 7;  // surrogate half?
-    e |= (*out_char > UNICODE_CODEPOINT_MAX) << 8;  // out of range?
+    e  = (*out_unicode < mins[len]) << 6; // non-canonical encoding
+    e |= ((*out_unicode >> 11) == 0x1b) << 7;  // surrogate half?
+    e |= (*out_unicode > UNICODE_CODEPOINT_MAX) << 8;  // out of range?
     e |= (s[1] & 0xc0) >> 2;
     e |= (s[2] & 0xc0) >> 4;
     e |= (s[3]       ) >> 6;
@@ -231,11 +232,40 @@ inline int TextCharFromUtf8(unsigned int* out_char, const char* in_text, const c
         // Invalid or incomplete input may consume less bytes than wanted, therefore every byte has to be inspected in s.
         int get = !!s[0] + !!s[1] + !!s[2] + !!s[3];
         wanted = MIN(wanted, get);
-        *out_char = (unsigned int)'A';
+        *out_unicode = (unsigned int)'A';
     }
 
     return wanted;
 }
+
+inline uint CodepointToUtf8(char* utf8, uint unicode)
+{
+    if (unicode < 0x80u) {
+        utf8[0] = unicode;
+        return 1u;
+    }
+    if (unicode < 0x800u) {
+        utf8[0] = (unicode >> 6)   | 0xC0u;
+        utf8[1] = (unicode & 0x3Fu) | 0x80u;
+        return 2u;
+    }
+    if (unicode < 0xFFFFu) {
+        utf8[0] = ((unicode >> 12)       ) | 0xE0u;
+        utf8[1] = ((unicode >> 6 ) & 0x3Fu) | 0x80u;
+        utf8[2] = ((unicode      ) & 0x3Fu) | 0x80u;
+        return 3u;
+    }
+    if (unicode <= 0x1fffffu) {
+        /* http://tidy.sourceforge.net/cgi-bin/lxr/source/src/utf8.c#L380 */
+        utf8[0] = (char)0xF0u | (unicode >> 18);
+        utf8[1] = (char)0x80u | ((unicode >> 12) & 0x3Fu);
+        utf8[2] = (char)0x80u | ((unicode >> 6) & 0x3Fu);
+        utf8[3] = (char)0x80u | ((unicode & 0x3Fu));
+        return 4u;
+    }
+    return 4u;
+}
+
 
 // small string optimization
 class String
@@ -602,7 +632,7 @@ public:
         uint32_t size = this->GetSize();
         long i = MIN((long)size + _count, (long)GetCapacity());
         int  j = size;
-        ASSERT(i <= INT32_MAX);
+        ASSERTR(i <= INT32_MAX, i = INT32_MAX);
         char* ptr = GetPtr();
 
         while (j >= _index)
