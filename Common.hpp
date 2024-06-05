@@ -113,7 +113,7 @@ typedef uint32_t uint;
 #    define ASSERTR(c, r) if (!(c)) { *(volatile int *)0 = 0; r }
 #  endif
 #else
-#  define ASSERTR(c) if (!(c)) { r; }
+#  define ASSERTR(c, r) if (!(c)) { r; }
 #endif
 
 #if defined(__has_builtin)
