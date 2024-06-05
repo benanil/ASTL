@@ -279,6 +279,7 @@ inline int Log10Algo(int n)
 // @returns number of characters added
 inline int IntToString(char* ptr, int x, int afterPoint=0)
 {
+    if (afterPoint < 0) return 0;
     int size = 0;
     if (x < 0) ptr[size++] = '-', x = 0-x;
     
@@ -320,6 +321,7 @@ inline int FloatToString(char* ptr, float f, int afterpoint = 4)
     int iPart = (int)f;
     int numChars = IntToString(ptr, iPart);
     float fPart = f - iPart;
+    fPart = fPart < 0.0f ? -fPart : fPart; // fpart = fabs(fpart)
     ptr[numChars++] = '.';
     int power = Pow10(afterpoint); 
     return numChars + IntToString(ptr + numChars, int(fPart * power), afterpoint-1);
