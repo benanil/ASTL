@@ -318,10 +318,16 @@ inline int Pow10(int x)
 // @returns number of characters added
 inline int FloatToString(char* ptr, float f, int afterpoint = 4)
 {
+    int lessThanZero = f < 0.0f;
+    int numChars = 0;
+    
+    if (lessThanZero) 
+        ptr[numChars++] = '-';
+
+    f = f >= 0.0f ? f : -f; // fabs(f)
     int iPart = (int)f;
-    int numChars = IntToString(ptr, iPart);
-    float fPart = f - iPart;
-    fPart = fPart < 0.0f ? -fPart : fPart; // fpart = fabs(fpart)
+    numChars += IntToString(ptr + numChars, iPart);
+    float fPart = f - (float)iPart;
     ptr[numChars++] = '.';
     int power = Pow10(afterpoint); 
     return numChars + IntToString(ptr + numChars, int(fPart * power), afterpoint-1);
