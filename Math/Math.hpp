@@ -249,6 +249,12 @@ inline_constexpr T Floor(T x) {
     return x - (x-whole);
 }
 
+template<typename T>
+inline_constexpr T Ceil(T x) {
+    T whole = (T)(int)x;  // truncate quotient to integer
+    return whole + float(x > whole);
+}
+
 inline_constexpr float Fract(float a) {
     return a - int(a); 
 }
@@ -596,6 +602,11 @@ inline float Remap(float in, float inMin, float inMax, float outMin, float outMa
 inline float Repeat(float t, float length)
 {
     return Clamp(t - Floor(t / length) * length, 0.0f, length);
+}
+
+__forceinline float Step(float edge, float x)
+{
+    return float(x > edge);
 }
 
 // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line

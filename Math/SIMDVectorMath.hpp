@@ -87,7 +87,7 @@ typedef __m128i vecu_t;
 #define VecSetY(v, y) _mm_insert_ps(v, _mm_set_ss(y), 0x10)
 #define VecSetZ(v, z) _mm_insert_ps(v, _mm_set_ss(z), 0x20)
 #define VecSetW(v, w) ((v) = _mm_insert_ps((v), _mm_set_ss(w), 0x30))
-inline vec_t VECTORCALL Vec3Load(void const* x) {
+__forceinline vec_t VECTORCALL Vec3Load(void const* x) {
     vec_t v = _mm_loadu_ps((float const*)x); 
     VecSetW(v, 0.0); return v;
 }
@@ -179,6 +179,7 @@ inline vec_t VECTORCALL Vec3Load(void const* x) {
 
 #define VecMax(a, b) _mm_max_ps(a, b)
 #define VecMin(a, b) _mm_min_ps(a, b)
+#define VecFloor(a)  _mm_floor_ps(a)
 
 #define VecCmpGt(a, b) _mm_cmpgt_ps(a, b) /* greater or equal */
 #define VecCmpGe(a, b) _mm_cmpge_ps(a, b) /* greater or equal */
@@ -317,6 +318,7 @@ typedef uint32x4_t vecu_t;
 
 #define VecMax(a, b) vmaxq_f32(a, b)
 #define VecMin(a, b) vminq_f32(a, b)
+#define VecFloor(a)  vrndmq_f32(a)
 
 #define VecCmpGt(a, b) vcgtq_f32(a, b) // greater or equal
 #define VecCmpGe(a, b) vcgeq_f32(a, b) // greater or equal
@@ -618,6 +620,7 @@ __forceinline veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 
 #define VecMax(a, b)   MakeVec4(MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z), MAX(a.w, b.w))
 #define VecMin(a, b)   MakeVec4(MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z), MIN(a.w, b.w))
+#define VecFloor(a)    MakeVec4(Floor(a.x), Floor(a.y), Floor(a.z), Floor(a.w))
 
 #define VecCmpGt(a, b) MakeVec4i(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w)     /* greater or equal */
 #define VecCmpGe(a, b) MakeVec4i(a.x >= b.x, a.y >= b.y, a.z >= b.z, a.w >= b.w) /* greater or equal */
@@ -698,10 +701,8 @@ __forceinline float VECTORCALL Max3(vec_t ab)
 
 __forceinline vec_t VECTORCALL VecClamp(vec_t v, vec_t vmin, vec_t vmax)
 {
-    veci_t cmp = VecCmpGt(v, vmax);
-    v = VecSelect(v, vmax, cmp);
-    cmp = VecCmpLt(v, vmin);
-    v = VecSelect(v, vmin, cmp);
+    v = VecSelect(v, vmax, VecCmpGt(v, vmax));
+    v = VecSelect(v, vmin, VecCmpLt(v, vmin));
     return v;
 }
 
@@ -758,6 +759,16 @@ __forceinline vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
 __forceinline vec_t VecLerp(vec_t x, vec_t y, float t)
 {
     return VecFmadd(VecSub(y, x), VecSet1(t), x);
+}
+
+__forceinline vec_t VecStep(vec_t edge, vec_t x)
+{
+    return VecBlend(VecZero(), VecOne(), VecCmpGt(x, edge));
+}
+
+__forceinline vec_t VecFract(vec_t x)
+{
+    return VecSub(x, VecFloor(x));
 }
 
 #if 1 // defined(__GNUC__) || defined(__clang__)

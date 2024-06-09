@@ -485,8 +485,7 @@ inline_constexpr T Clamp(T x, T a, T b) {
     return MAX(a, MIN(b, x));
 }
 
-template<typename T> 
-inline_constexpr T Clamp01(T x) {
+inline_constexpr float Clamp01(float x) {
     return MAX(0.0f, MIN(1.0f, x));
 }
 
