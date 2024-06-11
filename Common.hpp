@@ -59,7 +59,7 @@ typedef uint32_t uint;
 #if defined(__GNUC__)
 #    define AX_PACK(decl) decl __attribute__((__packed__))
 #elif defined(_MSC_VER)
-#    define AX_PACK(decl) __pragma(pack(push, 1)) decl __pragma(pack(pop))
+#    define AX_PACK(decl) __pragma(pack(push, 1)); decl __pragma(pack(pop));
 #else
 #error you should define pack function
 #endif

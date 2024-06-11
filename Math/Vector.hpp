@@ -230,18 +230,22 @@ using Vector2d = Vector2<double>;
 using Vector2f = Vector2<float>;
 using Vector2i = Vector2<int>;
 using Vector2s = Vector2<short>;
-using Vector2h = Vector2<half>;
 
 using Vector3d = Vector3<double>;
 using Vector3f = Vector3<float>;
 using Vector3i = Vector3<int>;
 using Vector3s = Vector3<short>;
-using Vector3h = Vector3<half>;
 
 typedef Vector3f float3;
 typedef Vector2f float2;
-typedef Vector3h half3;
-typedef Vector2h half2;
+
+typedef uint half2;
+constexpr half2 Half2Up    = OneFP16 << 16u;
+constexpr half2 Half2Down  = MinusOneFP16 << 16u;
+constexpr half2 Half2Left  = MinusOneFP16;
+constexpr half2 Half2Right = OneFP16;
+constexpr half2 Half2One   = OneFP16 | (OneFP16 << 16);
+constexpr half2 Half2Zero  = 0;
 
 inline Vector2f Normalize(Vector2f v) {
 	return v / Sqrt(v.x * v.x + v.y * v.y);
@@ -261,19 +265,17 @@ __forceinline float3 ConvertToFloat3(const half* h) {
 
 __forceinline half2 ConvertToHalf2(const float* h) {
 	half2 res;
-	res.x = ConvertFloatToHalf(*h++);
-	res.y = ConvertFloatToHalf(*h);
+	res  = ConvertFloatToHalf(*h++);
+	res |= uint32_t(ConvertFloatToHalf(*h)) << 16;
 	return res;
 }
 
-__forceinline half3 ConvertToHalf3(const float* h) {
-	half3 res;
-	res.x = ConvertFloatToHalf(*h++);
-	res.y = ConvertFloatToHalf(*h++);
-	res.z = ConvertFloatToHalf(*h);
+__forceinline half2 ConvertToHalf2(Vector2f f) {
+	half2 res;
+	res  = ConvertFloatToHalf(f.x);
+	res |= uint32_t(ConvertFloatToHalf(f.y)) << 16;
 	return res;
 }
-
 // recommended to use simd instructions instead. this functions are slow in hot loops
 template<typename T> __forceinline Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z) }; }
 template<typename T> __forceinline Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z) }; }

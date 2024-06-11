@@ -240,10 +240,11 @@ struct AFile {
 inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
 {
     FILE* file;
-    const char* modes[2] = { "rb", "wb" };
 #ifdef _MSC_VER
+    const char* modes[2] = { "rb, ccs=UTF-8", "wb, ccs=UTF-8" };
     fopen_s(&file, fileName, modes[flag]);
 #else
+    const char* modes[2] = { "rb", "wb" };
     file = fopen(fileName, modes[flag]);
 #endif
     AFile afile;

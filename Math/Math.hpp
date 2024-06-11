@@ -386,6 +386,12 @@ inline_constexpr float SinPI(float x)  { return Sin(x) / PI; }
 /*//////////////////////////////////////////////////////////////////////////*/
 
 typedef ushort half;
+constexpr half OneFP16 = 15360;
+constexpr half MinusOneFP16 = 48128;
+constexpr half ZeroFP16 = 0;
+constexpr half HalfFP16 = 14336; // fp16 0.5
+constexpr half Sqrt2FP16 = 15784; // fp16 sqrt(2)
+#define HALF2XY(x, y) ((x) | ((y) << 16));
 
 __forceinline float ConvertHalfToFloat(half x) {
 #if defined(AX_SUPPORT_SSE) 
