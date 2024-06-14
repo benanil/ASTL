@@ -296,6 +296,21 @@ __forceinline bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f poi
            point.x >= min.x && point.y >= min.y;
 }
 
+inline Vector3f HUEToRGB(float h) {
+    float r = Clamp01(Abs(h * 6.0f - 3.0f) - 1.0f);
+    float g = Clamp01(2.0f - Abs(h * 6.0f - 2.0f));
+    float b = Clamp01(2.0f - Abs(h * 6.0f - 4.0f));
+    return { r, g, b };
+}
+
+// converts hue to rgb color
+inline_constexpr uint32 HUEToRGBU32(float h) {
+    uint r = uint(Clamp01(Abs(h * 6.0f - 3.0f) - 1.0f) * 255.0f);
+    uint g = uint(Clamp01(2.0f - Abs(h * 6.0f - 2.0f)) * 255.0f);
+    uint b = uint(Clamp01(2.0f - Abs(h * 6.0f - 4.0f)) * 255.0f);
+    return r | (uint(g) << 8u) | (uint(b) << 16u) | (255 << 24u);
+}
+
 // __forceinline uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
 // __forceinline uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
 // 

@@ -123,16 +123,16 @@ inline void MemSetAligned64(void* RESTRICT dst, unsigned char val, uint64_t size
         dp += 4;
     }
    
-    switch (sizeInBytes & 7)
-    {
-        case 7: *dp++ = d4;
-        case 6: *dp++ = d4;
-        case 5: *dp++ = d4;
-        case 4: *dp++ = d4;
-        case 3: *dp++ = d4;
-        case 2: *dp++ = d4;
-        case 1: *dp   = d4;
-    };
+        switch (sizeInBytes & 7)
+        {
+            case 7: *dp++ = d4; [[fallthrough]];
+            case 6: *dp++ = d4; [[fallthrough]];
+            case 5: *dp++ = d4; [[fallthrough]];
+            case 4: *dp++ = d4; [[fallthrough]];
+            case 3: *dp++ = d4; [[fallthrough]];
+            case 2: *dp++ = d4; [[fallthrough]];
+            case 1: *dp   = d4;
+        };
 }
 
 inline void MemSet32(uint32_t* RESTRICT dst, uint32_t val, uint32_t numValues)
@@ -165,8 +165,8 @@ inline void MemSetAligned32(uint32_t* RESTRICT dst, unsigned char val, uint64_t 
     
     switch (sizeInBytes & 3)
     {
-        case 3: *dp++ = d4;
-        case 2: *dp++ = d4;
+        case 3: *dp++ = d4; [[fallthrough]];
+        case 2: *dp++ = d4; [[fallthrough]];
         case 1: *dp   = d4;
     };
 }
@@ -229,8 +229,8 @@ inline void MemCpyAligned32(uint32_t* dst, const uint32_t* RESTRICT src, uint64_
     
     switch (sizeInBytes & 3)
     {
-        case 3: *dp++ = *sp++;
-        case 2: *dp++ = *sp++;
+        case 3: *dp++ = *sp++; [[fallthrough]];
+        case 2: *dp++ = *sp++; [[fallthrough]];
         case 1: *dp++ = *sp++;
     };
 }

@@ -55,7 +55,7 @@
 #include <android/asset_manager.h>
 #include <game-activity/native_app_glue/android_native_app_glue.h>
 
-extern android_app* g_android_app;
+extern "C" android_app* g_android_app;
 #endif
 
 #ifdef _WIN32
@@ -170,16 +170,11 @@ inline bool RenameFile(const char* oldFile, const char* newFile)
 
 inline bool CreateFolder(const char* folderName) 
 {
-#ifdef __ANDROID__
-    __builtin_trap();
-    return false;
-#else
     return _mkdir(folderName
                #ifndef _WIN32
                , 0777
                #endif 
                ) == 0;
-#endif
 }
 
 inline bool IsDirectory(const char* path)
@@ -519,8 +514,7 @@ inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn)
         if (stat(filePath, &fileStat) == 0) {
             bool isFolder = S_ISDIR(fileStat.st_mode);
             off_t fileSize = fileStat.st_size;
-            int pathLen=0;
-            while (filePath[pathLen]) pathLen++;
+            int pathLen = StringLength(filePath);
             visitFn(filePath, pathLen, entry->d_name, isFolder, fileSize);
         } else {
             perror("Error getting file stat");
