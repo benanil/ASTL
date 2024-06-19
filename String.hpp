@@ -168,6 +168,16 @@ inline bool IsUTF8(char c)
     return (c & 0xC0) != 0x80; 
 }
 
+inline int UTF8CharLen(const char* s)
+{
+    unsigned char c = (unsigned char)s[0];
+    if ((c & 0x80) == 0) return 1;              // 0xxxxxxx (1-byte sequence)
+    else if ((c & 0xE0) == 0xC0) return 2;      // 110xxxxx (2-byte sequence)
+    else if ((c & 0xF0) == 0xE0) return 3;      // 1110xxxx (3-byte sequence)
+    else if ((c & 0xF8) == 0xF0) return 4;      // 11110xxx (4-byte sequence)
+    else return 0;                              // Invalid UTF-8 byte
+}
+
 // Returns the number of characters in an UTF-8 encoded string.
 // (Does not check for encoding validity)
 inline int UTF8StrLen(const char *s)

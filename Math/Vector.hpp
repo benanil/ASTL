@@ -239,6 +239,12 @@ using Vector3s = Vector3<short>;
 typedef Vector3f float3;
 typedef Vector2f float2;
 
+struct Rect2D
+{
+    Vector2f pos;
+    Vector2f size;
+};
+
 typedef uint half2;
 constexpr half2 Half2Up    = OneFP16 << 16u;
 constexpr half2 Half2Down  = MinusOneFP16 << 16u;
