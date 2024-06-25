@@ -74,6 +74,7 @@ typedef struct AMaterial_
     float16 specularFactor;
     unsigned diffuseColor, specularColor, baseColorFactor;
     float alphaCutoff;
+    float ior;
     bool doubleSided;
     AMaterialAlphaMode alphaMode;
 

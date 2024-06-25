@@ -551,7 +551,6 @@ struct ScopedPtr
 
           T& operator[](int n)       { return ptr[n]; }
     const T& operator[](int n) const { return ptr[n]; }
-
 };
 
 // todo SharedPtr in different hpp file 

@@ -6,7 +6,7 @@
 ********************************************************************************/
 #pragma once
 
-#include "Random.hpp"
+#include "Random.hpp" // for hashing
 #include "Algorithms.hpp"
 #include "Memory.hpp"
 
@@ -123,6 +123,25 @@ inline int StringContains(const char* ptr, const char* other)
             return i;
     }
     return -1;
+}
+
+#define StrCMP16(_str, _otr) (sizeof(_otr) <= 9 ? StrCmp8(_str, _otr, sizeof(_otr)) : \
+                                                  StrCmp16(_str, _otr, sizeof(_otr))) 
+ 
+inline bool StrCmp8(const char* RESTRICT a, const char* b, uint64_t n)
+{
+    uint64_t al, bl;
+    uint64_t mask = ~0ull >> (64 - ((n-1) * 8));
+    al = UnalignedLoad64(a);
+    bl = UnalignedLoad64(b);
+    return ((al ^ bl) & mask) == 0;
+}
+
+inline bool StrCmp16(const char* RESTRICT a, const char* b, uint64_t bSize)
+{
+    bool equal = StrCmp8(a, b, 9);
+    equal &= StrCmp8(a + 8, b + 8, bSize - 8);
+    return equal;
 }
 
 // https://github.com/lemire/fastvalidate-utf-8/blob/master/include/simdasciicheck.h

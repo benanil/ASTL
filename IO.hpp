@@ -16,6 +16,7 @@
 // char*  GetFileExtension(path, size);
 // bool   FileHasExtension(path, size, extension);
 // char*  PathGoBackwards (path, end, skipSeparator);
+// int    CopyFilename(char* out, char* path, int end); // < returns number of characters in filename
 // bool   FileExist(file);
 // uint64 FileSize(file);
 // bool   RenameFile(oldFile, newFile);
@@ -118,6 +119,24 @@ inline char* PathGoBackwards(char* path, int end, bool skipSeparator)
     }
 
     return path + end + 1; // Return the new starting point of the path.
+}
+
+// returns length of filename
+inline int CopyFilename(char* out, const char* path, int end)
+{
+    int numChars = 0;
+    while (end >= 0 && (path[end] != '/' && path[end] != '\\')) {
+        out[numChars++] = path[end--]; // Null-terminate the string.
+    }
+    
+    // reverse
+    for (int i = 0, j = numChars-1; i < j; i++, j--) {
+        char t = out[i];
+        out[i] = out[j];
+        out[j] = t;
+    }
+
+    return numChars; // Return the new starting point of the path.
 }
 
 // these functions works fine with file and folders

@@ -1,8 +1,16 @@
 
-// Almost all macros are here, most of them are agressively inlined for debug time performance
+// This file is mostly included from other files, it does a lot of things here is what it does
+// Compiler Spesiffic features   : VectorCall, force inline, ASSERT, UNREACHABLE,
+// Determinate CPU Architecture  : AX_ARM, AX_X86 AX_CPUID, AX_SUPPORT_SSE, AX_SUPPORT_NEON, AVX.. 
+// Determinate Operating System  : defines the PLATFORM_XXX macro
+// CPP Version Macros            : current cpp version
+// Memory Operations             : SmallMemCpy, SmallMemSet, unaligned load
+// Bit Operations                : PopCount, ByteSwap, TrailingZeroCount, LeadingZeroCount 
+// Basic Math Logical Operations : Min, Max, Clamp, Abs...
+// Utilities                     : ArraySize, PointerDistance, Pair, KeyValuePair...
+// Almost all macros are here, most of them are agressively inlined for debug and runtime performance
 
-#ifndef ASTL_COMMON
-#define ASTL_COMMON
+#pragma once
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
@@ -21,29 +29,32 @@ typedef uint8_t  uchar;
 typedef uint16_t ushort;
 typedef uint32_t uint;
 
+//------------------------------------------------------------------------
+// Compiler Spesiffic features
+
 #ifdef AX_EXPORT
-	#define AX_API __declspec(dllexport)
+    #define AX_API __declspec(dllexport)
 #else
-	#define AX_API __declspec(dllimport)
+    #define AX_API __declspec(dllimport)
 #endif
 
 #ifdef _MSC_VER
-# // do nothing	it already has __forceinline
+    // do nothing   it already has __forceinline
 #elif __CLANG__
-#       define __forceinline [[clang::always_inline]] 
+    #define __forceinline [[clang::always_inline]] 
 #elif __GNUC__
-#ifndef __forceinline
-#       define __forceinline inline __attribute__((always_inline))
-#endif
+    #ifndef __forceinline
+        #define __forceinline inline __attribute__((always_inline))
+    #endif
 #endif
 
 #ifdef _MSC_VER
-#   include <intrin.h>
-#	define VECTORCALL __vectorcall
+    #include <intrin.h>
+    #define VECTORCALL __vectorcall
 #elif __CLANG__
-#   define VECTORCALL [[clang::vectorcall]] 
+    #define VECTORCALL [[clang::vectorcall]] 
 #elif __GNUC__
-#   define VECTORCALL  
+    #define VECTORCALL  
 #endif
 
 #if defined(__cplusplus) &&  __cplusplus >= 201103L
@@ -57,11 +68,11 @@ typedef uint32_t uint;
 #endif
 
 #if defined(__GNUC__)
-#    define AX_PACK(decl) decl __attribute__((__packed__))
+    #define AX_PACK(decl) decl __attribute__((__packed__))
 #elif defined(_MSC_VER)
-#    define AX_PACK(decl) __pragma(pack(push, 1)); decl __pragma(pack(pop));
+    #define AX_PACK(decl) __pragma(pack(push, 1)); decl __pragma(pack(pop));
 #else
-#error you should define pack function
+    #error you should define pack function
 #endif
 
 #if defined(__GNUC__) || defined(__MINGW32__)
@@ -72,79 +83,81 @@ typedef uint32_t uint;
     #define RESTRICT
 #endif
 
-#ifndef AXGLOBALCONST
-#	if _MSC_VER
-#		define AXGLOBALCONST extern const __declspec(selectany)
-#	elif defined(__GNUC__) && !defined(__MINGW32__)
-#		define AXGLOBALCONST extern const __attribute__((weak))
-#   else 
-#       define AXGLOBALCONST extern const 
-#	endif
+#if _MSC_VER
+    #define AXGLOBALCONST extern const __declspec(selectany)
+#elif defined(__GNUC__) && !defined(__MINGW32__)
+    #define AXGLOBALCONST extern const __attribute__((weak))
+#else 
+    #define AXGLOBALCONST extern const 
 #endif
 
 #if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__clang__)
-#    define AX_LIKELY(x) __builtin_expect(x, 1)  
-#    define AX_UNLIKELY(x) __builtin_expect(x, 0)
+    #define AX_LIKELY(x) __builtin_expect(x, 1)  
+    #define AX_UNLIKELY(x) __builtin_expect(x, 0)
 #else
-#    define AX_LIKELY(x) (x)   
-#    define AX_UNLIKELY(x) (x) 
+    #define AX_LIKELY(x) (x)   
+    #define AX_UNLIKELY(x) (x) 
 #endif
 
 // https://nullprogram.com/blog/2022/06/26/
 #if defined(_DEBUG) || defined(Debug)
-#  if __GNUC__
-#    define ASSERT(c) if (!(c)) __builtin_trap()
-#  elif _MSC_VER
-#    define ASSERT(c) if (!(c)) __debugbreak()
-#  else
-#    define ASSERT(c) if (!(c)) *(volatile int *)0 = 0
-#  endif
+    #if __GNUC__
+        #define ASSERT(c) if (!(c)) __builtin_trap()
+    #elif _MSC_VER
+        #define ASSERT(c) if (!(c)) __debugbreak()
+    #else
+        #define ASSERT(c) if (!(c)) *(volatile int *)0 = 0
+    #endif
 #else
-#  define ASSERT(c)
+    #define ASSERT(c)
 #endif
 
 // https://nullprogram.com/blog/2022/06/26/
 #if defined(_DEBUG) || defined(Debug)
-#  if __GNUC__
-#    define ASSERTR(c, r) if (!(c)) { __builtin_trap(); r; }
-#  elif _MSC_VER
-#define ASSERTR(c, r) if (!(c)) { __debugbreak(); r; }
-#  else
-#    define ASSERTR(c, r) if (!(c)) { *(volatile int *)0 = 0; r }
-#  endif
+    #if __GNUC__
+        #define ASSERTR(c, r) if (!(c)) { __builtin_trap(); r; }
+    #elif _MSC_VER
+        #define ASSERTR(c, r) if (!(c)) { __debugbreak(); r; }
+    #else
+        #define ASSERTR(c, r) if (!(c)) { *(volatile int *)0 = 0; r }
+    #endif
 #else
-#  define ASSERTR(c, r) if (!(c)) { r; }
+    #define ASSERTR(c, r) if (!(c)) { r; }
 #endif
 
 #if defined(__has_builtin)
-#   define AX_COMPILER_HAS_BUILTIN(x) __has_builtin(x)
+    #define AX_COMPILER_HAS_BUILTIN(x) __has_builtin(x)
 #else
-#   define AX_COMPILER_HAS_BUILTIN(x) 0
+    #define AX_COMPILER_HAS_BUILTIN(x) 0
 #endif
 
 #if AX_COMPILER_HAS_BUILTIN(__builtin_assume)
-#   define AX_ASSUME(x) __builtin_assume(x)
+    #define AX_ASSUME(x) __builtin_assume(x)
 #elif defined(_MSC_VER)
-#   define AX_ASSUME(x) __assume(x)
+    #define AX_ASSUME(x) __assume(x)
 #else
-#   define AX_ASSUME(x) (void)(x)
+    #define AX_ASSUME(x) (void)(x)
 #endif
 
 #if AX_COMPILER_HAS_BUILTIN(__builtin_unreachable)
-#   define AX_UNREACHABLE() __builtin_unreachable()
+    #define AX_UNREACHABLE() __builtin_unreachable()
 #elif _MSC_VER
-#   define AX_UNREACHABLE() __assume(0)
+    #define AX_UNREACHABLE() __assume(0)
 #else
-#   define AX_UNREACHABLE() 
+    #define AX_UNREACHABLE() 
 #endif
 
 #if AX_COMPILER_HAS_BUILTIN(__builtin_prefetch)
-#   define AX_PREFETCH(x) __builtin_prefetch(x)
+    #define AX_PREFETCH(x) __builtin_prefetch(x)
 #elif defined(_MSC_VER)
-#   define AX_PREFETCH(x) _mm_prefetch(x, _MM_HINT_T0)
+    #define AX_PREFETCH(x) _mm_prefetch(x, _MM_HINT_T0)
 #else
-#   define AX_PREFETCH(x)
+    #define AX_PREFETCH(x)
 #endif
+
+
+//------------------------------------------------------------------------
+// Determinate CPU Architecture
 
 // https://gist.github.com/boxmein/7d8e5fae7febafc5851e
 // https://en.wikipedia.org/wiki/CPUID
@@ -159,12 +172,12 @@ typedef uint32_t uint;
 // AX_CPUID(1, arr);
 // int numCores = (arr[1] >> 16) & 0xff; // virtual cores included
 #if defined(__clang__) || defined(__GNUC__)
-//#   include <cpuid.h>
-//#   define AX_CPUID(num, regs)       __cpuid(num, regs[0], regs[1], regs[2], regs[3])
-//#   define AX_CPUID2(num, sub, regs) __cpuid_count(num, sub, regs[0], regs[1], regs[2], regs[3])
-#   define AX_CPUID(num, regs)       
+//  #include <cpuid.h>
+//  #define AX_CPUID(num, regs)       __cpuid(num, regs[0], regs[1], regs[2], regs[3])
+//  #define AX_CPUID2(num, sub, regs) __cpuid_count(num, sub, regs[0], regs[1], regs[2], regs[3])
+    #define AX_CPUID(num, regs)       
 #else
-#   define AX_CPUID(num, regs) __cpuid(regs, num)
+    #define AX_CPUID(num, regs) __cpuid(regs, num)
 #endif
 
 /* Architecture Detection */
@@ -172,9 +185,9 @@ typedef uint32_t uint;
 // you can define AX_NO_SSE2 or AX_NO_AVX2 in order to disable this extensions
 
 #if defined(__x86_64__) || defined(_M_X64)
-#   define AX_X64
+    #define AX_X64
 #elif defined(__i386) || defined(_M_IX86)
-#   define AX_X86
+    #define AX_X86
 #elif defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
     #define AX_ARM
 #endif
@@ -219,23 +232,41 @@ typedef uint32_t uint;
 
     #if defined(AX_SUPPORT_AVX2) || defined(AX_SUPPORT_AVX)
         #include <immintrin.h>
-
     #elif defined(AX_SUPPORT_SSE)
         #include <emmintrin.h>
     #endif
 #endif
 
-#ifndef AX_NO_UNROLL
-    #if defined(__clang__)
-    #   define AX_NO_UNROLL _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
-    #elif defined(__GNUC__) >= 8
-    #   define AX_NO_UNROLL _Pragma("GCC unroll 0")
-    #elif defined(_MSC_VER)
-    #   define AX_NO_UNROLL __pragma(loop(no_vector))
-    #else
-    #   define AX_NO_UNROLL
-    #endif
+//------------------------------------------------------------------------
+// Determinate Operating System
+
+// Check windows
+#if defined(_WIN32) || defined(_WIN64)
+    #define PLATFORM_WINDOWS 1
 #endif
+
+// Check unix
+#if defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
+    #define PLATFORM_UNIX 1
+#endif
+
+// Check Linux
+#if defined(linux) || defined(__linux)
+    #define PLATFORM_LINUX 1
+#endif
+
+// Check macos
+#if defined(__APPLE__)
+    #define PLATFORM_UNIX 1
+    #define PLATFORM_MACOSX 1
+#endif
+
+#if defined(__ANDROID__)
+    #define PLATFORM_ANDROID
+#endif
+
+//------------------------------------------------------------------------
+// CPP version macros
 
 #if defined(__clang__) || defined(__GNUC__)
     #define AX_CPP_VERSION __cplusplus
@@ -259,9 +290,9 @@ typedef uint32_t uint;
 #define inline_constexpr __forceinline __constexpr
 
 #if AX_CPP_VERSION >= AX_CPP17
-#   define if_constexpr if constexpr
+    #define if_constexpr if constexpr
 #else
-#   define if_constexpr if
+    #define if_constexpr if
 #endif
 
 #if AX_CPP_VERSION < AX_CPP14
@@ -270,6 +301,21 @@ typedef uint32_t uint;
 #else
     #define __const constexpr
 #endif
+
+#ifndef AX_NO_UNROLL
+    #if defined(__clang__)
+        #define AX_NO_UNROLL _Pragma("clang loop unroll(disable)") _Pragma("clang loop vectorize(disable)")
+    #elif defined(__GNUC__) >= 8
+        #define AX_NO_UNROLL _Pragma("GCC unroll 0")
+    #elif defined(_MSC_VER)
+        #define AX_NO_UNROLL __pragma(loop(no_vector))
+    #else
+        #define AX_NO_UNROLL
+    #endif
+#endif
+
+//------------------------------------------------------------------------
+// Memory Operations, memcpy, memset, unaligned load
 
 #ifdef _MSC_VER
     #define SmallMemCpy(dst, src, size) __movsb((unsigned char*)(dst), (unsigned char*)(src), size);
@@ -286,11 +332,11 @@ typedef uint32_t uint;
 #define MemsetZero(dst, size) SmallMemSet(dst, 0, size)
 
 #if defined(_MSC_VER) && !defined(__clang__)
-#if defined(_M_IX86) //< The __unaligned modifier isn't valid for the x86 platform.
-    #define UnalignedLoad64(ptr) *((uint64_t*)(ptr))
-#else
-    #define UnalignedLoad64(ptr) *((__unaligned uint64_t*)(ptr))
-#endif
+    #if defined(_M_IX86) //< The __unaligned modifier isn't valid for the x86 platform.
+        #define UnalignedLoad64(ptr) *((uint64_t*)(ptr))
+    #else
+        #define UnalignedLoad64(ptr) *((__unaligned uint64_t*)(ptr))
+    #endif
 #else
     __forceinline uint64_t UnalignedLoad64(void const* ptr) {
         __attribute__((aligned(1))) uint64_t const *result = (uint64_t const *)ptr;
@@ -299,11 +345,11 @@ typedef uint32_t uint;
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
-#if defined(_M_IX86) //< The __unaligned modifier isn't valid for the x86 platform.
-    #define UnalignedLoad32(ptr) *((uint32_t*)(ptr))
-#else
-    #define UnalignedLoad32(ptr) *((__unaligned uint32_t*)(ptr))
-#endif
+    #if defined(_M_IX86) //< The __unaligned modifier isn't valid for the x86 platform.
+        #define UnalignedLoad32(ptr) *((uint32_t*)(ptr))
+    #else
+        #define UnalignedLoad32(ptr) *((__unaligned uint32_t*)(ptr))
+    #endif
 #else
     __forceinline uint64_t UnalignedLoad32(void const* ptr) {
         __attribute__((aligned(1))) uint32_t const *result = (uint32_t const *)ptr;
@@ -313,29 +359,22 @@ typedef uint32_t uint;
 
 #define UnalignedLoadWord(x) (sizeof(unsigned long long) == 8 ? UnalignedLoad64(x) : UnalignedLoad32(x))
 
+//------------------------------------------------------------------------
+// Namespace Begin
+
 // #define AX_USE_NAMESPACE
 #ifdef AX_USE_NAMESPACE
-#   define AX_NAMESPACE namespace ax {
-#   define AX_END_NAMESPACE }
+    #define AX_NAMESPACE namespace ax {
+    #define AX_END_NAMESPACE }
 #else
-#   define AX_NAMESPACE
-#   define AX_END_NAMESPACE
+    #define AX_NAMESPACE
+    #define AX_END_NAMESPACE
 #endif
 
 AX_NAMESPACE
 
-// change it as is mobile maybe?
-inline_constexpr bool IsAndroid()
-{
-#ifdef __ANDROID__
-    return true;
-#else
-    return false;
-#endif
-}
-
-template<typename T, int N>
-__constexpr int ArraySize(const T (&)[N]) { return N; }
+//------------------------------------------------------------------------
+// Bit Operations
 
 #if defined(_MSC_VER)     /* Visual Studio */
     #define AX_BSWAP32(x) _byteswap_ulong(x)
@@ -378,25 +417,25 @@ inline uint64_t ByteSwap(uint64_t x) {
 #if defined(__ARM_NEON__)
     #define PopCount32(x) vcnt_u8((int8x8_t)x)
 #elif defined(AX_SUPPORT_SSE)
-	#define PopCount32(x) _mm_popcnt_u32(x)
+    #define PopCount32(x) _mm_popcnt_u32(x)
     #define PopCount64(x) _mm_popcnt_u64(x)
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	#define PopCount32(x) __builtin_popcount(x)
-	#define PopCount64(x) __builtin_popcountl(x)
+    #define PopCount32(x) __builtin_popcount(x)
+    #define PopCount64(x) __builtin_popcountl(x)
 #else
 
 inline uint32_t PopCount32(uint32_t x) {
-	x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
-	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
-	x = (x + (x >> 4)) & 0x0F0F0F0F;        // groups of 8
-	return (x * 0x01010101) >> 24;          // horizontal sum of bytes	
+    x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
+    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
+    x = (x + (x >> 4)) & 0x0F0F0F0F;        // groups of 8
+    return (x * 0x01010101) >> 24;          // horizontal sum of bytes	
 }
 
 // standard popcount; from wikipedia
 inline uint64_t PopCount64(uint64_t x) {
-	x -= ((x >> 1) & 0x5555555555555555ull);
-	x = (x & 0x3333333333333333ull) + (x >> 2 & 0x3333333333333333ull);
-	return ((x + (x >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
+    x -= ((x >> 1) & 0x5555555555555555ull);
+    x = (x & 0x3333333333333333ull) + (x >> 2 & 0x3333333333333333ull);
+    return ((x + (x >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
 }
 #endif
 
@@ -414,23 +453,24 @@ inline uint64_t PopCount64(uint64_t x) {
 #define TrailingZeroCountWord(x) (sizeof(unsigned long long) == 8 ? TrailingZeroCount64(x) : TrailingZeroCount32(x))
 
 #ifdef _MSC_VER
-	#define LeadingZeroCount32(x) _lzcnt_u32(x)
-	#define LeadingZeroCount64(x) _lzcnt_u64(x)
+    #define LeadingZeroCount32(x) _lzcnt_u32(x)
+    #define LeadingZeroCount64(x) _lzcnt_u64(x)
 #elif defined(__GNUC__) || !defined(__MINGW32__)
-	#define LeadingZeroCount32(x) __builtin_clz(x)
-	#define LeadingZeroCount64(x) __builtin_clzll(x)
+    #define LeadingZeroCount32(x) __builtin_clz(x)
+    #define LeadingZeroCount64(x) __builtin_clzll(x)
 #else
 template<typename T> inline T LeadingZeroCount64(T x)
 {
-	x |= (x >> 1);
-	x |= (x >> 2);
-	x |= (x >> 4);
-	x |= (x >> 8);
-	x |= (x >> 16);
+    x |= (x >> 1);
+    x |= (x >> 2);
+    x |= (x >> 4);
+    x |= (x >> 8);
+    x |= (x >> 16);
     if (sizeof(T) == 8) x |= (x >> 32); 
-	return (sizeof(T) * 8) - PopCount(x);
+    return (sizeof(T) * 8) - PopCount(x);
 }
 #endif
+
 
 #define LeadingZeroCountWord(x) (sizeof(unsigned long long) == 8 ? LeadingZeroCount64(x) : LeadingZeroCount32(x))
 
@@ -455,16 +495,19 @@ inline_constexpr To BitCast(const From& _Val)
 #endif
 }
 
+//------------------------------------------------------------------------
+// Basic Math Logical Operations, min, max, clamp, abs, 
+
 #ifndef MIN
     #if AX_CPP_VERSION >= AX_CPP17
     template<typename T> inline_constexpr T MIN(T a, T b) { return a < b ? a : b; }
     template<typename T> inline_constexpr T MAX(T a, T b) { return a > b ? a : b; }
     #else
-    // using macro if less than 17 because we want this to be constexpr
-    #   ifndef MIN
-    #       define MIN(a, b) ((a) < (b) ? (a) : (b))
-    #       define MAX(a, b) ((a) > (b) ? (a) : (b))
-    #   endif
+        // using macro if less than 17 because we want this to be constexpr
+        #ifndef MIN
+            #define MIN(a, b) ((a) < (b) ? (a) : (b))
+            #define MAX(a, b) ((a) > (b) ? (a) : (b))
+        #endif
     #endif
 #endif
 
@@ -491,13 +534,13 @@ inline_constexpr float Clamp01(float x) {
 
 inline_constexpr int64_t Abs(int64_t x) 
 {
-	int64_t temp = x >> 63;
+    int64_t temp = x >> 63;
     return (x ^ temp) - temp;
 }
 
 inline_constexpr int Abs(int x)
 {
-	int temp = x >> 31;
+    int temp = x >> 31;
     return (x ^ temp) - temp;
 }
 
@@ -532,6 +575,22 @@ inline_constexpr int64_t NextPowerOf2(int64_t x) {
     return ++x;
 }
 
+//------------------------------------------------------------------------
+// Utilities
+
+// change it as is mobile maybe?
+inline_constexpr bool IsAndroid()
+{
+    #ifdef __ANDROID__
+    return true;
+    #else
+    return false;
+    #endif
+}
+
+template<typename T, int N>
+__constexpr int ArraySize(const T (&)[N]) { return N; }
+
 // maybe we should move this to Algorithms.hpp
 template<typename T>
 inline uint PointerDistance(const T* begin, const T* end)
@@ -551,7 +610,7 @@ inline int CalculateArrayGrowth(int _size)
 #if (defined(__GNUC__) || defined(__clang__)) || \
     (defined(_MSC_VER) && (AX_CPP_VERSION >= AX_CPP17))
     #define StringLength(s) (int)__builtin_strlen(s)
-#elif 
+#else
 typedef unsigned long long unsignedLongLong;
 // http://www.lrdev.com/lr/c/strlen.c
 inline int StringLength(char const* s)
@@ -561,7 +620,7 @@ inline int StringLength(char const* s)
     const unsignedLongLong n = ~m;
 
     for (; (unsignedLongLong)p & (sizeof(unsignedLongLong) - 1); p++) 
-        if (!*p) 
+        if (!*p)
             return (int)(unsignedLongLong)(p - s);
 
     for (;;) 
@@ -640,5 +699,3 @@ template <bool B, typename T, typename F>
 using ConditionalT = typename Conditional<B, T, F>::Type;
 
 AX_END_NAMESPACE
-
-#endif // ASTL_COMMON

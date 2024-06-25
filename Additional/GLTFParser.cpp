@@ -18,6 +18,7 @@
 #include "../IO.hpp"
 #include "../Array.hpp"
 #include "../Math/Matrix.hpp"
+#include "../String.hpp"
 
 #define __private static
 #define __public 
@@ -42,25 +43,6 @@ struct GLTFBufferView
 
 typedef FixedSizeGrowableAllocator<char> AStringAllocator;
 typedef FixedSizeGrowableAllocator<int>  AIntAllocator;
-
-#define StrCMP16(_str, _otr) (sizeof(_otr) <= 9 ? StrCmp8(_str, _otr, sizeof(_otr)) : \
-                                                  StrCmp16(_str, _otr, sizeof(_otr))) 
- 
-bool StrCmp8(const char* RESTRICT a, const char* b, uint64_t n)
-{
-    uint64_t al, bl;
-    uint64_t mask = ~0ull >> (64 - ((n-1) * 8));
-    al = UnalignedLoad64(a);
-    bl = UnalignedLoad64(b);
-    return ((al ^ bl) & mask) == 0;
-}
-
-bool StrCmp16(const char* RESTRICT a, const char* b, uint64_t bSize)
-{
-    bool equal = StrCmp8(a, b, 9);
-    equal &= StrCmp8(a + 8, b + 8, bSize - 8);
-    return equal;
-}
 
 inline const char* SkipUntill(const char* curr, char character)
 {
@@ -975,7 +957,35 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
         }
         else if (StrCMP16(curr, "extensions"))
         {
-            curr = SkipToNextNode(curr, '{', '}'); // currently extensions are not supported 
+            curr = SkipAfter(curr, '{');
+            int balance = 1;
+            // parse until finish
+            while (balance > 0)
+            {
+                // search for name
+                if (*curr == '"')
+                {
+                    ++curr; // skip "
+                    if (StrCMP16(curr, "index"))
+                    {
+                        curr += sizeof("index");
+                        material.specularTexture.index = ParsePositiveNumber(curr);
+                    }
+                    else if (StrCMP16(curr, "ior"))
+                    {
+                        material.ior = ParseFloat(curr);
+                    }
+                    else if (StrCMP16(curr, "specularColorFa"))
+                    {
+                        curr += sizeof("specularColorFactor");
+                        float s = (ParseFloat(curr) + ParseFloat(curr) + ParseFloat(curr)) * 0.33333f;
+                        material.specularFactor = AMaterial::MakeFloat16(s);
+                    }
+                }
+                
+                balance -= *curr == '}';
+                balance += *curr++ == '{';
+            }
         }
         else if (StrCMP16(curr, "alphaMode"))
         {

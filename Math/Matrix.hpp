@@ -716,6 +716,7 @@ __forceinline vec_t VECTORCALL MaxPointAlongNormal(vec_t min, vec_t max, vec_t n
 
 inline bool VECTORCALL CheckAABBCulled(vec_t minAABB, vec_t maxAABB, const FrustumPlanes& frustum, const Matrix4& matrix)
 {
+    return true;
     vec_t min = Vector3Transform(minAABB, matrix.r);
     vec_t max = Vector3Transform(maxAABB, matrix.r);
     

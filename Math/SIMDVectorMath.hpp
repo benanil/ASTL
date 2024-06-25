@@ -474,11 +474,8 @@ __forceinline vec_t ARMVectorNorm(vec_t v)
 }
 
 __forceinline int ARMVecMovemask(veci_t v) {
-    int res = v[0] & 1; res <<= 1;
-    res    |= v[1] & 1; res <<= 1;
-    res    |= v[1] & 1; res <<= 1;
-    res    |= v[1] & 1;
-    return res;
+    int32x4_t shift = ARMCreateVec(0, 1, 2, 3);
+    return vaddvq_u32(vshlq_u32(vshrq_n_u32(v, 31), shift));
 }
 
 template<int E0, int E1, int E2, int E3>
@@ -775,35 +772,35 @@ __forceinline vec_t VecFract(vec_t x)
 
 inline vec_t VECTORCALL VecSin(vec_t x)
 { 
-	veci_t lz, gtpi; 
-	vec_t vpi = VecSet1(PI);
-	lz = VecCmpLt(x, VecZero());
-	x  = VecFabs(x);
-	gtpi = VecCmpGt(x, vpi);
-
-	x = VecSelect(x, VecSub(x, vpi), gtpi);
-	x = VecMul(x, VecSet1(0.63655f));
-	x = VecMul(x, VecSub(VecSet1(2.0f), x));
-	x = VecFmadd(x, VecSet1(0.225f), VecSet1(0.775f));
-
-	x = VecSelect(x, VecNeg(x), gtpi);
-	x = VecSelect(x, VecNeg(x), lz);
-	return x;
+    veci_t lz, gtpi; 
+    vec_t vpi = VecSet1(PI);
+    lz = VecCmpLt(x, VecZero());
+    x  = VecFabs(x);
+    gtpi = VecCmpGt(x, vpi);
+    
+    x = VecSelect(x, VecSub(x, vpi), gtpi);
+    x = VecMul(x, VecSet1(0.63655f));
+    x = VecMul(x, VecSub(VecSet1(2.0f), x));
+    x = VecFmadd(x, VecSet1(0.225f), VecSet1(0.775f));
+    
+    x = VecSelect(x, VecNeg(x), gtpi);
+    x = VecSelect(x, VecNeg(x), lz);
+    return x;
 }
 
 inline vec_t VECTORCALL VecCos(vec_t x)
 {
-	veci_t lz, gtpi;
-	vec_t a;
-	vec_t vpi = VecSet1(PI);
-	lz = VecCmpLt(VecZero(), x);
-	x = VecFabs(x);
-	gtpi = VecCmpGt(x, vpi);
-	x = VecSelect(x, VecSub(x, vpi), gtpi);
-	x = VecMul(x, VecSet1(0.159f));
-	a = VecMul(VecMul(VecSet1(32.0f), x), x);
-	x = VecSub(VecSet1(1.0f), VecMul(a, VecSub(VecSet1(0.75f), x)));
-	return VecSelect(x, VecNeg(x), gtpi);
+    veci_t lz, gtpi;
+    vec_t a;
+    vec_t vpi = VecSet1(PI);
+    lz = VecCmpLt(VecZero(), x);
+    x = VecFabs(x);
+    gtpi = VecCmpGt(x, vpi);
+    x = VecSelect(x, VecSub(x, vpi), gtpi);
+    x = VecMul(x, VecSet1(0.159f));
+    a = VecMul(VecMul(VecSet1(32.0f), x), x);
+    x = VecSub(VecSet1(1.0f), VecMul(a, VecSub(VecSet1(0.75f), x)));
+    return VecSelect(x, VecNeg(x), gtpi);
 }
 
 __forceinline vec_t VECTORCALL VecAtan(vec_t x)
@@ -835,9 +832,9 @@ inline vec_t VECTORCALL VecAtan2(vec_t y, vec_t x)
 
 inline vec_t VECTORCALL VecSinCos(vec_t* cv, vec_t x)
 {
-	vec_t s = VecSin(x);
-	*cv = VecCos(x);
-	return s;
+    vec_t s = VecSin(x);
+    *cv = VecCos(x);
+    return s;
 }
 
 #else //__clang__ || __gnu

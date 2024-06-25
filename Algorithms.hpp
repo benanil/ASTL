@@ -257,7 +257,7 @@ inline float ParseFloat(const char*& text)
     #   define AX_NO_UNROLL __pragma(loop(no_vector))
     #else
     #   define AX_NO_UNROLL
-    #endif  
+    #endif
 #endif
 
 inline int Log10Algo(int n)

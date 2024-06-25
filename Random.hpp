@@ -83,14 +83,14 @@ __constexpr __forceinline uint64_t MurmurHashInverse(uint64_t x) {
 
 namespace Random
 {
-	// these random seeds slower than PCG and MTwister but good choice for random seed
-	// also seeds are cryptographic 
-	__forceinline uint Seed32() {
-		uint32 result;
+    // these random seeds slower than PCG and MTwister but good choice for random seed
+    // also seeds are cryptographic 
+    __forceinline uint Seed32() {
+        uint32 result;
         #if !defined(__ANDROID__)
-		_rdseed32_step(&result); // or faster __rdtsc
+        _rdseed32_step(&result); // or faster __rdtsc
         #else
-		result = WangHash(time(nullptr));
+        result = WangHash(time(nullptr));
         #endif
 		return result;
 	}
