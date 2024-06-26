@@ -29,6 +29,8 @@ typedef uint8_t  uchar;
 typedef uint16_t ushort;
 typedef uint32_t uint;
 
+
+
 //------------------------------------------------------------------------
 // Compiler Spesiffic features
 
@@ -156,6 +158,7 @@ typedef uint32_t uint;
 #endif
 
 
+
 //------------------------------------------------------------------------
 // Determinate CPU Architecture
 
@@ -237,6 +240,8 @@ typedef uint32_t uint;
     #endif
 #endif
 
+
+
 //------------------------------------------------------------------------
 // Determinate Operating System
 
@@ -264,6 +269,8 @@ typedef uint32_t uint;
 #if defined(__ANDROID__)
     #define PLATFORM_ANDROID
 #endif
+
+
 
 //------------------------------------------------------------------------
 // CPP version macros
@@ -314,8 +321,10 @@ typedef uint32_t uint;
     #endif
 #endif
 
+
+
 //------------------------------------------------------------------------
-// Memory Operations, memcpy, memset, unaligned load
+// Memory Operations:  memcpy, memset, unaligned load
 
 #ifdef _MSC_VER
     #define SmallMemCpy(dst, src, size) __movsb((unsigned char*)(dst), (unsigned char*)(src), size);
@@ -359,6 +368,7 @@ typedef uint32_t uint;
 
 #define UnalignedLoadWord(x) (sizeof(unsigned long long) == 8 ? UnalignedLoad64(x) : UnalignedLoad32(x))
 
+
 //------------------------------------------------------------------------
 // Namespace Begin
 
@@ -372,6 +382,8 @@ typedef uint32_t uint;
 #endif
 
 AX_NAMESPACE
+
+
 
 //------------------------------------------------------------------------
 // Bit Operations
@@ -495,6 +507,8 @@ inline_constexpr To BitCast(const From& _Val)
 #endif
 }
 
+
+
 //------------------------------------------------------------------------
 // Basic Math Logical Operations, min, max, clamp, abs, 
 
@@ -574,6 +588,8 @@ inline_constexpr int64_t NextPowerOf2(int64_t x) {
     x |= x >> 8; x |= x >> 16; x |= x >> 32;
     return ++x;
 }
+
+
 
 //------------------------------------------------------------------------
 // Utilities
