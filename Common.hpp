@@ -267,7 +267,7 @@ typedef uint32_t uint;
 #endif
 
 #if defined(__ANDROID__)
-    #define PLATFORM_ANDROID
+    #define PLATFORM_ANDROID 1
 #endif
 
 
@@ -544,6 +544,10 @@ inline_constexpr T Clamp(T x, T a, T b) {
 
 inline_constexpr float Clamp01(float x) {
     return MAX(0.0f, MIN(1.0f, x));
+}
+
+inline_constexpr double Clamp01(double x) {
+    return MAX(0.0, MIN(1.0, x));
 }
 
 inline_constexpr int64_t Abs(int64_t x) 

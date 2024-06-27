@@ -464,7 +464,7 @@ __forceinline half ConvertFloatToHalf(float Value) {
 }
 
 // converts maximum 4 half
-__forceinline void ConvertFloatToHalf(half* res, const float* x, short n) {
+__forceinline void ConvertFloatToHalfN(half* res, const float* x, short n) {
 #if defined(AX_SUPPORT_SSE)
     alignas(16) half a[8];
     float b[8]; 
@@ -478,11 +478,10 @@ __forceinline void ConvertFloatToHalf(half* res, const float* x, short n) {
 }
 
 __forceinline void ConvertFloatToHalf4(half* res, const float* x) {
-#if defined(AX_SUPPORT_SSE) 
-    _mm_store_si128((__m128i*)res, _mm_cvtps_ph(_mm_loadu_ps(x), _MM_FROUND_TO_NEAREST_INT)); 
-#else
-    ConvertFloatToHalf(res, x, 4);
-#endif
+    res[0] = ConvertFloatToHalf(x[0]);
+    res[1] = ConvertFloatToHalf(x[1]);
+    res[2] = ConvertFloatToHalf(x[2]);
+    res[3] = ConvertFloatToHalf(x[3]);
 }
 
 // packs -1,1 range float to short

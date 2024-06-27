@@ -100,9 +100,9 @@ typedef struct AImage_
 typedef struct ANode_
 {
     // Warning! order is important, we copy memory in assetmanager.cpp from fbx transform(pos,rot, scale)
-    float translation[3];
-    float rotation[4];
-    float scale[3];
+    alignas(16) float translation[4];
+    alignas(16) float rotation[4];
+    alignas(16) float scale[4];
 
     int   type;  // 0 mesh or 1 camera
     int   index; // index of mesh or camera, -1 if node doesn't have mesh or camera
