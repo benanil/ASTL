@@ -30,7 +30,6 @@ typedef uint16_t ushort;
 typedef uint32_t uint;
 
 
-
 //------------------------------------------------------------------------
 // Compiler Spesiffic features
 
@@ -158,7 +157,6 @@ typedef uint32_t uint;
 #endif
 
 
-
 //------------------------------------------------------------------------
 // Determinate CPU Architecture
 
@@ -225,10 +223,10 @@ typedef uint32_t uint;
     
     /* If at this point we still haven't determined compiler support for the intrinsics just fall back to __has_include. */
     #if !defined(__GNUC__) && !defined(__clang__) && defined(__has_include)
-        #if !defined(AX_SUPPORT_SSE)   && !defined(AX_NO_SSE2)   && __has_include(<emmintrin.h>)
+        #if !defined(AX_SUPPORT_SSE) && !defined(AX_NO_SSE2) && __has_include(<emmintrin.h>)
             #define AX_SUPPORT_SSE
         #endif
-        #if !defined(AX_SUPPORT_AVX2)   && !defined(AX_NO_AVX2)   && __has_include(<immintrin.h>)
+        #if !defined(AX_SUPPORT_AVX2) && !defined(AX_NO_AVX2) && __has_include(<immintrin.h>)
             #define AX_SUPPORT_AVX2
         #endif
     #endif
@@ -239,7 +237,6 @@ typedef uint32_t uint;
         #include <emmintrin.h>
     #endif
 #endif
-
 
 
 //------------------------------------------------------------------------
@@ -269,7 +266,6 @@ typedef uint32_t uint;
 #if defined(__ANDROID__)
     #define PLATFORM_ANDROID 1
 #endif
-
 
 
 //------------------------------------------------------------------------
@@ -320,7 +316,6 @@ typedef uint32_t uint;
         #define AX_NO_UNROLL
     #endif
 #endif
-
 
 
 //------------------------------------------------------------------------
@@ -382,7 +377,6 @@ typedef uint32_t uint;
 #endif
 
 AX_NAMESPACE
-
 
 
 //------------------------------------------------------------------------
@@ -508,7 +502,6 @@ inline_constexpr To BitCast(const From& _Val)
 }
 
 
-
 //------------------------------------------------------------------------
 // Basic Math Logical Operations, min, max, clamp, abs, 
 
@@ -592,7 +585,6 @@ inline_constexpr int64_t NextPowerOf2(int64_t x) {
     x |= x >> 8; x |= x >> 16; x |= x >> 32;
     return ++x;
 }
-
 
 
 //------------------------------------------------------------------------

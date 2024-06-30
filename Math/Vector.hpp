@@ -31,11 +31,11 @@ struct Vector2
 	static const uint64 ElementSize = sizeof(T);
 	using ElemType = T;
 
-	float Length()		  const { return Sqrt(LengthSquared()); }
-	float LengthSquared() const { return x * x + y * y; }
+	float Length()        const { return Sqrt(LengthSquared()); }
+    float LengthSafe()    const { float sq = LengthSquared(); return sq < 0.01f ? 0.0f : Sqrt(sq); }
+    float LengthSquared() const { return x * x + y * y; }
 
-	static float LengthEst(Vector2 v)     { return RSqrt(v.LengthSquared()); }
-	static float Length(Vector2 v)		  { return Sqrt(v.LengthSquared()); }
+	static float Length(Vector2 v)        { return Sqrt(v.LengthSquared()); }
 	static float LengthSquared(Vector2 v) { return v.x * v.x + v.y * v.y; }
 
 	T& operator[] (int index) { return arr[index]; }
@@ -125,7 +125,7 @@ struct Vector3
 	T& operator[] (int index) { return arr[index]; }
 	T  operator[] (int index) const { return arr[index]; }
 
-	float Length() const { return Sqrt(LengthSquared()); }
+	            float Length() const { return Sqrt(LengthSquared()); }
 	__constexpr float LengthSquared() const { return x * x + y * y + z * z; }
 
 	Vector3& Normalized() { *this /= Length(); return *this; }
@@ -180,10 +180,6 @@ struct Vector3
 
 	static Vector3 NormalizeEst(const Vector3& a) {
 		return a * RSqrt(Vector3::Dot(a, a));
-	}
-
-	static float LengthEst(const Vector3& a) {
-		return RSqrt(Vector3::Dot(a, a));
 	}
 
 	Vector3 operator- () { return { -x, -y, -z }; }

@@ -435,16 +435,16 @@ __forceinline float ConvertHalfToFloat(half x) {
 
 // maybe write 4 quantity version that is faster 
 __forceinline void ConvertHalfToFloat(float* res, const half* x, short n) 
-{
-	for (int i = 0; i < n; i++)
-		res[i] = ConvertHalfToFloat(x[i]);
+{   
+    for (int i = 0; i < n; i++)
+        res[i] = ConvertHalfToFloat(x[i]);
 }
 
 __forceinline half ConvertFloatToHalf(float Value) {
 #if defined(AX_SUPPORT_SSE)
-	return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);
+    return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);
 #elif defined(__ARM_NEON__)
-	return _cvtss_sh(Value, 0);
+    return _cvtss_sh(Value, 0);
 #else
     uint32_t Result; // branch removed version of DirectxMath function
     uint32_t IValue = BitCast<uint32_t>(Value);

@@ -10,13 +10,14 @@ struct xyzw { float x, y, z, w; };
 
 #define QIdentity()  VecSetR(0.0f, 0.0f, 0.0f, 1.0f)
 #define QNorm(q)     VecNorm(q)
+#define QNormEst(q)  VecNormEst(q)
 #define MakeQuat(_x, _y, _z, _w)  VecSetR(_x, _y, _z, _w)
 
 inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2) 
 {
-    static const vec_t ControlWZYX = { 1.0f,-1.0f, 1.0f,-1.0f };
-    static const vec_t ControlZWXY = { 1.0f, 1.0f,-1.0f,-1.0f };
-    static const vec_t ControlYXWZ = { -1.0f, 1.0f, 1.0f,-1.0f };
+    const vec_t ControlWZYX = { 1.0f,-1.0f, 1.0f,-1.0f };
+    const vec_t ControlZWXY = { 1.0f, 1.0f,-1.0f,-1.0f };
+    const vec_t ControlYXWZ = { -1.0f, 1.0f, 1.0f,-1.0f };
     vec_t Q2X = Q2, Q2Y = Q2, Q2Z = Q2, vResult = Q2;
     vResult = VecSplatW(vResult);
     Q2X     = VecSplatX(Q2X);
@@ -25,12 +26,13 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
     vResult = VecMul(vResult, Q1);
 
     vec_t Q1Shuffle = Q1;
-    Q1Shuffle = VecShuffleR(Q1Shuffle, Q1Shuffle, 0, 1, 2, 3);
+    // Todo: Special shuffle for wzyx VecShuffleR(Q1Shuffle, Q1Shuffle, 0, 1, 2, 3);
+    Q1Shuffle = VecRev(Q1Shuffle);
     Q2X       = VecMul(Q2X, Q1Shuffle);
     Q1Shuffle = VecShuffleR(Q1Shuffle, Q1Shuffle, 2, 3, 0, 1);
     Q2X       = VecMul(Q2X, ControlWZYX);
     Q2Y       = VecMul(Q2Y, Q1Shuffle);
-    Q1Shuffle = VecShuffleR(Q1Shuffle, Q1Shuffle, 0, 1, 2, 3);
+    Q1Shuffle = VecRev(Q1Shuffle);
     Q2Y       = VecMul(Q2Y, ControlZWXY);
     Q2Z       = VecMul(Q2Z, Q1Shuffle);
     vResult   = VecAdd(vResult, Q2X);
@@ -42,8 +44,8 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
 
 inline vec_t QFromAxisAngle(Vector3f axis, float angle)
 {
-	float SinV = SinR(0.5f * angle);
-	float CosV = CosR(0.5f * angle);
+    float SinV = SinR(0.5f * angle);
+    float CosV = CosR(0.5f * angle);
     return VecSetR(axis.x * SinV, axis.y * SinV, axis.z * SinV, CosV);
 }
 
@@ -113,11 +115,10 @@ inline Quaternion VECTORCALL QSlerp(Quaternion q0, Quaternion q1, float t)
 // faster but less precise, more error prone version of slerp
 __forceinline Quaternion VECTORCALL QNLerp(Quaternion a, Quaternion b, float t)
 {
-    if (VecDotf(a, b) < 0.0f)
-        a = VecNeg(a);
-    
+    veci_t lz = VecCmpLt(VecDot(a, b), VecZero());
+    a = VecSelect(a, VecNeg(a), lz);
     a = VecLerp(a, b, t);
-    return VecNorm(a);
+    return VecNormEst(a);
 }
 
 __forceinline Quaternion QFromEuler(float x, float y, float z)
@@ -189,11 +190,13 @@ inline void QuaternionFromMatrix(float* Orientation, const float* m) {
 template<int numCol = 4> // number of columns of matrix, 3 or 4
 void MatrixFromQuaternion(float* mat, Quaternion quat)
 {
-    const float num9 = VecGetX(quat) * VecGetX(quat), num8 = VecGetY(quat) * VecGetY(quat),
-                num7 = VecGetZ(quat) * VecGetZ(quat), num6 = VecGetX(quat) * VecGetY(quat),
-                num5 = VecGetZ(quat) * VecGetW(quat), num4 = VecGetZ(quat) * VecGetX(quat),
-                num3 = VecGetY(quat) * VecGetW(quat), num2 = VecGetY(quat) * VecGetZ(quat),
-                num  = VecGetX(quat) * VecGetW(quat);
+    xyzw q;
+    VecStore(&q.x, quat);
+    const float num9 = q.x * q.x, num8 = q.y * q.y,
+                num7 = q.z * q.z, num6 = q.x * q.y,
+                num5 = q.z * q.w, num4 = q.z * q.x,
+                num3 = q.y * q.w, num2 = q.y * q.z,
+                num  = q.x * q.w;
 
     mat[numCol * 0 + 0] = 1.0f - (2.0f * (num8 + num7));
     mat[numCol * 0 + 1] = 2.0f * (num6 + num5);

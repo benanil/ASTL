@@ -164,7 +164,7 @@ __forceinline vec_t VECTORCALL Vec3Load(void const* x) {
 // Special shuffle
 #define VecShuffle_0101(vec1, vec2) _mm_movelh_ps(vec1, vec2)
 #define VecShuffle_2323(vec1, vec2) _mm_movehl_ps(vec2, vec1)
-#define VecRev(v) VecShuffle((v), 3, 2, 1, 0)
+#define VecRev(v) VecShuffle((v), (v), 3, 2, 1, 0)
 
 // Logical
 #define VecAnd(a, b)    _mm_and_ps(a, b)
@@ -264,15 +264,15 @@ typedef uint32x4_t vecu_t;
 // Vector Math
 #define VecDot(a, b)  ARMVectorDot(a, b)
 #define VecDotf(a, b) VecGetX(ARMVectorDot(a, b))
-#define VecNorm(v)    ARMVectorNorm(v)    
-#define VecNormEst(v) ARMVectorNormEst(v) 
+#define VecNorm(v)    ARMVectorNorm(v)
+#define VecNormEst(v) ARMVectorNormEst(v)
 #define VecLenf(v)    VecGetX(ARMVectorLength(v))
 #define VecLen(v)     ARMVectorLength(v)
 
 #define Vec3Dot(a, b)  ARMVector3Dot(a, b)
 #define Vec3Dotf(a, b) VecGetX(ARMVector3Dot(a, b))
 #define Vec3Norm(v)    ARMVector3Norm(v)
-#define Vec3NormEst(v) ARMVector3NormEst(v) 
+#define Vec3NormEst(v) ARMVector3NormEst(v)
 #define Vec3Lenf(v)    VecGetX(ARMVector3Length(v))
 #define Vec3Len(v)     ARMVector3Length(v)
 
@@ -288,22 +288,22 @@ typedef uint32x4_t vecu_t;
 #define VecIdentityR3 ARMCreateVec(0.0f, 0.0f, 0.0f, 1.0f)
 
 #define VecMaskXY ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
-#define VecMask3  ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u)
-#define VecMaskX  ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0x00000000u, 0x00000000u)
-#define VecMaskY  ARMCreateVecI(0x00000000u, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
-#define VecMaskZ  ARMCreateVecI(0x00000000u, 0x00000000u, 0xFFFFFFFFu, 0x00000000u)
-#define VecMaskW  ARMCreateVecI(0x00000000u, 0x00000000u, 0x00000000u, 0xFFFFFFFFu)
+#define VecMask3 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u)
+#define VecMaskX ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0x00000000u, 0x00000000u)
+#define VecMaskY ARMCreateVecI(0x00000000u, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
+#define VecMaskZ ARMCreateVecI(0x00000000u, 0x00000000u, 0xFFFFFFFFu, 0x00000000u)
+#define VecMaskW ARMCreateVecI(0x00000000u, 0x00000000u, 0x00000000u, 0xFFFFFFFFu)
 
 // vec(0, 1, 2, 3) -> (vec[x], vec[y], vec[z], vec[w])
-#define VecSwizzle(vec, x, y, z, w) ARMVectorSwizzle<x, y, z, w>(vec)
+#define VecSwizzle(vec, x, y, z, w) ARMVectorSwizzle < x, y, z, w > (vec)
 
-#define VecShuffle(vec1, vec2, x, y, z, w)  ARMVectorShuffle<x, y, z, w>(vec1, vec2)
-#define VecShuffleR(vec1, vec2, x, y, z, w) ARMVectorShuffle<w, z, y, x>(vec1, vec2)
+#define VecShuffle(vec1, vec2, x, y, z, w)  ARMVectorShuffle < x, y, z, w > (vec1, vec2)
+#define VecShuffleR(vec1, vec2, x, y, z, w) ARMVectorShuffle < w, z, y, x > (vec1, vec2)
 
 // special shuffle
 #define VecShuffle_0101(vec1, vec2) vcombine_f32(vget_low_f32(vec1), vget_low_f32(vec2))
 #define VecShuffle_2323(vec1, vec2) vcombine_f32(vget_high_f32(vec1), vget_high_f32(vec2))
-#define VecRev(v) vrev64_f32(v)
+#define VecRev(v) ARMVectorRev(v)
 
 #define VecAnd(a, b) vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), b))
 #define VecOr(a, b)  vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(a), b))
@@ -311,7 +311,7 @@ typedef uint32x4_t vecu_t;
 
 // Logical
 #define VeciAnd(a, b)  vandq_u32(a, b)
-#define VeciOr(a, b)   vorrq_u32(a, b) 
+#define VeciOr(a, b)   vorrq_u32(a, b)
 #define VeciXor(a, b)  veorq_u32(a, b)
 
 #define VecMask(a, msk) VecSelect(vdupq_n_f32(0.0f), a, msk)
@@ -328,6 +328,12 @@ typedef uint32x4_t vecu_t;
 
 #define VecSelect(V1, V2, Control) vbslq_f32(Control, V2, V1)
 #define VecBlend(a, b, Control)    vbslq_f32(Control, b, a)
+
+__forceinline vec_t ARMVectorRev(vec_t v)
+{
+    float32x4_t rev64 = vrev64q_f32(v);
+    return vextq_f32(rev64, rev64, 2);
+}
 
 __forceinline vec_t ARMVector3Load(float* src)
 {
@@ -586,6 +592,7 @@ __forceinline veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 // special shuffle
 #define VecShuffle_0101(vec1, vec2)  MakeVec4(vec1.x, vec1.x, vec2.y, vec2.y) 
 #define VecShuffle_2323(vec1, vec2)  MakeVec4(vec1.z, vec1.z, vec2.w, vec2.w) 
+#define VecRev(v)  MakeVec4(v.w, v.z, v.y, vec2.x)
 
 #define VecAdd(a, b) MakeVec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w)
 #define VecSub(a, b) MakeVec4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w)
