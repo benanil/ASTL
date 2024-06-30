@@ -201,7 +201,7 @@ struct alignas(16) Matrix4
     	return FromPosition(vec3.x, vec3.y, vec3.z);
     }
     
-    static Matrix4 CreateScale(float ScaleX, float ScaleY, float ScaleZ)
+    static Matrix4 FromScale(float ScaleX, float ScaleY, float ScaleZ)
     {
         Matrix4 M;
         M.r[0] = VecSetR(ScaleX, 0.0f, 0.0f, 0.0f);
@@ -211,19 +211,19 @@ struct alignas(16) Matrix4
         return M;
     }
     
-    static Matrix4 CreateScale(Vector3f vec3)
+    static Matrix4 FromScale(Vector3f vec3)
     {
-    	return CreateScale(vec3.x, vec3.y, vec3.z);
+    	return FromScale(vec3.x, vec3.y, vec3.z);
     }
     
-    static Matrix4 CreateScale(float* vec3)
+    static Matrix4 FromScale(float* vec3)
     {
-    	return CreateScale(vec3[0], vec3[1], vec3[2]);
+    	return FromScale(vec3[0], vec3[1], vec3[2]);
     }
     
-    static Matrix4 CreateScale(float scale)
+    static Matrix4 FromScale(float scale)
     {
-    	return CreateScale(scale, scale, scale);
+    	return FromScale(scale, scale, scale);
     }
     
     static Matrix4 CreateRotation(Vector3f right, Vector3f up, Vector3f forward)
@@ -673,10 +673,10 @@ struct alignas(16) Matrix4
         mResult.r[2] = T1.val[0];
         mResult.r[3] = T1.val[1];
         #else
-        const vec_t vTemp1 = VecShuffleR(M.r[0], M.r[1], 1, 0, 1, 0);
-        const vec_t vTemp3 = VecShuffleR(M.r[0], M.r[1], 3, 2, 3, 2);
-        const vec_t vTemp2 = VecShuffleR(M.r[2], M.r[3], 1, 0, 1, 0);
-        const vec_t vTemp4 = VecShuffleR(M.r[2], M.r[3], 3, 2, 3, 2);
+        vec_t vTemp1 = VecShuffleR(M.r[0], M.r[1], 1, 0, 1, 0);
+        vec_t vTemp3 = VecShuffleR(M.r[0], M.r[1], 3, 2, 3, 2);
+        vec_t vTemp2 = VecShuffleR(M.r[2], M.r[3], 1, 0, 1, 0);
+        vec_t vTemp4 = VecShuffleR(M.r[2], M.r[3], 3, 2, 3, 2);
         mResult.r[0] = VecShuffleR(vTemp1, vTemp2, 2, 0, 2, 0);
         mResult.r[1] = VecShuffleR(vTemp1, vTemp2, 3, 1, 3, 1);
         mResult.r[2] = VecShuffleR(vTemp3, vTemp4, 2, 0, 2, 0);

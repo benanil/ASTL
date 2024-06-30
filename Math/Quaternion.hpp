@@ -26,7 +26,6 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
     vResult = VecMul(vResult, Q1);
 
     vec_t Q1Shuffle = Q1;
-    // Todo: Special shuffle for wzyx VecShuffleR(Q1Shuffle, Q1Shuffle, 0, 1, 2, 3);
     Q1Shuffle = VecRev(Q1Shuffle);
     Q2X       = VecMul(Q2X, Q1Shuffle);
     Q1Shuffle = VecShuffleR(Q1Shuffle, Q1Shuffle, 2, 3, 0, 1);
@@ -44,9 +43,24 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
 
 inline vec_t QFromAxisAngle(Vector3f axis, float angle)
 {
-    float SinV = SinR(0.5f * angle);
-    float CosV = CosR(0.5f * angle);
-    return VecSetR(axis.x * SinV, axis.y * SinV, axis.z * SinV, CosV);
+    float SinV = Sin(0.5f * angle);
+    float CosV = Cos(0.5f * angle);
+    vec_t q = VecSetR(axis.x * SinV, axis.y * SinV, axis.z * SinV, CosV);
+    return QNorm(q);
+}
+
+// below 3 function are same as QFromAxisAngle but with single axis, 
+// faster because no normalization and less multipication
+inline vec_t QFromXAngle(float angle) {
+    return VecSetR(angle * Sin(0.5f * angle), 0.0f, 0.0f, Cos(0.5f * angle));
+}
+
+inline vec_t QFromYAngle(float angle) {
+    return VecSetR(0.0f, angle * Sin(0.5f * angle), 0.0f, Cos(0.5f * angle));
+}
+
+inline vec_t QFromZAngle(float angle) {
+    return VecSetR(0.0f, 0.0f, angle * Sin(0.5f * angle), Cos(0.5f * angle));
 }
 
 inline vec_t VECTORCALL QMulVec3(vec_t vec, vec_t quat)
