@@ -760,17 +760,17 @@ __forceinline vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
     return VecFromVeci(res);
 }
 
-__forceinline vec_t VecLerp(vec_t x, vec_t y, float t)
+__forceinline vec_t VECTORCALL VecLerp(vec_t x, vec_t y, float t)
 {
     return VecFmadd(VecSub(y, x), VecSet1(t), x);
 }
 
-__forceinline vec_t VecStep(vec_t edge, vec_t x)
+__forceinline vec_t VECTORCALL VecStep(vec_t edge, vec_t x)
 {
     return VecBlend(VecZero(), VecOne(), VecCmpGt(x, edge));
 }
 
-__forceinline vec_t VecFract(vec_t x)
+__forceinline vec_t VECTORCALL VecFract(vec_t x)
 {
     return VecSub(x, VecFloor(x));
 }

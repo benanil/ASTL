@@ -18,11 +18,11 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
     const vec_t ControlWZYX = { 1.0f,-1.0f, 1.0f,-1.0f };
     const vec_t ControlZWXY = { 1.0f, 1.0f,-1.0f,-1.0f };
     const vec_t ControlYXWZ = { -1.0f, 1.0f, 1.0f,-1.0f };
-    vec_t Q2X = Q2, Q2Y = Q2, Q2Z = Q2, vResult = Q2;
-    vResult = VecSplatW(vResult);
-    Q2X     = VecSplatX(Q2X);
-    Q2Y     = VecSplatY(Q2Y);
-    Q2Z     = VecSplatZ(Q2Z);
+    
+    vec_t vResult = VecSplatW(Q2);
+    vec_t Q2X     = VecSplatX(Q2);
+    vec_t Q2Y     = VecSplatY(Q2);
+    vec_t Q2Z     = VecSplatZ(Q2);
     vResult = VecMul(vResult, Q1);
 
     vec_t Q1Shuffle = Q1;
@@ -41,6 +41,7 @@ inline vec_t VECTORCALL QMul(vec_t Q1, vec_t Q2)
     return vResult;
 }
 
+// Angle should be between -twopi, twopi
 inline vec_t QFromAxisAngle(Vector3f axis, float angle)
 {
     float SinV = Sin(0.5f * angle);

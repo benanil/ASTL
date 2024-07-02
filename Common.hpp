@@ -120,7 +120,7 @@ typedef uint32_t uint;
     #elif _MSC_VER
         #define ASSERTR(c, r) if (!(c)) { __debugbreak(); r; }
     #else
-        #define ASSERTR(c, r) if (!(c)) { *(volatile int *)0 = 0; r }
+        #define ASSERTR(c, r) if (!(c)) { *(volatile int *)0 = 0; r; }
     #endif
 #else
     #define ASSERTR(c, r) if (!(c)) { r; }
