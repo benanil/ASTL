@@ -53,15 +53,15 @@ inline vec_t QFromAxisAngle(Vector3f axis, float angle)
 // below 3 function are same as QFromAxisAngle but with single axis, 
 // faster because no normalization and less multipication
 inline vec_t QFromXAngle(float angle) {
-    return VecSetR(angle * Sin(0.5f * angle), 0.0f, 0.0f, Cos(0.5f * angle));
+    return VecSetR(Sin(0.5f * angle), 0.0f, 0.0f, Cos(0.5f * angle));
 }
 
 inline vec_t QFromYAngle(float angle) {
-    return VecSetR(0.0f, angle * Sin(0.5f * angle), 0.0f, Cos(0.5f * angle));
+    return VecSetR(0.0f, Sin(0.5f * angle), 0.0f, Cos(0.5f * angle));
 }
 
 inline vec_t QFromZAngle(float angle) {
-    return VecSetR(0.0f, 0.0f, angle * Sin(0.5f * angle), Cos(0.5f * angle));
+    return VecSetR(0.0f, 0.0f, Sin(0.5f * angle), Cos(0.5f * angle));
 }
 
 inline vec_t VECTORCALL QMulVec3(vec_t vec, vec_t quat)

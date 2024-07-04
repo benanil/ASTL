@@ -17,10 +17,10 @@ AX_NAMESPACE
 
 // constants
 constexpr float PI       = 3.14159265358f;
+constexpr float HalfPI   = PI / 2.0f;
 constexpr float RadToDeg = 180.0f / PI;
 constexpr float DegToRad = PI / 180.0f;
 constexpr float OneDivPI = 1.0f / PI;
-constexpr float HalfPI   = PI / 2.0f;
 constexpr float TwoPI    = PI * 2.0f;
 constexpr float Sqrt2    = 1.414213562f;
 constexpr float Epsilon  = 0.0001f;
@@ -79,33 +79,32 @@ inline_constexpr float SqrtConstexpr(float a) {
 
 __forceinline float Sqrt(float a) {
 #ifdef AX_SUPPORT_SSE
-	return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));
+    return _mm_cvtss_f32(_mm_sqrt_ps(_mm_set_ps1(a)));
 #elif defined(__clang__)
-	return __builtin_sqrt(a);
+    return __builtin_sqrt(a);
 #else
-	return SqrtConstexpr(a);
+    return SqrtConstexpr(a);
 #endif
 }
 
-// original doom rsqrt implementation with comments :)
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 // https://rrrola.wz.cz/inv_sqrt.html   <- fast and 2.5x accurate
 __forceinline float RSqrt(float x) {
 #ifdef AX_SUPPORT_SSE
-	// when I compile with godbolt -O1 expands to one instruction vrsqrtss
-	// which is approximately equal latency as mulps.
-	// RSqrt(float):                             # @RSqrt3(float)
-  //       vrsqrtss        xmm0, xmm0, xmm0
-  //       ret
-	return _mm_cvtss_f32(_mm_rsqrt_ps(_mm_set_ps1(x)));
+    // when I compile with godbolt -O1 expands to one instruction vrsqrtss
+    // which is approximately equal latency as mulps.
+    // RSqrt(float):                             # @RSqrt3(float)
+    //       vrsqrtss        xmm0, xmm0, xmm0
+    //       ret
+    return _mm_cvtss_f32(_mm_rsqrt_ps(_mm_set_ps1(x)));
 #elif defined(AX_ARM)
-	return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
+    return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
 #else
-	float f = x;
-	uint32_t i = BitCast<uint32_t>(f);
-	i = (uint32_t)(0x5F1FFFF9ul - (i >> 1));
-	f = BitCast<float>(i);
-	return 0.703952253f * f * (2.38924456f - x * f * f);
+    float f = x;
+    uint32_t i = BitCast<uint32_t>(f);
+    i = (uint32_t)(0x5F1FFFF9ul - (i >> 1));
+    f = BitCast<float>(i);
+    return 0.703952253f * f * (2.38924456f - x * f * f);
 #endif
 }
 
@@ -271,27 +270,25 @@ inline_constexpr float ATan(float x) {
     return x * (a1 + x_sq * (a3 + x_sq * (a5 + x_sq * (a7 + x_sq * (a9 + x_sq * a11)))));
 }
 
-// is not working negative angles
+// Warning! if y and x is zero this will return HalfPI instead of 0.0f unlike cstdlib
 inline_constexpr float ATan2(float y, float x) {
-    // from here: https://yal.cc/fast-atan2/  
-    float ay = Abs(y), ax = Abs(x);
-    int invert = ay > ax;
-    float z = invert ? ax/ay : ay/ax;// [ 0 , 1]
-    float th = ATan(z);              // [ 0 , pi/4]
-    if (invert)   th = HalfPI - th;  // [ 0 , pi/2]
-    if (x < 0.0f) th = PI - th;      // [ 0 , pi]
-    return CopySign(th, y);          // [-pi, pi] 
+    // https://gist.github.com/volkansalma/2972237
+    float abs_y = Abs(y) + 1e-10f;      // kludge to prevent 0/0 condition
+    float r = (x - CopySign(abs_y, x)) / (abs_y + Abs(x));
+    float angle = HalfPI - CopySign(PI / 4.f, x);
+    angle += (0.1963f * r * r - 0.9817f) * r;
+    return CopySign(angle, y);
 }
 
 inline_constexpr float ASin(float z) {
-	return ATan2(z, SqrtConstexpr(1.0f-(z * z)));
+    return ATan2(z, SqrtConstexpr(1.0f-(z * z)));
 }
 
 // https://en.wikipedia.org/wiki/Sine_and_cosine
 // warning: accepts input between -TwoPi and TwoPi  if (Abs(x) > TwoPi) use x = FMod(x + PI, TwoPI) - PI;
 
 inline_constexpr float RepeatPI(float x) {
-  return FMod(x + PI, TwoPI) - PI;
+    return FMod(x + PI, TwoPI) - PI;
 }
 
 // Accepts input between -TwoPi and TwoPi, use SinR if value is bigger than this range
@@ -395,9 +392,9 @@ constexpr half Sqrt2FP16 = 15784; // fp16 sqrt(2)
 
 __forceinline float ConvertHalfToFloat(half x) {
 #if defined(AX_SUPPORT_SSE) 
-	return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); 
+    return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); 
 #elif defined(__ARM_NEON__)
-	return _cvtsh_ss(x); 
+    return _cvtsh_ss(x); 
 #else
     uint Mantissa, Exponent, Result;
     Mantissa = (uint)(x & 0x03FF);

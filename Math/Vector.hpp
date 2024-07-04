@@ -21,90 +21,90 @@ AX_NAMESPACE
 template<typename T>
 struct Vector2
 {
-	union
-	{
-		struct { T x, y; };
-		struct { T arr[2]; };
-	};
-
-	static const int NumElements = 2;
-	static const uint64 ElementSize = sizeof(T);
-	using ElemType = T;
-
-	float Length()        const { return Sqrt(LengthSquared()); }
+    union
+    {
+        struct { T x, y; };
+        struct { T arr[2]; };
+    };
+    
+    static const int NumElements = 2;
+    static const uint64 ElementSize = sizeof(T);
+    using ElemType = T;
+    
+    float Length()        const { return Sqrt(LengthSquared()); }
     float LengthSafe()    const { float sq = LengthSquared(); return sq < 0.01f ? 0.0f : Sqrt(sq); }
     float LengthSquared() const { return x * x + y * y; }
-
-	static float Length(Vector2 v)        { return Sqrt(v.LengthSquared()); }
-	static float LengthSquared(Vector2 v) { return v.x * v.x + v.y * v.y; }
-
-	T& operator[] (int index) { return arr[index]; }
-	T  operator[] (int index) const { return arr[index]; }
-
-	static Vector2 Lerp(const Vector2& a, const Vector2& b, float t)
-	{
-		Vector2 v;
-		v.x = a.x + (b.x - a.x) * t;
-		v.y = a.y + (b.y - a.y) * t;
-		return v;
-	}
-
-	static __forceinline float Distance(Vector2 a, Vector2 b) {
-		float diffx = (float)(a.x - b.x);
-		float diffy = (float)(a.y - b.y);
-		return Sqrt(diffx * diffx + diffy * diffy);
-	}
-
-	static __forceinline float DistanceSq(Vector2 a, Vector2 b) {
-		float diffx = (float)(a.x - b.x);
-		float diffy = (float)(a.y - b.y);
-		return diffx * diffx + diffy * diffy;
-	}
-
-	static __forceinline Vector2 Rotate(Vector2 vec, float angle)
-	{
-		float s = Sin(angle), c = Cos(angle);
-		return Vector2(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
-	}
-
-	Vector2& Normalized() { *this /= Length(); return *this; }
-	void NormalizeSelf()  { *this /= Length(); }
-	static Vector2 Normalize(Vector2 x) { return x / x.Length(); }
-	static Vector2 NormalizeEst(const Vector2& a) {
-		return a * RSqrt(a.x * a.x + a.y * a.y);
-	}
-
-	Vector2 operator - () { return { -x, -y }; }
-	Vector2 operator + (Vector2 other) const { return {x + other.x, y + other.y}; }
-	Vector2 operator * (Vector2 other) const { return {x * other.x, y * other.y}; }
-	Vector2 operator / (Vector2 other) const { return {x / other.x, y / other.y}; }
-	Vector2 operator - (Vector2 other) const { return {x - other.x, y - other.y}; }
-
-	Vector2 operator + (T other) const { return {x + other, y + other}; }
-	Vector2 operator * (T other) const { return {x * other, y * other}; }
-	Vector2 operator / (T other) const { return {x / other, y / other}; }
-	Vector2 operator - (T other) const { return {x - other, y - other}; }
-
-	Vector2 operator += (Vector2 o) { x += o.x; y += o.y; return *this; }
-	Vector2 operator *= (Vector2 o) { x *= o.x; y *= o.y; return *this; }
-	Vector2 operator /= (Vector2 o) { x /= o.x; y /= o.y; return *this; }
-	Vector2 operator -= (Vector2 o) { x -= o.x; y -= o.y; return *this; }
-
-	Vector2 operator += (T o) { x += o; y += o; return *this; }
-	Vector2 operator *= (T o) { x *= o; y *= o; return *this; }
-	Vector2 operator /= (T o) { x /= o; y /= o; return *this; }
-	Vector2 operator -= (T o) { x -= o; y -= o; return *this; }
-
-	bool operator == (Vector2 b) const { return x == b.x && y == b.y; }
-	bool operator != (Vector2 b) const { return x != b.x || y != b.y; }
-	bool operator <  (Vector2 b) const { return x < b.x && y < b.y; }
-
-	static __constexpr Vector2 Zero()     { return {T( 0), T( 0)}; }
-	static __constexpr Vector2 One()      { return {T( 1), T( 1)}; }
-	static __constexpr Vector2 Up()       { return {T( 0), T( 1)}; }
-	static __constexpr Vector2 Left()     { return {T(-1), T( 0)}; }
-	static __constexpr Vector2 Down()     { return {T( 0), T(-1)}; }
-	static __constexpr Vector2 Right()    { return {T( 1), T( 0)}; }
+    
+    static float Length(Vector2 v)        { return Sqrt(v.LengthSquared()); }
+    static float LengthSquared(Vector2 v) { return v.x * v.x + v.y * v.y; }
+    
+    T& operator[] (int index) { return arr[index]; }
+    T  operator[] (int index) const { return arr[index]; }
+    
+    static Vector2 Lerp(const Vector2& a, const Vector2& b, float t)
+    {
+        Vector2 v;
+        v.x = a.x + (b.x - a.x) * t;
+        v.y = a.y + (b.y - a.y) * t;
+        return v;
+    }
+    
+    static __forceinline float Distance(Vector2 a, Vector2 b) {
+        float diffx = (float)(a.x - b.x);
+        float diffy = (float)(a.y - b.y);
+        return Sqrt(diffx * diffx + diffy * diffy);
+    }
+    
+    static __forceinline float DistanceSq(Vector2 a, Vector2 b) {
+        float diffx = (float)(a.x - b.x);
+        float diffy = (float)(a.y - b.y);
+        return diffx * diffx + diffy * diffy;
+    }
+    
+    static __forceinline Vector2 Rotate(Vector2 vec, float angle)
+    {
+        float s = Sin(angle), c = Cos(angle);
+        return Vector2(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
+    }
+    
+    Vector2& Normalized() { *this /= Length(); return *this; }
+    void NormalizeSelf()  { *this /= Length(); }
+    static Vector2 Normalize(Vector2 x) { return x / x.Length(); }
+    static Vector2 NormalizeEst(const Vector2& a) {
+        return a * RSqrt(a.x * a.x + a.y * a.y);
+    }
+    
+    Vector2 operator - () { return { -x, -y }; }
+    Vector2 operator + (Vector2 other) const { return {x + other.x, y + other.y}; }
+    Vector2 operator * (Vector2 other) const { return {x * other.x, y * other.y}; }
+    Vector2 operator / (Vector2 other) const { return {x / other.x, y / other.y}; }
+    Vector2 operator - (Vector2 other) const { return {x - other.x, y - other.y}; }
+    
+    Vector2 operator + (T other) const { return {x + other, y + other}; }
+    Vector2 operator * (T other) const { return {x * other, y * other}; }
+    Vector2 operator / (T other) const { return {x / other, y / other}; }
+    Vector2 operator - (T other) const { return {x - other, y - other}; }
+    
+    Vector2 operator += (Vector2 o) { x += o.x; y += o.y; return *this; }
+    Vector2 operator *= (Vector2 o) { x *= o.x; y *= o.y; return *this; }
+    Vector2 operator /= (Vector2 o) { x /= o.x; y /= o.y; return *this; }
+    Vector2 operator -= (Vector2 o) { x -= o.x; y -= o.y; return *this; }
+    
+    Vector2 operator += (T o) { x += o; y += o; return *this; }
+    Vector2 operator *= (T o) { x *= o; y *= o; return *this; }
+    Vector2 operator /= (T o) { x /= o; y /= o; return *this; }
+    Vector2 operator -= (T o) { x -= o; y -= o; return *this; }
+    
+    bool operator == (Vector2 b) const { return x == b.x && y == b.y; }
+    bool operator != (Vector2 b) const { return x != b.x || y != b.y; }
+    bool operator <  (Vector2 b) const { return x < b.x && y < b.y; }
+    
+    static __constexpr Vector2 Zero()     { return {T( 0), T( 0)}; }
+    static __constexpr Vector2 One()      { return {T( 1), T( 1)}; }
+    static __constexpr Vector2 Up()       { return {T( 0), T( 1)}; }
+    static __constexpr Vector2 Left()     { return {T(-1), T( 0)}; }
+    static __constexpr Vector2 Down()     { return {T( 0), T(-1)}; }
+    static __constexpr Vector2 Right()    { return {T( 1), T( 0)}; }
 };
 
 template<typename T> __forceinline Vector2<T> MakeVec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
@@ -113,108 +113,108 @@ template<typename T> __forceinline Vector2<T> MakeVec2(T a, T b) { Vector2<T> v;
 template<typename T>
 struct Vector3
 {
-	union
-	{
-		struct { T x, y, z; };
-		struct { T arr[3]; };
-	};
-
-	static const int NumElements = 3;
-	using ElemType = T;
-
-	T& operator[] (int index) { return arr[index]; }
-	T  operator[] (int index) const { return arr[index]; }
-
-	            float Length() const { return Sqrt(LengthSquared()); }
-	__constexpr float LengthSquared() const { return x * x + y * y + z * z; }
-
-	Vector3& Normalized() { *this /= Length(); return *this; }
-	void NormalizeSelf() { *this /= Length(); }
-
-	static float Distance(const Vector3& a, const Vector3& b)
-	{
-		Vector3 diff = a - b; diff *= diff;
-		return Sqrt(diff.x + diff.y + diff.z);
-	}
-
-	// distance squared for comparing distances, faster than distance 
-	static float DistanceSq(const Vector3& a, const Vector3& b)
-	{
-		Vector3 diff = a - b; diff *= diff;
-		return diff.x + diff.y + diff.z;
-	}
-
-	static float Length(const Vector3& vec) { return vec.Length(); }
-
-	__forceinline static float Dot(const Vector3& a, const Vector3& b)
-	{
-		return a.x * b.x + a.y * b.y + a.z * b.z;
-	}
-
-	static Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
-	{
-		Vector3 v;
-		v.x = a.x + (b.x - a.x) * t;
-		v.y = a.y + (b.y - a.y) * t;
-		v.z = a.z + (b.z - a.z) * t;
-		return v;
-	}
-
-	static Vector3 Cross(const Vector3& a, const Vector3& b)
-	{
-		Vector3 v;
-		v.x = a.y * b.z - b.y * a.z;
-		v.y = a.z * b.x - b.z * a.x;
-		v.z = a.x * b.y - b.x * a.y;
-		return v;
-	}
-
-	static Vector3 Reflect(const Vector3& in, const Vector3& normal)
-	{
-		return in - normal * Vector3::Dot(normal, in) * 2.0f;
-	}
-
-	static Vector3 Normalize(const Vector3& a) {
-		return a / Sqrt(Vector3::Dot(a, a));
-	}
-
-	static Vector3 NormalizeEst(const Vector3& a) {
-		return a * RSqrt(Vector3::Dot(a, a));
-	}
-
-	Vector3 operator- () { return { -x, -y, -z }; }
-	Vector3 operator + (const Vector3& other) const { return { x + other.x, y + other.y, z + other.z }; }
-	Vector3 operator * (const Vector3& other) const { return { x * other.x, y * other.y, z * other.z }; }
-	Vector3 operator / (const Vector3& other) const { return { x / other.x, y / other.y, z / other.z }; }
-	Vector3 operator - (const Vector3& other) const { return { x - other.x, y - other.y, z - other.z }; }
-
-	Vector3 operator + (T other) const { return { x + other, y + other, z + other }; }
-	Vector3 operator * (T other) const { return { x * other, y * other, z * other }; }
-	Vector3 operator / (T other) const { return { x / other, y / other, z / other }; }
-	Vector3 operator - (T other) const { return { x - other, y - other, z - other }; }
-
-	Vector3 operator += (const Vector3& o) { x += o.x; y += o.y; z += o.z; return *this; }
-	Vector3 operator *= (const Vector3& o) { x *= o.x; y *= o.y; z *= o.z; return *this; }
-	Vector3 operator /= (const Vector3& o) { x /= o.x; y /= o.y; z /= o.z; return *this; }
-	Vector3 operator -= (const Vector3& o) { x -= o.x; y -= o.y; z -= o.z; return *this; }
-
-	Vector3 operator += (T o) { x += o; y += o; z += o; return *this; }
-	Vector3 operator *= (T o) { x *= o; y *= o; z *= o; return *this; }
-	Vector3 operator /= (T o) { x /= o; y /= o; z /= o; return *this; }
-	Vector3 operator -= (T o) { x -= o; y -= o; z -= o; return *this; }
-
-	Vector3 xxx() const { return {x, x, x}; }
-	Vector3 yyy() const { return {y, y, y}; }
-	Vector3 zzz() const { return {z, z, z}; }
-
-	static const Vector3 Zero()    { return { 0.0,  0.0,  0.0}; }
-	static const Vector3 One()     { return { 1.0,  1.0,  1.0}; }
-	static const Vector3 Up()      { return { 0.0,  1.0,  0.0}; }
-	static const Vector3 Left()    { return {-1.0,  0.0,  0.0}; }
-	static const Vector3 Down()    { return { 0.0, -1.0,  0.0}; }
-	static const Vector3 Right()   { return { 1.0,  0.0,  0.0}; }
-	static const Vector3 Forward() { return { 0.0,  0.0,  1.0}; }
-	static const Vector3 Backward(){ return { 0.0,  0.0, -1.0}; }
+    union
+    {
+        struct { T x, y, z; };
+        struct { T arr[3]; };
+    };
+    
+    static const int NumElements = 3;
+    using ElemType = T;
+    
+    T& operator[] (int index) { return arr[index]; }
+    T  operator[] (int index) const { return arr[index]; }
+    
+                float Length() const { return Sqrt(LengthSquared()); }
+    __constexpr float LengthSquared() const { return x * x + y * y + z * z; }
+    
+    Vector3& Normalized() { *this /= Length(); return *this; }
+    void NormalizeSelf() { *this /= Length(); }
+    
+    static float Distance(const Vector3& a, const Vector3& b)
+    {
+        Vector3 diff = a - b; diff *= diff;
+        return Sqrt(diff.x + diff.y + diff.z);
+    }
+    
+    // distance squared for comparing distances, faster than distance 
+    static float DistanceSq(const Vector3& a, const Vector3& b)
+    {
+        Vector3 diff = a - b; diff *= diff;
+        return diff.x + diff.y + diff.z;
+    }
+    
+    static float Length(const Vector3& vec) { return vec.Length(); }
+    
+    __forceinline static float Dot(const Vector3& a, const Vector3& b)
+    {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+    
+    static Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
+    {
+        Vector3 v;
+        v.x = a.x + (b.x - a.x) * t;
+        v.y = a.y + (b.y - a.y) * t;
+        v.z = a.z + (b.z - a.z) * t;
+        return v;
+    }
+    
+    static Vector3 Cross(const Vector3& a, const Vector3& b)
+    {
+        Vector3 v;
+        v.x = a.y * b.z - b.y * a.z;
+        v.y = a.z * b.x - b.z * a.x;
+        v.z = a.x * b.y - b.x * a.y;
+        return v;
+    }
+    
+    static Vector3 Reflect(const Vector3& in, const Vector3& normal)
+    {
+        return in - normal * Vector3::Dot(normal, in) * 2.0f;
+    }
+    
+    static Vector3 Normalize(const Vector3& a) {
+        return a / Sqrt(Vector3::Dot(a, a));
+    }
+    
+    static Vector3 NormalizeEst(const Vector3& a) {
+        return a * RSqrt(Vector3::Dot(a, a));
+    }
+    
+    Vector3 operator- () { return { -x, -y, -z }; }
+    Vector3 operator + (const Vector3& other) const { return { x + other.x, y + other.y, z + other.z }; }
+    Vector3 operator * (const Vector3& other) const { return { x * other.x, y * other.y, z * other.z }; }
+    Vector3 operator / (const Vector3& other) const { return { x / other.x, y / other.y, z / other.z }; }
+    Vector3 operator - (const Vector3& other) const { return { x - other.x, y - other.y, z - other.z }; }
+    
+    Vector3 operator + (T other) const { return { x + other, y + other, z + other }; }
+    Vector3 operator * (T other) const { return { x * other, y * other, z * other }; }
+    Vector3 operator / (T other) const { return { x / other, y / other, z / other }; }
+    Vector3 operator - (T other) const { return { x - other, y - other, z - other }; }
+    
+    Vector3 operator += (const Vector3& o) { x += o.x; y += o.y; z += o.z; return *this; }
+    Vector3 operator *= (const Vector3& o) { x *= o.x; y *= o.y; z *= o.z; return *this; }
+    Vector3 operator /= (const Vector3& o) { x /= o.x; y /= o.y; z /= o.z; return *this; }
+    Vector3 operator -= (const Vector3& o) { x -= o.x; y -= o.y; z -= o.z; return *this; }
+    
+    Vector3 operator += (T o) { x += o; y += o; z += o; return *this; }
+    Vector3 operator *= (T o) { x *= o; y *= o; z *= o; return *this; }
+    Vector3 operator /= (T o) { x /= o; y /= o; z /= o; return *this; }
+    Vector3 operator -= (T o) { x -= o; y -= o; z -= o; return *this; }
+    
+    Vector3 xxx() const { return {x, x, x}; }
+    Vector3 yyy() const { return {y, y, y}; }
+    Vector3 zzz() const { return {z, z, z}; }
+    
+    static const Vector3 Zero()    { return { 0.0,  0.0,  0.0}; }
+    static const Vector3 One()     { return { 1.0,  1.0,  1.0}; }
+    static const Vector3 Up()      { return { 0.0,  1.0,  0.0}; }
+    static const Vector3 Left()    { return {-1.0,  0.0,  0.0}; }
+    static const Vector3 Down()    { return { 0.0, -1.0,  0.0}; }
+    static const Vector3 Right()   { return { 1.0,  0.0,  0.0}; }
+    static const Vector3 Forward() { return { 0.0,  0.0,  1.0}; }
+    static const Vector3 Backward(){ return { 0.0,  0.0, -1.0}; }
 };
 
 template<typename T> __forceinline Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; }

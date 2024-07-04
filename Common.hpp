@@ -543,14 +543,12 @@ inline_constexpr double Clamp01(double x) {
     return MAX(0.0, MIN(1.0, x));
 }
 
-inline_constexpr int64_t Abs(int64_t x) 
-{
+inline_constexpr int64_t Abs(int64_t x) {
     int64_t temp = x >> 63;
     return (x ^ temp) - temp;
 }
 
-inline_constexpr int Abs(int x)
-{
+inline_constexpr int Abs(int x) {
     int temp = x >> 31;
     return (x ^ temp) - temp;
 }
