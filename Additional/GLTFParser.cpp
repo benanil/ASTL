@@ -849,10 +849,11 @@ __private const char* ParseMaterialTexture(const char* curr, AMaterial::Texture&
             curr = ParseFloat16(curr, texture.scale);
         }
         else if (StrCMP16(curr, "index")) {
-            texture.index = (char)ParsePositiveNumber(curr);
+            texture.index = ParsePositiveNumber(curr);
+            ASSERT(texture.index < UINT16_MAX-1);
         }
         else if (StrCMP16(curr, "texCoord")) {
-            texture.texCoord = (char)ParsePositiveNumber(curr);
+            texture.texCoord = ParsePositiveNumber(curr);
         }
         else if (StrCMP16(curr, "strength")) {
             curr = ParseFloat16(curr, texture.strength);
@@ -885,8 +886,15 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
             {
                 materials.Add(material);
                 MemsetZero(&material, sizeof(AMaterial));
-                material.baseColorTexture.index = -1;
-                material.metallicFactor = PackUnorm16(1.0f);
+                material.baseColorTexture.index   = UINT16_MAX;
+                material.specularTexture.index    = UINT16_MAX;
+                material.baseColorTexture.index   = UINT16_MAX;
+                material.metallicRoughnessTexture.index = UINT16_MAX;
+                material.textures[0].index = UINT16_MAX;
+                material.textures[1].index = UINT16_MAX;
+                material.textures[2].index = UINT16_MAX;
+
+                material.metallicFactor  = PackUnorm16(1.0f);
                 material.roughnessFactor = PackUnorm16(1.0f);
             }
             if (*curr++ == ']') return curr; // end all nodes
@@ -924,7 +932,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
                 else if (StrCMP16(curr, "baseColorFact"))
                 {
                     float baseColorFactor[4] = { ParseFloat(curr), ParseFloat(curr), ParseFloat(curr), ParseFloat(curr)};
-                    material.baseColorFactor = PackColorRGBAU32(baseColorFactor);
+                    material.baseColorFactor = PackColor4ToUintPtr(baseColorFactor);
                     curr = SkipUntill(curr, ']');
                     curr++;
                 }

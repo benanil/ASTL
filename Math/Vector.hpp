@@ -49,19 +49,19 @@ struct Vector2
         return v;
     }
     
-    static __forceinline float Distance(Vector2 a, Vector2 b) {
+    static purefn float Distance(Vector2 a, Vector2 b) {
         float diffx = (float)(a.x - b.x);
         float diffy = (float)(a.y - b.y);
         return Sqrt(diffx * diffx + diffy * diffy);
     }
     
-    static __forceinline float DistanceSq(Vector2 a, Vector2 b) {
+    static purefn float DistanceSq(Vector2 a, Vector2 b) {
         float diffx = (float)(a.x - b.x);
         float diffy = (float)(a.y - b.y);
         return diffx * diffx + diffy * diffy;
     }
     
-    static __forceinline Vector2 Rotate(Vector2 vec, float angle)
+    static purefn Vector2 Rotate(Vector2 vec, float angle)
     {
         float s = Sin(angle), c = Cos(angle);
         return Vector2(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
@@ -107,8 +107,8 @@ struct Vector2
     static __constexpr Vector2 Right()    { return {T( 1), T( 0)}; }
 };
 
-template<typename T> __forceinline Vector2<T> MakeVec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
-template<typename T> __forceinline Vector2<T> MakeVec2(T a, T b) { Vector2<T> v; v.x = a; v.y = b;  return v; }
+template<typename T> purefn Vector2<T> MakeVec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
+template<typename T> purefn Vector2<T> MakeVec2(T a, T b) { Vector2<T> v; v.x = a; v.y = b;  return v; }
 
 template<typename T>
 struct Vector3
@@ -146,7 +146,7 @@ struct Vector3
     
     static float Length(const Vector3& vec) { return vec.Length(); }
     
-    __forceinline static float Dot(const Vector3& a, const Vector3& b)
+    purefn static float Dot(const Vector3& a, const Vector3& b)
     {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
@@ -217,10 +217,10 @@ struct Vector3
     static const Vector3 Backward(){ return { 0.0,  0.0, -1.0}; }
 };
 
-template<typename T> __forceinline Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; }
-template<typename T> __forceinline Vector3<T> MakeVec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; }
-template<typename T> __forceinline Vector3<T> MakeVec3(T a, T b, T c) { Vector3<T> v; v.x = a; v.y = b; v.z = c; return v; }
-template<typename T> __forceinline Vector3<T> MakeVec3(T* p) { Vector3<T> v; v.x = p[0]; v.y = p[1]; v.z = p[2]; return v; }
+template<typename T> purefn Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; }
+template<typename T> purefn Vector3<T> MakeVec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; }
+template<typename T> purefn Vector3<T> MakeVec3(T a, T b, T c) { Vector3<T> v; v.x = a; v.y = b; v.z = c; return v; }
+template<typename T> purefn Vector3<T> MakeVec3(T* p) { Vector3<T> v; v.x = p[0]; v.y = p[1]; v.z = p[2]; return v; }
 
 using Vector2d = Vector2<double>;
 using Vector2f = Vector2<float>;
@@ -257,42 +257,42 @@ inline Vector3f Normalize(Vector3f v) {
 	return v / Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
-__forceinline float2 ConvertToFloat2(const half* h) {
+purefn float2 ConvertToFloat2(const half* h) {
 	float2 res; ConvertHalfToFloat(&res.x, h, 2); return res;
 }
 
-__forceinline float3 ConvertToFloat3(const half* h) {
+purefn float3 ConvertToFloat3(const half* h) {
 	float3 res; ConvertHalfToFloat(&res.x, h, 3); return res;
 }
 
-__forceinline half2 ConvertToHalf2(const float* h) {
+purefn half2 ConvertToHalf2(const float* h) {
 	half2 res;
 	res  = ConvertFloatToHalf(*h++);
 	res |= uint32_t(ConvertFloatToHalf(*h)) << 16;
 	return res;
 }
 
-__forceinline half2 ConvertToHalf2(Vector2f f) {
+purefn half2 ConvertToHalf2(Vector2f f) {
 	half2 res;
 	res  = ConvertFloatToHalf(f.x);
 	res |= uint32_t(ConvertFloatToHalf(f.y)) << 16;
 	return res;
 }
 // recommended to use simd instructions instead. this functions are slow in hot loops
-template<typename T> __forceinline Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z) }; }
-template<typename T> __forceinline Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z) }; }
-template<typename T> __forceinline Vector2<T> Min(const Vector2<T>& a, const Vector2<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y)}; }
-template<typename T> __forceinline Vector2<T> Max(const Vector2<T>& a, const Vector2<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y)}; }
+template<typename T> purefn Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z) }; }
+template<typename T> purefn Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z) }; }
+template<typename T> purefn Vector2<T> Min(const Vector2<T>& a, const Vector2<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y)}; }
+template<typename T> purefn Vector2<T> Max(const Vector2<T>& a, const Vector2<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y)}; }
 
-template<typename T> __forceinline T Max3(const Vector3<T>& a) { return MAX(MAX(a.x, a.y), a.z); }
-template<typename T> __forceinline T Min3(const Vector3<T>& a) { return MIN(MIN(a.x, a.y), a.z); }
+template<typename T> purefn T Max3(const Vector3<T>& a) { return MAX(MAX(a.x, a.y), a.z); }
+template<typename T> purefn T Min3(const Vector3<T>& a) { return MIN(MIN(a.x, a.y), a.z); }
 
-__forceinline Vector2s ToVector2s(const Vector2f& vec) { return {(short)vec.x, (short)vec.y }; }
-__forceinline Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (float)vec.y }; }
-__forceinline Vector2f ToVector2f(const Vector2i& vec) { return {(float)vec.x, (float)vec.y }; }
-__forceinline Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec.y   }; }
+purefn Vector2s ToVector2s(const Vector2f& vec) { return {(short)vec.x, (short)vec.y }; }
+purefn Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (float)vec.y }; }
+purefn Vector2f ToVector2f(const Vector2i& vec) { return {(float)vec.x, (float)vec.y }; }
+purefn Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec.y   }; }
 
-__forceinline bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
+purefn bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
 {
     return point.x <= max.x && point.y <= max.y &&
            point.x >= min.x && point.y >= min.y;
@@ -306,21 +306,21 @@ inline Vector3f HUEToRGB(float h) {
 }
 
 // converts hue to rgb color
-inline_constexpr uint32 HUEToRGBU32(float h) {
+pureconst uint32 HUEToRGBU32(float h) {
     uint r = uint(Clamp01(Abs(h * 6.0f - 3.0f) - 1.0f) * 255.0f);
     uint g = uint(Clamp01(2.0f - Abs(h * 6.0f - 2.0f)) * 255.0f);
     uint b = uint(Clamp01(2.0f - Abs(h * 6.0f - 4.0f)) * 255.0f);
     return r | (uint(g) << 8u) | (uint(b) << 16u) | (255 << 24u);
 }
 
-// __forceinline uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
-// __forceinline uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
+// purefn uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
+// purefn uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }
 // 
-// __forceinline uint64 VecToHash(Vector3s vec){
+// purefn uint64 VecToHash(Vector3s vec){
 // 	return WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull) | (uint64(vec.z) << 24ull));
 // }
 // 
-// __forceinline uint64 VecToHash(Vector3i vec) {
+// purefn uint64 VecToHash(Vector3i vec) {
 // 	return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)) + WangHash(vec.z);
 // }
 

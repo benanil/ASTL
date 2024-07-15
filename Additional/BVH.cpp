@@ -78,7 +78,7 @@ static void UpdateNodeBounds(BVHNode* bvhNode, const Tri* tris, uint nodeIdx)
     Vec3Store(&node->aabbMax.x, nodeMax);
 }
 
-__forceinline float CalculateCost(const BVHNode* node)
+purefn float CalculateCost(const BVHNode* node)
 { 
 	vec_t e = VecSub(node->maxv, node->minv); // box extent
 	vec_t eSurface = VecMask(VecMul(e, VecSwizzle(e, 1, 2, 0, 0)), VecSelect1110);

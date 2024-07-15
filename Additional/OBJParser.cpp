@@ -150,11 +150,11 @@ int ParseObj(const char* path, ParsedObj* scene)
         { 
             // diffuse color
             float colorf[3] = { ParseFloatNonConst(curr), ParseFloatNonConst(curr), ParseFloatNonConst(curr)};
-            materials.Back().baseColorFactor = PackColorRGBU32(colorf);
+            materials.Back().baseColorFactor = PackColor3ToUintPtr(colorf);
         }
         else if (curr[0] == 'K' && curr[1] == 's') { // specular color
             float colorf[3] = { ParseFloatNonConst(curr), ParseFloatNonConst(curr), ParseFloatNonConst(curr)};
-            materials.Back().specularColor = PackColorRGBU32(colorf);
+            materials.Back().specularColor = PackColor3ToUintPtr(colorf);
         }
         else if (curr[0] == 'm') // map_bla
         {

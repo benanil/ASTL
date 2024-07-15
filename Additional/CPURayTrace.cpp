@@ -117,7 +117,7 @@ static bool IntersectBVH(const RaySSE& ray, const BVHNode* nodes, uint rootNode,
 #undef SWAPF
 #undef SWAPUINT
 
-__forceinline uint MultiplyU32Colors(uint a, RGB8 b)
+purefn uint MultiplyU32Colors(uint a, RGB8 b)
 {
 	uint result = 0u;
 	result |= ((a & 0xffu) * b.r) >> 8u;
@@ -128,7 +128,7 @@ __forceinline uint MultiplyU32Colors(uint a, RGB8 b)
 
 __constexpr float UcharToFloat01 = 1.0f / 255.0f;
 
-__forceinline float3 UnpackRGB8u(uint u)
+purefn float3 UnpackRGB8u(uint u)
 {
 	return MakeVec3(
 		float(u & 255u)        * UcharToFloat01,

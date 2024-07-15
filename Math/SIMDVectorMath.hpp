@@ -87,7 +87,7 @@ typedef __m128i vecu_t;
 #define VecSetY(v, y) _mm_insert_ps(v, _mm_set_ss(y), 0x10)
 #define VecSetZ(v, z) _mm_insert_ps(v, _mm_set_ss(z), 0x20)
 #define VecSetW(v, w) ((v) = _mm_insert_ps((v), _mm_set_ss(w), 0x30))
-__forceinline vec_t VECTORCALL Vec3Load(void const* x) {
+purefn vec_t VECTORCALL Vec3Load(void const* x) {
     vec_t v = _mm_loadu_ps((float const*)x); 
     VecSetW(v, 0.0); return v;
 }
@@ -329,29 +329,29 @@ typedef uint32x4_t vecu_t;
 #define VecSelect(V1, V2, Control) vbslq_f32(Control, V2, V1)
 #define VecBlend(a, b, Control)    vbslq_f32(Control, b, a)
 
-__forceinline vec_t ARMVectorRev(vec_t v)
+purefn vec_t ARMVectorRev(vec_t v)
 {
     float32x4_t rev64 = vrev64q_f32(v);
     return vextq_f32(rev64, rev64, 2);
 }
 
-__forceinline vec_t ARMVector3Load(float* src)
+purefn vec_t ARMVector3Load(float* src)
 {
     return vcombine_f32(vld1_f32(src), vld1_lane_f32(src + 2, vdup_n_f32(0), 0));
 }
 
-__forceinline vec_t ARMCreateVec(float x, float y, float z, float w) {
+purefn vec_t ARMCreateVec(float x, float y, float z, float w) {
     alignas(16) float v[4] = {x, y, z, w};
     return vld1q_f32(v);
 }
 
-__forceinline veci_t ARMCreateVecI(uint x, uint y, uint z, uint w) {
+purefn veci_t ARMCreateVecI(uint x, uint y, uint z, uint w) {
     uint32x2_t V0 = vcreate_u32(((uint64_t)x) | (((uint64_t)y) << 32));
     uint32x2_t V1 = vcreate_u32(((uint64_t)z) | (((uint64_t)w) << 32));
     return vcombine_u32(V0, V1);
 }
 
-__forceinline vec_t ARMVector3NormEst(vec_t v) {
+purefn vec_t ARMVector3NormEst(vec_t v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -362,7 +362,7 @@ __forceinline vec_t ARMVector3NormEst(vec_t v) {
     return vmulq_f32(v, vcombine_f32(v2, v2)); // Normalize
 }
 
-__forceinline vec_t ARMVector3Norm(vec_t v) {
+purefn vec_t ARMVector3Norm(vec_t v) {
     // Dot3
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
@@ -384,7 +384,7 @@ __forceinline vec_t ARMVector3Norm(vec_t v) {
     return vResult;
 }
 
-__forceinline vec_t ARMVector3Dot(vec_t a, vec_t b) {
+purefn vec_t ARMVector3Dot(vec_t a, vec_t b) {
     float32x4_t vTemp = vmulq_f32(a, b);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -394,7 +394,7 @@ __forceinline vec_t ARMVector3Dot(vec_t a, vec_t b) {
     return vcombine_f32(v1, v1);
 }
 
-__forceinline vec_t ARMVector3Length(vec_t v) {
+purefn vec_t ARMVector3Length(vec_t v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -409,7 +409,7 @@ __forceinline vec_t ARMVector3Length(vec_t v) {
     return vcombine_f32(Result, Result);
 }
 
-__forceinline vec_t ARMVectorLengthEst(vec_t v) {
+purefn vec_t ARMVectorLengthEst(vec_t v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -423,7 +423,7 @@ __forceinline vec_t ARMVectorLengthEst(vec_t v) {
     return vcombine_f32(Result, Result);
 }
 
-__forceinline vec_t ARMVectorLength(vec_t v) {
+purefn vec_t ARMVectorLength(vec_t v) {
      // Dot4
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
@@ -445,7 +445,7 @@ __forceinline vec_t ARMVectorLength(vec_t v) {
     return vcombine_f32(Result, Result);
 }
 
-__forceinline vec_t ARMVectorDevide(vec_t V1, vec_t V2) {
+purefn vec_t ARMVectorDevide(vec_t V1, vec_t V2) {
     // 2 iterations of Newton-Raphson refinement of reciprocal
     float32x4_t Reciprocal = vrecpeq_f32(V2);
     float32x4_t S = vrecpsq_f32(Reciprocal, V2);
@@ -455,7 +455,7 @@ __forceinline vec_t ARMVectorDevide(vec_t V1, vec_t V2) {
     return vmulq_f32(V1, Reciprocal);
 }
 
-__forceinline vec_t ARMVectorDot(vec_t a, vec_t b) {
+purefn vec_t ARMVectorDot(vec_t a, vec_t b) {
     float32x4_t vTemp = vmulq_f32(a, b);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -464,7 +464,7 @@ __forceinline vec_t ARMVectorDot(vec_t a, vec_t b) {
     return vcombine_f32(v1, v1);
 }
 
-__forceinline vec_t ARMVectorNormEst(vec_t v) {
+purefn vec_t ARMVectorNormEst(vec_t v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -474,18 +474,18 @@ __forceinline vec_t ARMVectorNormEst(vec_t v) {
     return vmulq_f32(v, vcombine_f32(v2, v2));
 }
 
-__forceinline vec_t ARMVectorNorm(vec_t v) 
+purefn vec_t ARMVectorNorm(vec_t v) 
 {
     return ARMVectorDevide(v, ARMVectorLength(v));
 }
 
-__forceinline int ARMVecMovemask(veci_t v) {
+purefn int ARMVecMovemask(veci_t v) {
     int32x4_t shift = ARMCreateVec(0, 1, 2, 3);
     return vaddvq_u32(vshlq_u32(vshrq_n_u32(v, 31), shift));
 }
 
 template<int E0, int E1, int E2, int E3>
-__forceinline vec_t ARMVectorSwizzle(vec_t v)
+purefn vec_t ARMVectorSwizzle(vec_t v)
 {
   float a = vgetq_lane_f32(v, E0); 
   float b = vgetq_lane_f32(v, E1); 
@@ -495,7 +495,7 @@ __forceinline vec_t ARMVectorSwizzle(vec_t v)
 }
 
 template<int E0, int E1, int E2, int E3>
-__forceinline vec_t ARMVectorShuffle(vec_t v0, vec_t v1)
+purefn vec_t ARMVectorShuffle(vec_t v0, vec_t v1)
 {
   float a = vgetq_lane_f32(v0, E0);
   float b = vgetq_lane_f32(v0, E1);
@@ -523,12 +523,12 @@ struct veci_t {
 
 typedef veci_t vecu_t;
 
-__forceinline vec_t MakeVec4(float x, float y, float z, float w) { return vec_t { x, y, z, w }; }
-__forceinline vec_t MakeVec4(float x) { return vec_t { x, x, x, x }; }
-__forceinline vec_t MakeVec4(const float* x) { return vec_t { x[0], x[1], x[2], x[3] }; }
+purefn vec_t MakeVec4(float x, float y, float z, float w) { return vec_t { x, y, z, w }; }
+purefn vec_t MakeVec4(float x) { return vec_t { x, x, x, x }; }
+purefn vec_t MakeVec4(const float* x) { return vec_t { x[0], x[1], x[2], x[3] }; }
 
-__forceinline veci_t MakeVec4i(uint x, uint y, uint z, uint w) { return veci_t { x, y, z, w }; }
-__forceinline veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
+purefn veci_t MakeVec4i(uint x, uint y, uint z, uint w) { return veci_t { x, y, z, w }; }
+purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 
 #define VecZero()           MakeVec4(0.0f)
 #define VecOne()            MakeVec4(1.0f)
@@ -651,35 +651,35 @@ __forceinline veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecSelect(V1, V2, Control)  MakeVec4(Control.x ? V2.x : V1.x, Control.y ? V2.y : V1.y, Control.z ? V2.z : V1.z, Control.w ? V2.w : V1.w)
 #define VecBlend(a, b, c)           NoVectorSelect(a, b, c)
 
-__forceinline vec_t NoVectorNormEst(vec_t v) {
+purefn vec_t NoVectorNormEst(vec_t v) {
     float invLen = RSqrt(VecDotf(v));
     return {v.x * invLen, v.y * invLen, v.z * invLen, v.w * invLen};
 }
 
-__forceinline vec_t NoVec3NormEst(vec_t v) {
+purefn vec_t NoVec3NormEst(vec_t v) {
     float invLen = RSqrt(Vec3Dotf(v));
     return {v.x * invLen, v.y * invLen, v.z * invLen, v.w * invLen};
 }
 
-__forceinline vec_t NoVectorAnd(vec_t a, vec_t b) {
+purefn vec_t NoVectorAnd(vec_t a, vec_t b) {
     veci_t aa = BitCast<veci_t>(a), bb = BitCast<veci_t>(b);
     aa.x &= bb.x; aa.y &= bb.y; aa.z &= bb.z; aa.w &= bb.w;
     return BitCast<vec_t>(aa);
 }
 
-__forceinline vec_t NoVectorOr(vec_t a, vec_t b) {
+purefn vec_t NoVectorOr(vec_t a, vec_t b) {
     veci_t aa = BitCast<veci_t>(a), bb = BitCast<veci_t>(b);
     aa.x |= bb.x; aa.y |= bb.y; aa.z |= bb.z; aa.w |= bb.w;
     return BitCast<vec_t>(aa);
 }
 
-__forceinline vec_t NoVectorXor(vec_t a, vec_t b) {
+purefn vec_t NoVectorXor(vec_t a, vec_t b) {
     veci_t aa = BitCast<veci_t>(a), bb = BitCast<veci_t>(b);
     aa.x ^= bb.x; aa.y ^= bb.y; aa.z ^= bb.z; aa.w ^= bb.w;
     return BitCast<vec_t>(aa);
 }
 
-__forceinline vec_t NoVectorSelect(vec_t a, vec_t b, veci_t c) {
+purefn vec_t NoVectorSelect(vec_t a, vec_t b, veci_t c) {
     veci_t ab = BitCast<veci_t>(a);
     veci_t bb = BitCast<veci_t>(b);
     bb.x &=  c.x; bb.y &=  c.y; bb.z &=  c.z; bb.w &=  c.w;
@@ -689,13 +689,13 @@ __forceinline vec_t NoVectorSelect(vec_t a, vec_t b, veci_t c) {
 }
 #endif
 
-__forceinline float VECTORCALL Min3(vec_t ab)
+purefn float VECTORCALL Min3(vec_t ab)
 {
     vec_t xy = VecMin(VecSplatX(ab), VecSplatY(ab));
     return VecGetX(VecMin(xy, VecSplatZ(ab)));
 }
 
-__forceinline float VECTORCALL Max3(vec_t ab)
+purefn float VECTORCALL Max3(vec_t ab)
 {
     vec_t xy = VecMax(VecSplatX(ab), VecSplatY(ab));
     return VecGetX(VecMax(xy, VecSplatZ(ab)));
@@ -703,21 +703,21 @@ __forceinline float VECTORCALL Max3(vec_t ab)
 
 #define VecClamp01(v) VecClamp(v, VecZero(), VecOne())
 
-__forceinline vec_t VECTORCALL VecClamp(vec_t v, vec_t vmin, vec_t vmax)
+purefn vec_t VECTORCALL VecClamp(vec_t v, vec_t vmin, vec_t vmax)
 {
     v = VecSelect(v, vmax, VecCmpGt(v, vmax));
     v = VecSelect(v, vmin, VecCmpLt(v, vmin));
     return v;
 }
 
-__forceinline void VECTORCALL Vec3Store(float* f, vec_t v)
+purefn void VECTORCALL Vec3Store(float* f, vec_t v)
 {
     f[0] = VecGetX(v);
     f[1] = VecGetY(v);
     f[2] = VecGetZ(v);
 }
 
-__forceinline vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
+purefn vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
 {
     #if defined(AX_ARM)
     float32x2_t v1xy = vget_low_f32(vec0);
@@ -741,7 +741,7 @@ __forceinline vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
     #endif
 }
 
-__forceinline vec_t VECTORCALL VecHSum(vec_t v) {
+purefn vec_t VECTORCALL VecHSum(vec_t v) {
     v = VecHadd(v, v); // high half -> low half
     return VecHadd(v, v);
 }
@@ -752,7 +752,7 @@ __forceinline vec_t VECTORCALL VecHSum(vec_t v) {
     #define VecFabs(x) VecAnd(x, VecFromInt1(0x7fffffff))
 #endif
 
-__forceinline vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
+purefn vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
 {
     vecu_t clearedX = VeciAnd(VeciFromVec(x), VeciSet1(0x7fffffff));
     vecu_t signY    = VeciAnd(VeciFromVec(y), VeciSet1(0x80000000));
@@ -760,17 +760,17 @@ __forceinline vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
     return VecFromVeci(res);
 }
 
-__forceinline vec_t VECTORCALL VecLerp(vec_t x, vec_t y, float t)
+purefn vec_t VECTORCALL VecLerp(vec_t x, vec_t y, float t)
 {
     return VecFmadd(VecSub(y, x), VecSet1(t), x);
 }
 
-__forceinline vec_t VECTORCALL VecStep(vec_t edge, vec_t x)
+purefn vec_t VECTORCALL VecStep(vec_t edge, vec_t x)
 {
     return VecBlend(VecZero(), VecOne(), VecCmpGt(x, edge));
 }
 
-__forceinline vec_t VECTORCALL VecFract(vec_t x)
+purefn vec_t VECTORCALL VecFract(vec_t x)
 {
     return VecSub(x, VecFloor(x));
 }
@@ -810,7 +810,7 @@ inline vec_t VECTORCALL VecCos(vec_t x)
     return VecSelect(x, VecNeg(x), gtpi);
 }
 
-__forceinline vec_t VECTORCALL VecAtan(vec_t x)
+purefn vec_t VECTORCALL VecAtan(vec_t x)
 {
     const float sa1 =  0.99997726f, sa3 = -0.33262347f, sa5  = 0.19354346f,
                 sa7 = -0.11643287f, sa9 =  0.05265332f, sa11 = -0.01172120f;
@@ -857,13 +857,13 @@ inline vec_t VECTORCALL VecSinCos(vec_t* cv, vec_t x)
 
 #ifdef AX_SUPPORT_AVX2
 
-__forceinline __m256i VECTORCALL AVXSelect(const __m256i V1, const __m256i V2, const __m256i& Control)
+purefn __m256i VECTORCALL AVXSelect(const __m256i V1, const __m256i V2, const __m256i& Control)
 {
     return _mm256_blendv_epi8(V1, V2, Control);
 }
 
 // from: Faster Population Counts Using AVX2 Instructions resource paper
-__forceinline int64 VECTORCALL popcount256_epi64(__m256i v)
+purefn int64 VECTORCALL popcount256_epi64(__m256i v)
 {
     const __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2,
         2, 3, 2, 3, 3, 4, 0, 1, 1, 2, 1, 2, 2, 3,
@@ -878,7 +878,7 @@ __forceinline int64 VECTORCALL popcount256_epi64(__m256i v)
     return _mm256_cvtsi256_si32(v) + _mm256_extract_epi64(v, 1) + _mm256_extract_epi64(v, 2) + _mm256_extract_epi64(v, 3);
 }
 
-__forceinline __m256i VECTORCALL popcnt256si(__m256i v) // returns 4 64 bit integer that contains pop counts
+purefn __m256i VECTORCALL popcnt256si(__m256i v) // returns 4 64 bit integer that contains pop counts
 {
     const __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
     const __m256i low_mask = _mm256_set1_epi8(0x0f);

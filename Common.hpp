@@ -39,14 +39,12 @@ typedef uint32_t uint;
     #define AX_API __declspec(dllimport)
 #endif
 
-#ifdef _MSC_VER
-    // do nothing   it already has __forceinline
-#elif __CLANG__
-    #define __forceinline [[clang::always_inline]] 
-#elif __GNUC__
-    #ifndef __forceinline
-        #define __forceinline inline __attribute__((always_inline))
-    #endif
+#if defined(__clang__) || defined(__GNUC__)
+    #define purefn __attribute__((pure)) [[clang::always_inline]]
+#elif defined(_MSC_VER)
+    #define purefn __forceinline __declspec(noalias)
+#else
+    #define purefn inline __attribute__((always_inline))
 #endif
 
 #ifdef _MSC_VER
@@ -290,7 +288,7 @@ typedef uint32_t uint;
     #define __constexpr constexpr
 #endif
 
-#define inline_constexpr __forceinline __constexpr
+#define pureconst purefn __constexpr
 
 #if AX_CPP_VERSION >= AX_CPP17
     #define if_constexpr if constexpr
@@ -342,7 +340,7 @@ typedef uint32_t uint;
         #define UnalignedLoad64(ptr) *((__unaligned uint64_t*)(ptr))
     #endif
 #else
-    __forceinline uint64_t UnalignedLoad64(void const* ptr) {
+    purefn uint64_t UnalignedLoad64(void const* ptr) {
         __attribute__((aligned(1))) uint64_t const *result = (uint64_t const *)ptr;
         return *result;
     }
@@ -355,7 +353,7 @@ typedef uint32_t uint;
         #define UnalignedLoad32(ptr) *((__unaligned uint32_t*)(ptr))
     #endif
 #else
-    __forceinline uint64_t UnalignedLoad32(void const* ptr) {
+    purefn uint64_t UnalignedLoad32(void const* ptr) {
         __attribute__((aligned(1))) uint32_t const *result = (uint32_t const *)ptr;
         return *result;
     }
@@ -402,7 +400,7 @@ inline uint32_t AX_BSWAP32(uint32_t x) {
 || (defined(__clang__) && __has_builtin(__builtin_bswap32))
     #define ByteSwap64(x) __builtin_bswap64(x)
 #else
-inline uint64_t ByteSwap(uint64_t x) {
+purefn uint64_t ByteSwap(uint64_t x) {
     return ((x << 56) & 0xff00000000000000ULL) |
            ((x << 40) & 0x00ff000000000000ULL) |
            ((x << 24) & 0x0000ff0000000000ULL) |
@@ -430,7 +428,7 @@ inline uint64_t ByteSwap(uint64_t x) {
     #define PopCount64(x) __builtin_popcountl(x)
 #else
 
-inline uint32_t PopCount32(uint32_t x) {
+purefn uint32_t PopCount32(uint32_t x) {
     x =  x - ((x >> 1) & 0x55555555);        // add pairs of bits
     x = (x & 0x33333333) + ((x >> 2) & 0x33333333);  // quads
     x = (x + (x >> 4)) & 0x0F0F0F0F;        // groups of 8
@@ -438,7 +436,7 @@ inline uint32_t PopCount32(uint32_t x) {
 }
 
 // standard popcount; from wikipedia
-inline uint64_t PopCount64(uint64_t x) {
+purefn uint64_t PopCount64(uint64_t x) {
     x -= ((x >> 1) & 0x5555555555555555ull);
     x = (x & 0x3333333333333333ull) + (x >> 2 & 0x3333333333333333ull);
     return ((x + (x >> 4)) & 0xf0f0f0f0f0f0f0full) * 0x101010101010101ull >> 56;
@@ -465,7 +463,7 @@ inline uint64_t PopCount64(uint64_t x) {
     #define LeadingZeroCount32(x) __builtin_clz(x)
     #define LeadingZeroCount64(x) __builtin_clzll(x)
 #else
-template<typename T> inline T LeadingZeroCount64(T x)
+template<typename T> purefn T LeadingZeroCount64(T x)
 {
     x |= (x >> 1);
     x |= (x >> 2);
@@ -481,7 +479,7 @@ template<typename T> inline T LeadingZeroCount64(T x)
 #define LeadingZeroCountWord(x) (sizeof(unsigned long long) == 8 ? LeadingZeroCount64(x) : LeadingZeroCount32(x))
 
 template<typename T>
-inline_constexpr T NextSetBit(T* bits)
+pureconst T NextSetBit(T* bits)
 {
     *bits &= ~T(1);
     T tz = sizeof(T) == 8 ? (T)TrailingZeroCount64((uint64_t)*bits) : (T)TrailingZeroCount32((uint32_t)*bits);
@@ -492,7 +490,7 @@ inline_constexpr T NextSetBit(T* bits)
 #define EnumHasBit(_enum, bit) !!(_enum & bit)
 
 template<typename To, typename From>
-inline_constexpr To BitCast(const From& _Val) 
+pureconst To BitCast(const From& _Val) 
 {
 #if defined(_MSC_VER) && AX_CPP_VERSION < AX_CPP17
   return *reinterpret_cast<const To*>(&_Val);
@@ -507,8 +505,8 @@ inline_constexpr To BitCast(const From& _Val)
 
 #ifndef MIN
     #if AX_CPP_VERSION >= AX_CPP17
-    template<typename T> inline_constexpr T MIN(T a, T b) { return a < b ? a : b; }
-    template<typename T> inline_constexpr T MAX(T a, T b) { return a > b ? a : b; }
+    template<typename T> pureconst T MIN(T a, T b) { return a < b ? a : b; }
+    template<typename T> pureconst T MAX(T a, T b) { return a > b ? a : b; }
     #else
         // using macro if less than 17 because we want this to be constexpr
         #ifndef MIN
@@ -519,65 +517,65 @@ inline_constexpr To BitCast(const From& _Val)
 #endif
 
 template<typename T> 
-inline_constexpr T Min3(T a, T b, T c) {
+pureconst T Min3(T a, T b, T c) {
     T res = a < b ? a : b;
     return res < c ? c : res;
 }
 
 template<typename T> 
-inline_constexpr T Max3(T a, T b, T c) {
+pureconst T Max3(T a, T b, T c) {
     T res = a > b ? a : b;
     return res > c ? res : c;
 }
 
 template<typename T> 
-inline_constexpr T Clamp(T x, T a, T b) {
+pureconst T Clamp(T x, T a, T b) {
     return MAX(a, MIN(b, x));
 }
 
-inline_constexpr float Clamp01(float x) {
+pureconst float Clamp01(float x) {
     return MAX(0.0f, MIN(1.0f, x));
 }
 
-inline_constexpr double Clamp01(double x) {
+pureconst double Clamp01(double x) {
     return MAX(0.0, MIN(1.0, x));
 }
 
-inline_constexpr int64_t Abs(int64_t x) {
+pureconst int64_t Abs(int64_t x) {
     int64_t temp = x >> 63;
     return (x ^ temp) - temp;
 }
 
-inline_constexpr int Abs(int x) {
+pureconst int Abs(int x) {
     int temp = x >> 31;
     return (x ^ temp) - temp;
 }
 
-inline_constexpr float Abs(float x)
+pureconst float Abs(float x)
 {
     int ix = BitCast<int>(x) & 0x7FFFFFFF; // every bit except sign mask
     return BitCast<float>(ix);
 }
 
-inline_constexpr double Abs(double x)
+pureconst double Abs(double x)
 {
     uint64_t  ix = BitCast<uint64_t >(x) & (~(1ull << 63ull));// every bit except sign mask
     return BitCast<double>(ix);
 }
 
 template<typename T>
-inline_constexpr bool IsPowerOfTwo(T x) { 
+pureconst bool IsPowerOfTwo(T x) { 
     return (x != 0) && ((x & (x - 1)) == 0); 
 }
 
-inline_constexpr int NextPowerOf2(int x) {
+pureconst int NextPowerOf2(int x) {
     x--;
     x |= x >> 1; x |= x >> 2; x |= x >> 4;
     x |= x >> 8; x |= x >> 16;
     return ++x;
 }
 
-inline_constexpr int64_t NextPowerOf2(int64_t x) {
+pureconst int64_t NextPowerOf2(int64_t x) {
     x--;
     x |= x >> 1; x |= x >> 2;  x |= x >> 4;
     x |= x >> 8; x |= x >> 16; x |= x >> 32;
@@ -589,7 +587,7 @@ inline_constexpr int64_t NextPowerOf2(int64_t x) {
 // Utilities
 
 // change it as is mobile maybe?
-inline_constexpr bool IsAndroid()
+pureconst bool IsAndroid()
 {
     #ifdef __ANDROID__
     return true;
@@ -603,12 +601,12 @@ __constexpr int ArraySize(const T (&)[N]) { return N; }
 
 // maybe we should move this to Algorithms.hpp
 template<typename T>
-inline uint PointerDistance(const T* begin, const T* end)
+purefn uint PointerDistance(const T* begin, const T* end)
 {
     return uint((char*)end - (char*)begin) / sizeof(T);
 }
 
-inline int CalculateArrayGrowth(int _size)
+purefn int CalculateArrayGrowth(int _size)
 {
     const int addition = _size >> 1;
     if (_size + addition < 0) {
@@ -623,7 +621,7 @@ inline int CalculateArrayGrowth(int _size)
 #else
 typedef unsigned long long unsignedLongLong;
 // http://www.lrdev.com/lr/c/strlen.c
-inline int StringLength(char const* s)
+purefn int StringLength(char const* s)
 {
     char const* p = s;
     const unsignedLongLong m = 0x7efefefefefefeffull; 

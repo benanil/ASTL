@@ -31,20 +31,20 @@ template<typename T> struct RemovePtr      { typedef T Type; };
 template<typename T> struct RemovePtr<T*>  { typedef T Type; };
 
 template<typename T>
-__forceinline typename RemoveRef<T>::Type&& Move(T&& obj)
+purefn typename RemoveRef<T>::Type&& Move(T&& obj)
 {
   typedef typename RemoveRef<T>::Type CastType;
   return (CastType&&)obj;
 }
 
 template<typename T>
-__forceinline T&& Forward(typename RemoveRef<T>::Type& obj) { return (T&&)obj; }
+purefn T&& Forward(typename RemoveRef<T>::Type& obj) { return (T&&)obj; }
 
 template<typename T>
-__forceinline T&& Forward(typename RemoveRef<T>::Type&& obj) { return (T&&)obj; }
+purefn T&& Forward(typename RemoveRef<T>::Type&& obj) { return (T&&)obj; }
 
 template<class T, class U = T>
-inline_constexpr T Exchange(T& obj, U&& new_value)
+pureconst T Exchange(T& obj, U&& new_value)
 {
   T old_value = Move(obj);
   obj = Forward<U>(new_value);
@@ -110,29 +110,24 @@ inline void MemSetAligned64(void* RESTRICT dst, unsigned char val, uint64_t size
     // we want an offset because the while loop below iterates over 4 uint64_t at a time
     const uint64_t * end = (uint64_t *)((char*)dst + (sizeInBytes >> 3));
     uint64_t * dp = (uint64_t *)dst;
-#ifdef _MSC_VER
-    uint64_t   d4;
-    __stosb((unsigned char*)&d4, val, 8);
-#else
-    uint64_t   d4 = val; d4 |= d4 << 8ull; d4 |= d4 << 16ull; d4 |= d4 << 32ull;
-#endif
+    uint64_t d8 = val * 0x0101010101010101ull; // replicate value to each byte.
 
     while (dp < end)
     {
-        dp[0] = dp[1] = dp[2] = dp[3] = d4;
+        dp[0] = dp[1] = dp[2] = dp[3] = d8;
         dp += 4;
     }
    
-        switch (sizeInBytes & 7)
-        {
-            case 7: *dp++ = d4; [[fallthrough]];
-            case 6: *dp++ = d4; [[fallthrough]];
-            case 5: *dp++ = d4; [[fallthrough]];
-            case 4: *dp++ = d4; [[fallthrough]];
-            case 3: *dp++ = d4; [[fallthrough]];
-            case 2: *dp++ = d4; [[fallthrough]];
-            case 1: *dp   = d4;
-        };
+    switch (sizeInBytes & 7)
+    {
+        case 7: *dp++ = d8; [[fallthrough]];
+        case 6: *dp++ = d8; [[fallthrough]];
+        case 5: *dp++ = d8; [[fallthrough]];
+        case 4: *dp++ = d8; [[fallthrough]];
+        case 3: *dp++ = d8; [[fallthrough]];
+        case 2: *dp++ = d8; [[fallthrough]];
+        case 1: *dp   = d8;
+    };
 }
 
 inline void MemSet32(uint32_t* RESTRICT dst, uint32_t val, uint32_t numValues)
@@ -151,12 +146,8 @@ inline void MemSetAligned32(uint32_t* RESTRICT dst, unsigned char val, uint64_t 
 {
     const uint32_t* end = (uint32_t*)((char*)dst + (sizeInBytes >> 2));
     uint32_t* dp = (uint32_t*)dst;
-#ifdef _MSC_VER
-    uint32_t  d4;
-    __stosb((unsigned char*)&d4, val, 4);
-#else
-    uint32_t  d4 = val; d4 |= d4 << 8ull; d4 |= d4 << 16ull;
-#endif
+    uint32_t  d4 = val * 0x01010101u; // replicate value to each byte
+    
     while (dp < end)
     {
         dp[0] = dp[1] = dp[2] = dp[3] = d4;

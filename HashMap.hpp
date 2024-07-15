@@ -40,7 +40,7 @@ AX_NAMESPACE
 /* example custom hasher
 template<> struct Hasher<int> 
 {
-    static __forceinline uint64_t Hash(int obj)  {
+    static purefn uint64_t Hash(int obj)  {
         return uint64(WangHash(x)) * 0x9ddfea08eb382d69ull;
     }
 };

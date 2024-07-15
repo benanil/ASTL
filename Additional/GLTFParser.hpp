@@ -56,10 +56,10 @@ typedef struct AMaterial_
     
     struct Texture
     {
-        float16 scale;    
-        float16 strength; 
-        short index; // index to texture path. -1 if is not exist
-        short texCoord;
+        float16 scale;
+        float16 strength;
+        unsigned short index; // index to texture path. -1 if is not exist
+        unsigned short texCoord;
     } textures[3]; // normalTexture, occlusionTexture, emissiveTexture
 
     // pbrMetallicRoughness in gltf. but baseColorFactor is below
@@ -139,9 +139,9 @@ typedef struct APrimitive_
     short weightStride; // lets say index data is rgba16u  [r, g, b, a, .......] stride might be bigger than joint
     
     // internal use only. after parsing this is useless
-    short indiceIndex; // indice index to accessor
-    short material;    // material index
-    short mode;        // 4 is triangle
+    unsigned short indiceIndex; // indice index to accessor
+    unsigned short material;    // material index
+    unsigned short mode;        // 4 is triangle
 
     // when we are parsing we use this as an indicator to accessor.
     // after parsing, this will become vertex pointers AAttribType_Position, AAttribType_TexCoord...
@@ -158,7 +158,7 @@ typedef struct APrimitive_
 
 typedef struct AMesh_
 {
-    char* name;  
+    char* name;
     APrimitive* primitives;
     int numPrimitives;
     int numMorphWeights;
@@ -262,18 +262,18 @@ typedef struct AAnimation_
 
 typedef struct SceneBundle_
 {
-    short numMeshes;
-    short numNodes;
-    short numMaterials;
-    short numTextures;
-    short numImages;
-    short numSamplers;
-    short numCameras;
-    short numScenes;
-    short defaultSceneIndex;
-    short numBuffers;
-    short numAnimations;
-    short numSkins;
+    unsigned short numMeshes;
+    unsigned short numNodes;
+    unsigned short numMaterials;
+    unsigned short numTextures;
+    unsigned short numImages;
+    unsigned short numSamplers;
+    unsigned short numCameras;
+    unsigned short numScenes;
+    unsigned short defaultSceneIndex;
+    unsigned short numBuffers;
+    unsigned short numAnimations;
+    unsigned short numSkins;
 
     AErrorType error;
 

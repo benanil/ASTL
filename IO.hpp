@@ -24,7 +24,7 @@
 // bool   DeleteFile(file);
 // char*  ReadAllFile(fileName, buffer, numCharacters);
 // void   CopyFile(source, dst, buffer);
-// void   VisitFolder(path, pathLen, visitFn);
+// void   VisitFolder(path, visitFn);
 // void   GetCurrentDirectory(buffer, bufferSize);
 // void   AbsolutePath(path, outBuffer, bufferSize);
 
@@ -36,20 +36,16 @@
 #ifdef _WIN32
     #include <io.h>
     #include <direct.h> 
+    #include "dirent.h"
     #define F_OK 0
 #else 
     #include <unistd.h>
     #include <sys/types.h>
     #include <fcntl.h>
+    #include <dirent.h>
     #define _mkdir mkdir
     #define _fileno fileno
     #define _filelengthi64 filelength
-#endif
-
-#if defined __WIN32__ || defined _WIN32 || defined _Windows
-    #if !defined S_ISDIR
-            #define S_ISDIR(m) (((m) & _S_IFDIR) == _S_IFDIR)
-    #endif
 #endif
 
 #ifdef __ANDROID__
@@ -204,8 +200,10 @@ inline bool IsDirectory(const char* path)
 
 enum AOpenFlag_
 {
-    AOpenFlag_Read, 
-    AOpenFlag_Write
+    AOpenFlag_ReadBinary, 
+    AOpenFlag_WriteBinary,
+    AOpenFlag_ReadText, 
+    AOpenFlag_WriteText
 };
 typedef int AOpenFlag;
 
@@ -255,12 +253,19 @@ inline AFile AFileOpen(const char* fileName, AOpenFlag flag)
 {
     FILE* file;
 #ifdef _MSC_VER
-    const char* modes[2] = { "rb, ccs=UTF-8", "wb, ccs=UTF-8" };
+    const char* modes[4] = { "rb", "wb", "rb", "wb" };
     fopen_s(&file, fileName, modes[flag]);
 #else
-    const char* modes[2] = { "rb", "wb" };
+    const char* modes[4] = { "rb", "wb", "r", "w"};
     file = fopen(fileName, modes[flag]);
-#endif
+    #endif
+
+    if (flag == AOpenFlag_WriteText) {
+        // Write the UTF-8 BOM
+        unsigned char bom[] = {0xEF, 0xBB, 0xBF};
+        fwrite(bom, sizeof(char), sizeof(bom), file);
+    }
+
     AFile afile;
     afile.file = file;
     return afile;
@@ -307,7 +312,7 @@ inline uint64_t AFileSize(AFile file)
 
 inline char* ReadAllFile(const char* fileName, char* buffer = 0)
 {
-    AFile file = AFileOpen(fileName, AOpenFlag_Read);
+    AFile file = AFileOpen(fileName, AOpenFlag_ReadBinary);
     if (!AFileExist(file))
         return nullptr;
 
@@ -334,7 +339,7 @@ inline char* ReadAllText(const char* fileName, char* buffer = 0, uint64_t* numCh
     if (startText) 
         while (startText[startTextLen]) startTextLen++;
 
-    AFile file = AFileOpen(fileName, AOpenFlag_Read);
+    AFile file = AFileOpen(fileName, AOpenFlag_ReadBinary);
     
     if (!AFileExist(file)) {
         perror("Error opening the file");
@@ -382,7 +387,7 @@ inline void FreeAllText(char* text)
 inline void WriteAllBytes(const char *filename, const char *bytes, unsigned long size) 
 {
     // Open the file for writing in binary mode
-    AFile file = AFileOpen(filename, AOpenFlag_Write);
+    AFile file = AFileOpen(filename, AOpenFlag_WriteBinary);
     if (!AFileExist(file)) 
     {
         perror("Failed to open file for writing");
@@ -410,139 +415,16 @@ inline void CopyFile(const char* source, const char* dst, char* buffer = 0)
     bool bufferProvided = buffer != 0;
     char* sourceFile = ReadAllText(source, buffer, &sourceSize);
     
-    AFile dstFile = AFileOpen(dst, AOpenFlag_Write);
+    AFile dstFile = AFileOpen(dst, AOpenFlag_WriteBinary);
     AFileWrite(sourceFile, sourceSize, dstFile);
     AFileClose(dstFile);
 
     if (!bufferProvided) delete[] buffer;
 }
 
-typedef void(*FolderVisitFn)(char* buffer, int bufferLength, const char* fileName, bool isFolder, unsigned long long fileSize);
-
-#if _WIN32
-
-// #define WIN32_LEAN_AND_MEAN 
-// #define NOMINMAX
-// #define VC_EXTRALEAN
-// #include <Windows.h>
-
-// if windows.h is not included forward declare the functions instead of including windows.h header
-#ifndef _MINWINBASE_
-
-#define INVALID_HANDLE_VALUE ((void*)(long)-1)
-#define MAX_PATH                 260
-#define FILE_ATTRIBUTE_DIRECTORY 0x00000010  
-
-typedef struct _FILETIME {
-    unsigned long long dwLowDateTime;
-    unsigned long long dwHighDateTime;
-} FILETIME;
-
-typedef struct _WIN32_FIND_DATAA {
-    unsigned long long dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    unsigned long long nFileSizeHigh;
-    unsigned long long nFileSizeLow;
-    unsigned long long dwReserved0;
-    unsigned long long dwReserved1;
-    char     cFileName[MAX_PATH];
-    char     cAlternateFileName[14];
-    unsigned long long dwFileType; // Obsolete. Do not use.
-    unsigned long long dwCreatorType; // Obsolete. Do not use
-    unsigned short wFinderFlags; // Obsolete. Do not use
-} WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
-
-extern "C"
-{
-    __declspec(dllimport) void* __cdecl FindFirstFileA(const char* lpFileName, LPWIN32_FIND_DATA lpFindFileData);
-
-    __declspec(dllimport) int __cdecl FindNextFileA(void* hFindFile, LPWIN32_FIND_DATA lpFindFileData);
-
-    __declspec(dllimport) int __cdecl FindClose(void* hFindFile);
-
-#define GetCurrentDirectory(bufferLength, buffer) GetCurrentDirectoryA(bufferLength, buffer)
-#ifndef _PROCESSENV_
-    __declspec(dllimport) unsigned long long GetCurrentDirectoryA(unsigned long long nBufferLength, char* lpBuffer);
+#ifndef _WIN32
+    #define GetCurrentDirectory(size, outPath) getcwd(outPath, size)
 #endif
-}
-#endif // windows.h included
-
-// visit all files and folders in the path
-inline void VisitFolder(char* path, int pathLen, FolderVisitFn visitFn)
-{
-    WIN32_FIND_DATA findFileData;
-    // we should add \\* to end the of the buffer
-    path[pathLen]     = '\\';
-    path[pathLen + 1] = '*';
-    pathLen++; // skip '\\'
-    void* hFind = FindFirstFileA(path, &findFileData);
-
-    if (hFind == INVALID_HANDLE_VALUE) {
-        printf("Error opening directory: %s \n", path);
-        return;
-    }
-
-    if (path[pathLen-1] == '*')
-        path[--pathLen] = 0;
-
-    do 
-    {
-        bool isFolder = findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-        visitFn(path, pathLen, findFileData.cFileName, isFolder, findFileData.nFileSizeLow);
-    } while (FindNextFileA(hFind, &findFileData) != 0);
- 
-    FindClose(hFind);
-}
-
-#else
-#include <sys/types.h>
-#include <dirent.h>
-#include "String.hpp"
-
-#define MAX_PATH 260
-
-inline unsigned long long GetCurrentDirectory(unsigned long long bufferSize, char* buffer)
-{
-  ASSERT(getcwd(buffer, bufferSize));
-  return StringLength(buffer);
-}
-
-inline void VisitFolder(char *path, int pathLen, FolderVisitFn visitFn) 
-{
-    struct dirent *entry;
-    struct stat fileStat;
-    DIR *directory = opendir(path);
-
-    if (directory == NULL) {
-        perror("Error opening directory");
-        return;
-    }
-
-    while ((entry = readdir(directory)) != NULL) 
-    {
-        if (*entry->d_name == '.') {
-            continue; // Skip "." and ".." entries.
-        }
-
-        // Build the full path to the file or folder.
-        char filePath[256]; // +2 for '/' and '\0'
-        snprintf(filePath, sizeof(filePath), "%s/%s", path, entry->d_name);
-
-        if (stat(filePath, &fileStat) == 0) {
-            bool isFolder = S_ISDIR(fileStat.st_mode);
-            off_t fileSize = fileStat.st_size;
-            int pathLen = StringLength(filePath);
-            visitFn(filePath, pathLen, entry->d_name, isFolder, fileSize);
-        } else {
-            perror("Error getting file stat");
-        }
-    }
-
-    closedir(directory);
-}
-#endif // 
 
 // input: ../Textures/Tree.png
 // output: C:/Source/Repos/Textures/Tree.png
@@ -572,4 +454,23 @@ inline void AbsolutePath(const char* path, char* outBuffer, int bufferSize)
         }
     }
     outBuffer[currLength] = '\n';
+}
+
+typedef void(*FolderVisitFn)(const char* path);
+
+// thanks to https://github.com/tronkko/dirent this is windows and linux compatible
+inline bool VisitFolder(const char* path, FolderVisitFn visitFn)
+{
+    DIR* dir;
+    dirent* ent;
+    if ((dir = opendir(path)) != NULL) 
+    {
+        while ((ent = readdir (dir)) != NULL)  
+        {
+            visitFn(ent->d_name);
+        }
+        closedir(dir);
+        return true;
+    }
+    return false;
 }

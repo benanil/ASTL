@@ -327,7 +327,7 @@ struct Array
 				arr = allocator.Allocate(_size);
 			m_capacity = _size;
 		}
-		m_count    = _size;
+		m_count = _size;
 	}
 
 	// you can use this function after removing elements in the array, this will reduct the amount of memory used

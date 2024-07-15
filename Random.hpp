@@ -47,7 +47,7 @@ AX_NAMESPACE
 // Not WangHash actually we can say skeeto hash.
 // developed and highly optimized by Chris Wellons
 // https://github.com/skeeto/hash-prospector https://nullprogram.com/blog/2018/07/31/
-__constexpr __forceinline uint WangHash(uint x) { 
+__constexpr purefn uint WangHash(uint x) { 
 	x ^= x >> 16u; x *= 0x7feb352du;
 	x ^= x >> 15u; x *= 0x846ca68bu;
 	return x ^ (x >> 16u);
@@ -56,19 +56,19 @@ __constexpr __forceinline uint WangHash(uint x) {
 // given Wang hash returns input value: 
 // WangHash(x) = 234525;
 // x = InverseWangHash(234525);
-__constexpr __forceinline uint WangHashInverse(uint x)  {
+__constexpr purefn uint WangHashInverse(uint x)  {
 	x ^= x >> 16u; x *= 0x7feb352du;
 	x ^= x >> 15u; x *= 0x846ca68bu;
 	return x ^ (x >> 16u);
 }
 
-__constexpr __forceinline uint64_t MurmurHash(uint64_t x) {
+__constexpr purefn uint64_t MurmurHash(uint64_t x) {
 	x ^= x >> 30ULL; x *= 0xbf58476d1ce4e5b9ULL;
 	x ^= x >> 27ULL; x *= 0x94d049bb133111ebULL;
 	return x ^ (x >> 31ULL);
 }
 
-__constexpr __forceinline uint64_t MurmurHashInverse(uint64_t x) {
+__constexpr purefn uint64_t MurmurHashInverse(uint64_t x) {
 	x ^= x >> 31ULL ^ x >> 62ULL; x *= 0x319642b2d24d8ec3ULL;
 	x ^= x >> 27ULL ^ x >> 54ULL; x *= 0x96de1b173f119089ULL;
 	return x ^ (x >> 30ULL ^ x >> 60ULL);
@@ -85,7 +85,7 @@ namespace Random
 {
     // these random seeds slower than PCG and MTwister but good choice for random seed
     // also seeds are cryptographic 
-    __forceinline uint Seed32() {
+    purefn uint Seed32() {
         uint32 result;
         #if !defined(__ANDROID__)
         _rdseed32_step(&result); // or faster __rdtsc
@@ -95,7 +95,7 @@ namespace Random
 		return result;
 	}
 
-	__forceinline uint64_t Seed64() {
+	purefn uint64_t Seed64() {
 		uint64_t result;
 		#if !defined(__ANDROID__)
 		_rdseed64_step(&result);// or faster __rdtsc
@@ -105,32 +105,32 @@ namespace Random
 		return result;
 	}
 
-	__forceinline float NextFloat01(uint32 next) {
+	purefn float NextFloat01(uint32 next) {
 		return float(next >> 8) / (float)(1 << 24);
 	}
 	
-	__forceinline float RepatMinMax(uint32 next, float min, float max) {
+	purefn float RepatMinMax(uint32 next, float min, float max) {
 		return min + (NextFloat01(next) * Abs(min - max));
 	}
 	
-	__forceinline double NextDouble01(uint64_t next) 
+	purefn double NextDouble01(uint64_t next) 
 	{
-		const int mask = (1 << 27) - 1;
-		// https://docs.oracle.com/javase/8/docs/api/java/util/Random.html
-		long x = next & mask;
-		x += (next >> 32) & (mask >> 1);
-		return x / (double)(1LL << 53L);
+		// // https://docs.oracle.com/javase/8/docs/api/java/util/Random.html
+		// const int mask = (1 << 27) - 1;
+		// long x = next & mask;
+		// x += (next >> 32) & (mask >> 1);
+		// return x / (double)(1LL << 53L);
 		// return (((long)(next & (mask >> 1)) << 27) + ((next >> 32) & mask)) / (double)(1LL << 53LL);
-		// return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
+		return (next & 0x001FFFFFFFFFFFFF) / 9007199254740992.0;
 	}
 	
-	__forceinline double RepatMinMax(uint64_t next, double min, double max) {
+	purefn double RepatMinMax(uint64_t next, double min, double max) {
 		return min + (NextDouble01(next) * Abs(min - max));
 	}
 	
-	__forceinline uint32 RepatMinMax(uint32 next, uint32 min, uint32 max) { return min + (next % (max - min)); }
-	__forceinline uint64_t RepatMinMax(uint64_t next, uint64_t min, uint64_t max) { return min + (next % (max - min)); }
-	__forceinline int    RepatMinMax(int next, int _min, int _max) { return _min + (next % (_max - _min)); }
+	purefn uint32 RepatMinMax(uint32 next, uint32 min, uint32 max) { return min + (next % (max - min)); }
+	purefn uint64_t RepatMinMax(uint64_t next, uint64_t min, uint64_t max) { return min + (next % (max - min)); }
+	purefn int    RepatMinMax(int next, int _min, int _max) { return _min + (next % (_max - _min)); }
 
 	// https://www.pcg-random.org/index.html
 	// we can also add global state in a cpp file
@@ -146,7 +146,7 @@ namespace Random
 	// RepatMINMAX(PCGNext(pcg), 120, 200);
 	// RepatMINMAX(Xoroshiro128Plus(xoro), 120ull, 200ull);
 
-	__forceinline uint32 PCGNext(PCG& pcg)
+	purefn uint32 PCGNext(PCG& pcg)
 	{
 		uint64_t oldstate = pcg.state;
 		pcg.state = oldstate * 6364136223846793005ULL + (pcg.inc | 1);
@@ -157,7 +157,7 @@ namespace Random
 		return uint32((xorshifted >> rot) | (xorshifted << ((-rot) & 31)));
 	}
 
-	__forceinline uint PCG2Next(uint& rng_state)
+	purefn uint PCG2Next(uint& rng_state)
 	{
 		uint state = rng_state;
 		rng_state = state * 747796405u + 2891336453u;
@@ -165,26 +165,26 @@ namespace Random
 		return (word >> 22u) ^ word;
 	}
 
-	__forceinline void PCGInitialize(PCG& pcg, uint64_t initstate, uint64_t seed)
+	purefn void PCGInitialize(PCG& pcg, uint64_t initstate, uint64_t seed)
 	{
 		pcg.inc = (seed << 1u) | 1u;
 		pcg.state = initstate;
 		PCGNext(pcg);
 	}
 
-	__forceinline void PCGInitialize(PCG& pcg, uint64_t seed) 
+	purefn void PCGInitialize(PCG& pcg, uint64_t seed) 
 	{
 		pcg.state = 0x853c49e6748fea9bULL;
 		pcg.inc = seed << 1 | 1u;
 	}
 
-	__forceinline void Xoroshiro128PlusInit(uint64_t s[2])
+	purefn void Xoroshiro128PlusInit(uint64_t s[2])
 	{
 		s[0] += Seed64(); s[1] += Seed64();
 		s[0] |= 1; // non zero
 	}
 	
-	__forceinline void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t  seed)
+	purefn void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t  seed)
 	{
 		seed |= 1; // non zero
 		s[0] = MurmurHash(seed); 
@@ -192,7 +192,7 @@ namespace Random
 	}
 	
 	// concise hashing function. https://nullprogram.com/blog/2017/09/21/
-	__forceinline uint64_t Xoroshiro128Plus(uint64_t s[2])
+	purefn uint64_t Xoroshiro128Plus(uint64_t s[2])
 	{
 		uint64_t  s0 = s[0];
 		uint64_t  s1 = s[1];
@@ -298,7 +298,7 @@ inline uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
 // hardcodes seed and the secret, reformattes the code, and clang-tidy fixes.
 namespace WYHash
 {
-	__forceinline void mum(uint64_t * RESTRICT a, uint64_t * RESTRICT b)
+	purefn void mum(uint64_t * RESTRICT a, uint64_t * RESTRICT b)
 	{
 #if defined(__SIZEOF_INT128__)
 		__uint128_t r = *a;
@@ -327,11 +327,11 @@ namespace WYHash
 #endif
 	}
 
-	__forceinline uint64_t mix(uint64_t a, uint64_t b) { mum(&a, &b); return a ^ b; }
-	__forceinline uint64_t r8(const uint8* p) { return *(uint64*)p; }
-	__forceinline uint64_t r4(const uint8* p) { return (uint64)*(uint32*)p; }
+	purefn uint64_t mix(uint64_t a, uint64_t b) { mum(&a, &b); return a ^ b; }
+	purefn uint64_t r8(const uint8* p) { return *(uint64*)p; }
+	purefn uint64_t r4(const uint8* p) { return (uint64)*(uint32*)p; }
 	// reads 1, 2, or 3 bytes
-	__forceinline uint64_t r3(const uint8* p, size_t k) 
+	purefn uint64_t r3(const uint8* p, size_t k) 
 	{
 		return (uint64_t (p[0]) << 16U) | (uint64_t (p[k >> 1U]) << 8U) | p[k - 1]; 
 	}
@@ -339,7 +339,7 @@ namespace WYHash
 	// alternative algorithm for this is xxHash which is really efficient
 	// https://github.com/Cyan4973/xxHash
 
-	[[nodiscard]] __forceinline uint64_t Hash(void const* key, size_t len)
+	[[nodiscard]] purefn uint64_t Hash(void const* key, size_t len)
 	{
         const uint64_t secret[4] = { 0xa0761d6478bd642full,
                                    0xe7037ed1a0b428dbull,
@@ -387,7 +387,7 @@ namespace WYHash
 		return mix(secret[1] ^ len, mix(a ^ secret[1], b ^ seed));
 	}
 
-	[[nodiscard]] __forceinline uint64_t Hash(uint64_t x) 
+	[[nodiscard]] purefn uint64_t Hash(uint64_t x) 
 	{
 		return mix(x, UINT64_C(0x9E3779B97F4A7C15));
 	}
@@ -410,7 +410,7 @@ __constexpr inline uint PathToHash(const char* str)
 
 template<typename T> struct  Hasher
 {
-	static __forceinline uint64_t Hash(const T& x)
+	static purefn uint64_t Hash(const T& x)
 	{
 		if_constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
 		else if      (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));
@@ -426,12 +426,12 @@ template<typename T> struct NoHasher
 
 template<> struct NoHasher<uint64_t>
 {
-	static __forceinline uint64_t Hash(uint64_t x) { return x; }
+	static purefn uint64_t Hash(uint64_t x) { return x; }
 };
 
 template<> struct NoHasher<uint32_t>
 {
-	static __forceinline uint64_t Hash(uint32_t x) { return (uint64_t)x * 0x9ddfea08eb382d69ull; }
+	static purefn uint64_t Hash(uint32_t x) { return (uint64_t)x * 0x9ddfea08eb382d69ull; }
 };
 
 AX_END_NAMESPACE 

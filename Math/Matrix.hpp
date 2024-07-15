@@ -36,11 +36,11 @@ struct Matrix3
                         float a, float b, float c,
                         float u, float v, float s)
     {
-    	Matrix3 M;
-    	M.m[0][0] = x; M.m[0][1] = y; M.m[0][2] = z; 
-    	M.m[1][0] = a; M.m[1][1] = b; M.m[1][2] = c; 
-    	M.m[2][0] = u; M.m[2][1] = v; M.m[2][2] = s; 
-    	return M;
+        Matrix3 M;
+        M.m[0][0] = x; M.m[0][1] = y; M.m[0][2] = z; 
+        M.m[1][0] = a; M.m[1][1] = b; M.m[1][2] = c; 
+        M.m[2][0] = u; M.m[2][1] = v; M.m[2][2] = s; 
+        return M;
     }
     
     static Matrix3 TBN(Vector3f normal, Vector3f tangent, Vector3f bitangent)
@@ -263,8 +263,8 @@ struct alignas(16) Matrix4
     
     static Matrix4 PerspectiveFovRH(float fov, float width, float height, float zNear, float zFar)
     {
-        float rad = Sin0pi(0.5f * fov); 
-		AX_ASSUME(rad > 0.01f);
+        float rad = Sin0pi(0.5f * fov);
+        AX_ASSUME(rad > 0.01f);
         float h = Sqrt(1.0f - (rad * rad)) / rad;
         float w = h * height / width; /// max(width , Height) / min(width , Height)?
         Matrix4 M = {};
@@ -346,15 +346,15 @@ struct alignas(16) Matrix4
     }
 
     static Matrix4 RotationX(float angleRadians) {
-    	Matrix4 out_matrix = Identity();
-    	float s, c;
-    	SinCos(angleRadians, &s, &c);
-    	out_matrix.m[1][1] = c;
-    	out_matrix.m[1][2] = s;
-    	out_matrix.m[2][1] = -s;
-    	out_matrix.m[2][2] = c;
+        Matrix4 out_matrix = Identity();
+        float s, c;
+        SinCos(angleRadians, &s, &c);
+        out_matrix.m[1][1] = c;
+        out_matrix.m[1][2] = s;
+        out_matrix.m[2][1] = -s;
+        out_matrix.m[2][2] = c;
         // out_matrix.m[3][3] = 1.0f;
-    	return out_matrix;
+        return out_matrix;
     }
     
     static Matrix4 RotationY(float angleRadians) {
@@ -404,22 +404,22 @@ struct alignas(16) Matrix4
     // we use vec_t to represent 2x2 matrix as A = | A0  A1 |
     //                                             | A2  A3 |
     // 2x2 row major Matrix multiply A*B
-    static vec_t VECTORCALL Mat2Mul(vec_t vec1, vec_t vec2)
+    static purefn vec_t VECTORCALL Mat2Mul(vec_t vec1, vec_t vec2)
     {
-    	return VecAdd(VecMul(vec1, VecSwizzle(vec2, 0, 3, 0, 3)), 
-    	              VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
+        return VecAdd(VecMul(vec1, VecSwizzle(vec2, 0, 3, 0, 3)), 
+                      VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
     }
     // 2x2 row major Matrix adjugate multiply (A#)*B
-    static vec_t VECTORCALL Mat2AdjMul(vec_t vec1, vec_t vec2)
+    static purefn vec_t VECTORCALL Mat2AdjMul(vec_t vec1, vec_t vec2)
     {
-    	return VecSub(VecMul(VecSwizzle(vec1, 3, 3, 0, 0), vec2),
-    	              VecMul(VecSwizzle(vec1, 1, 1, 2, 2), VecSwizzle(vec2, 2, 3, 0, 1)));
+        return VecSub(VecMul(VecSwizzle(vec1, 3, 3, 0, 0), vec2),
+                      VecMul(VecSwizzle(vec1, 1, 1, 2, 2), VecSwizzle(vec2, 2, 3, 0, 1)));
     }
     // 2x2 row major Matrix multiply adjugate A*(B#)
-    static vec_t VECTORCALL Mat2MulAdj(vec_t vec1, vec_t vec2)
+    static purefn vec_t VECTORCALL Mat2MulAdj(vec_t vec1, vec_t vec2)
     {
-    	return VecSub(VecMul(vec1, VecSwizzle(vec2, 3, 0, 3, 0)),
-    	              VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
+        return VecSub(VecMul(vec1, VecSwizzle(vec2, 3, 0, 3, 0)),
+                      VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
     }
     
     // this will not work on camera matrix this is for only transformation matricies
@@ -467,8 +467,8 @@ struct alignas(16) Matrix4
         vec_t D = VecShuffle_2323(m.r[2], m.r[3]);
         
         vec_t detSub = VecSub(
-        	VecMul(VecShuffle(m.r[0], m.r[2], 0, 2, 0, 2), VecShuffle(m.r[1], m.r[3], 1, 3, 1, 3)),
-        	VecMul(VecShuffle(m.r[0], m.r[2], 1, 3, 1, 3), VecShuffle(m.r[1], m.r[3], 0, 2, 0, 2))
+            VecMul(VecShuffle(m.r[0], m.r[2], 0, 2, 0, 2), VecShuffle(m.r[1], m.r[3], 1, 3, 1, 3)),
+            VecMul(VecShuffle(m.r[0], m.r[2], 1, 3, 1, 3), VecShuffle(m.r[1], m.r[3], 0, 2, 0, 2))
         );
         vec_t detA = VecSplatX(detSub);
         vec_t detB = VecSplatY(detSub);
@@ -503,7 +503,7 @@ struct alignas(16) Matrix4
         out.r[1] = VecShuffle(X_, Y_, 2, 0, 2, 0);
         out.r[2] = VecShuffle(Z_, W_, 3, 1, 3, 1);
         out.r[3] = VecShuffle(Z_, W_, 2, 0, 2, 0);
-        return out;        
+        return out;
     }
     #else
     static Matrix4 VECTORCALL Inverse(Matrix4 mat)
@@ -568,7 +568,7 @@ struct alignas(16) Matrix4
                           vget_low_f32(vzipq_f32(v2, v3).val[0]));
 
         Matrix4 dest;
-        x0 = VecDiv(VecOne(), VecHSum(vmulq_f32(x0, mat.r[0])));
+        x0 = VecRcp(VecHSum(vmulq_f32(x0, mat.r[0])));
         dest.r[0] = vmulq_f32(v0, x0);
         dest.r[1] = vmulq_f32(v1, x0);
         dest.r[2] = vmulq_f32(v2, x0);
@@ -709,7 +709,7 @@ inline FrustumPlanes CreateFrustumPlanes(const Matrix4& viewProjection)
     return result;
 }
 
-__forceinline vec_t VECTORCALL MaxPointAlongNormal(vec_t min, vec_t max, vec_t n) 
+purefn vec_t VECTORCALL MaxPointAlongNormal(vec_t min, vec_t max, vec_t n) 
 {
     return VecSelect(min, max, VecCmpGe(n, VecZero()));
 }
@@ -734,12 +734,11 @@ inline bool VECTORCALL CheckAABBCulled(vec_t minAABB, vec_t maxAABB, const Frust
 inline bool isPointCulled(const FrustumPlanes& frustum, const Vector3f& _point, const Matrix4& matrix)
 {
     vec_t point = Vector3Transform(VecLoad(&_point.x), matrix.r);
-    
-    for (uint i = 0u; i < 5u; ++i)
-    {
-        if (VecDotf(frustum.planes[i], point) < 0.0f)
-            return false;
-    }
+    if (VecDotf(frustum.planes[0], point) < 0.0f) return false;
+    if (VecDotf(frustum.planes[1], point) < 0.0f) return false;
+    if (VecDotf(frustum.planes[2], point) < 0.0f) return false;
+    if (VecDotf(frustum.planes[3], point) < 0.0f) return false;
+    if (VecDotf(frustum.planes[4], point) < 0.0f) return false;
     return true;
 }
 

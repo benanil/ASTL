@@ -128,7 +128,7 @@ inline Quaternion VECTORCALL QSlerp(Quaternion q0, Quaternion q1, float t)
 }
 
 // faster but less precise, more error prone version of slerp
-__forceinline Quaternion VECTORCALL QNLerp(Quaternion a, Quaternion b, float t)
+purefn Quaternion VECTORCALL QNLerp(Quaternion a, Quaternion b, float t)
 {
     veci_t lz = VecCmpLt(VecDot(a, b), VecZero());
     a = VecSelect(a, VecNeg(a), lz);
@@ -136,7 +136,7 @@ __forceinline Quaternion VECTORCALL QNLerp(Quaternion a, Quaternion b, float t)
     return VecNormEst(a);
 }
 
-__forceinline Quaternion QFromEuler(float x, float y, float z)
+purefn Quaternion QFromEuler(float x, float y, float z)
 {
     x *= 0.5f; y *= 0.5f; z *= 0.5f;
     float c[4], s[4];
@@ -153,7 +153,7 @@ __forceinline Quaternion QFromEuler(float x, float y, float z)
     return q;
 }
 
-__forceinline Quaternion VECTORCALL QFromEuler(Vector3f euler)
+purefn Quaternion VECTORCALL QFromEuler(Vector3f euler)
 {
     return QFromEuler(euler.x, euler.y, euler.z);
 }
@@ -239,7 +239,7 @@ inline Quaternion QFromLookRotation(Vector3f direction, const Vector3f& up)
     return VecLoad(&result.x);
 }
 
-__forceinline Quaternion VECTORCALL QConjugate(Quaternion vec)
+purefn Quaternion VECTORCALL QConjugate(Quaternion vec)
 {
     return VecMul(vec, VecSetR(-1.0f, -1.0f, -1.0f, 1.0f));
 }

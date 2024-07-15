@@ -16,7 +16,7 @@ AX_NAMESPACE
 
 template<> struct Hasher<Vector2i>
 {
-    static __forceinline uint64_t Hash(Vector2i vec)
+    static purefn uint64_t Hash(Vector2i vec)
     {
         uint64_t x = (uint64(vec.y) << 32) | vec.x;
         x *= 0xbf58476d1ce4e5b9ULL;
@@ -27,7 +27,7 @@ template<> struct Hasher<Vector2i>
 
 template<> struct Hasher<Vector2s>
 {
-	static __forceinline uint64_t Hash(Vector2s vec)
+	static purefn uint64_t Hash(Vector2s vec)
 	{
 		uint64_t x = (uint64(vec.y) << 16) | vec.x;
 		x ^= x << 30ULL;
