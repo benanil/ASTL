@@ -249,12 +249,17 @@ constexpr half2 Half2Right = OneFP16;
 constexpr half2 Half2One   = OneFP16 | (OneFP16 << 16);
 constexpr half2 Half2Zero  = 0;
 
-inline Vector2f Normalize(Vector2f v) {
+purefn Vector2f Normalize(Vector2f v) {
 	return v / Sqrt(v.x * v.x + v.y * v.y);
 }
 
-inline Vector3f Normalize(Vector3f v) {
+purefn Vector3f Normalize(Vector3f v) {
 	return v / Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+purefn float Dot(Vector3f a, Vector3f b) 
+{
+	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 purefn float2 ConvertToFloat2(const half* h) {
@@ -312,6 +317,32 @@ pureconst uint32 HUEToRGBU32(float h) {
     uint b = uint(Clamp01(2.0f - Abs(h * 6.0f - 4.0f)) * 255.0f);
     return r | (uint(g) << 8u) | (uint(b) << 16u) | (255 << 24u);
 }
+
+pureconst uint32 GreaterThan(Vector2f a, Vector2f b)
+{
+    return uint32(a.x > b.x) || (uint32(a.y > b.y) << 1);
+}
+
+pureconst uint32 LessThan(Vector2f a, Vector2f b)
+{
+    return uint32(a.x < b.x) | (uint32(a.y < b.y) << 1);
+}
+
+pureconst uint32 GreaterThan(Vector3f a, Vector3f b)
+{
+    return uint32(a.x > b.x) | (uint32(a.y > b.y) << 1) | (uint32(a.y > b.y) << 2);
+}
+
+pureconst uint32 LessThan(Vector3f a, Vector3f b)
+{
+    return uint32(a.x < b.x) | (uint32(a.y < b.y) << 1) | (uint32(a.y < b.y) << 2);
+}
+
+pureconst uint32 All2(uint32 msk) { return msk == 0x11u; }
+pureconst uint32 All3(uint32 msk) { return msk == 0x111u; }
+
+pureconst uint32 Any2(uint32 msk) { return msk  > 0; }
+pureconst uint32 Any3(uint32 msk) { return msk  > 0; }
 
 // purefn uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
 // purefn uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }

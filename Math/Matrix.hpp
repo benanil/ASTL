@@ -742,4 +742,20 @@ inline bool isPointCulled(const FrustumPlanes& frustum, const Vector3f& _point, 
     return true;
 }
 
+inline Vector2f WorldToNDC(Matrix4 viewProj, Vector3f worldPos)
+{
+    vec_t pos = VecLoad(worldPos.arr);
+    vec_t clipCoords = ::Vector3Transform(pos, viewProj.r);
+    pos = VecDiv(clipCoords, VecSplatW(clipCoords));
+    Vec3Store(worldPos.arr, pos);
+    return { worldPos.x, worldPos.y };
+}
+
+inline Vector2f WorldToScreenCoord(Matrix4 viewProj, Vector3f worldPos, int width, int height)
+{
+    Vector2f ndc = WorldToNDC(viewProj, worldPos);
+    return { (width  * ndc.x), (height * ndc.y) };
+}
+
+
 AX_END_NAMESPACE 
