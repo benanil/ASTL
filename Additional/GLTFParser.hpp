@@ -150,8 +150,8 @@ typedef struct APrimitive_
     // ...
     void* vertexAttribs[AAttribType_Count]; 
     // AABB min and max
-    float min[4];
-    float max[4];
+    alignas(16) float min[4];
+    alignas(16) float max[4];
 
     AMorphTarget* morphTargets; // num morph targets is equal to mesh.num numMorphWeights
 } APrimitive;

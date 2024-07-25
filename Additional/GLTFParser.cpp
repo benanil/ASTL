@@ -932,7 +932,7 @@ __private const char* ParseMaterials(const char* curr, Array<AMaterial>& materia
                 else if (StrCMP16(curr, "baseColorFact"))
                 {
                     float baseColorFactor[4] = { ParseFloat(curr), ParseFloat(curr), ParseFloat(curr), ParseFloat(curr)};
-                    material.baseColorFactor = PackColor4ToUintPtr(baseColorFactor);
+                    material.baseColorFactor = PackColor4PtrToUint(baseColorFactor);
                     curr = SkipUntill(curr, ']');
                     curr++;
                 }

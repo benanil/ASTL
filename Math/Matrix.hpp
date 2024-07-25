@@ -693,7 +693,10 @@ struct alignas(16) Matrix4
  
 struct FrustumPlanes
 {
-    vec_t planes[6];
+    union {
+        vec_t planes[6];
+        float x[6 * 4];
+    };
 };
 
 inline FrustumPlanes CreateFrustumPlanes(const Matrix4& viewProjection)
@@ -714,19 +717,13 @@ purefn vec_t VECTORCALL MaxPointAlongNormal(vec_t min, vec_t max, vec_t n)
     return VecSelect(min, max, VecCmpGe(n, VecZero()));
 }
 
-inline bool VECTORCALL CheckAABBCulled(vec_t minAABB, vec_t maxAABB, const FrustumPlanes& frustum, const Matrix4& matrix)
+inline bool VECTORCALL CheckAABBCulled(vec_t min, vec_t max, const FrustumPlanes& frustum, const Matrix4& model)
 {
-    return true;
-    vec_t min = Vector3Transform(minAABB, matrix.r);
-    vec_t max = Vector3Transform(maxAABB, matrix.r);
-    
     for (uint i = 0u; i < 5u; ++i) // make < 6 if you want far plane 
     {
         vec_t p = MaxPointAlongNormal(min, max, frustum.planes[i]);
-        if (VecDotf(frustum.planes[i], p) < 0.0f)
-        {
-            return false;
-        }
+        p = VecSelect(VecOne(), p, VecSelect1110);
+        if (VecDotf(frustum.planes[i], p) < 0.0f) return false;
     }
     return true;
 }

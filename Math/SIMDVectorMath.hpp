@@ -181,7 +181,7 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecMin(a, b) _mm_min_ps(a, b)
 #define VecFloor(a)  _mm_floor_ps(a)
 
-#define VecCmpGt(a, b) _mm_cmpgt_ps(a, b) /* greater or equal */
+#define VecCmpGt(a, b) _mm_cmpgt_ps(a, b) /* greater than */
 #define VecCmpGe(a, b) _mm_cmpge_ps(a, b) /* greater or equal */
 #define VecCmpLt(a, b) _mm_cmplt_ps(a, b) /* less than */
 #define VecCmpLe(a, b) _mm_cmple_ps(a, b) /* less or equal */

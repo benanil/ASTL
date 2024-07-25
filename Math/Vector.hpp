@@ -297,13 +297,13 @@ purefn Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (float)v
 purefn Vector2f ToVector2f(const Vector2i& vec) { return {(float)vec.x, (float)vec.y }; }
 purefn Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec.y   }; }
 
-purefn bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
+pureconst bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
 {
     return point.x <= max.x && point.y <= max.y &&
            point.x >= min.x && point.y >= min.y;
 }
 
-inline Vector3f HUEToRGB(float h) {
+pureconst Vector3f HUEToRGB(float h) {
     float r = Clamp01(Abs(h * 6.0f - 3.0f) - 1.0f);
     float g = Clamp01(2.0f - Abs(h * 6.0f - 2.0f));
     float b = Clamp01(2.0f - Abs(h * 6.0f - 4.0f));
@@ -312,15 +312,14 @@ inline Vector3f HUEToRGB(float h) {
 
 // converts hue to rgb color
 pureconst uint32 HUEToRGBU32(float h) {
-    uint r = uint(Clamp01(Abs(h * 6.0f - 3.0f) - 1.0f) * 255.0f);
-    uint g = uint(Clamp01(2.0f - Abs(h * 6.0f - 2.0f)) * 255.0f);
-    uint b = uint(Clamp01(2.0f - Abs(h * 6.0f - 4.0f)) * 255.0f);
-    return r | (uint(g) << 8u) | (uint(b) << 16u) | (255 << 24u);
+    Vector3f v3 = HUEToRGB(h);
+    uint32 res  = PackColor3PtrToUint(v3.arr);
+    return res | 0xFF000000u; // make the alpha 255
 }
 
 pureconst uint32 GreaterThan(Vector2f a, Vector2f b)
 {
-    return uint32(a.x > b.x) || (uint32(a.y > b.y) << 1);
+    return uint32(a.x > b.x) | (uint32(a.y > b.y) << 1);
 }
 
 pureconst uint32 LessThan(Vector2f a, Vector2f b)
@@ -341,8 +340,8 @@ pureconst uint32 LessThan(Vector3f a, Vector3f b)
 pureconst uint32 All2(uint32 msk) { return msk == 0x11u; }
 pureconst uint32 All3(uint32 msk) { return msk == 0x111u; }
 
-pureconst uint32 Any2(uint32 msk) { return msk  > 0; }
-pureconst uint32 Any3(uint32 msk) { return msk  > 0; }
+pureconst uint32 Any2(uint32 msk) { return msk > 0; }
+pureconst uint32 Any3(uint32 msk) { return msk > 0; }
 
 // purefn uint64 VecToHash(Vector2s vec) { return (uint64)WangHash(uint64(vec.x) | (uint64(vec.y) << 16ull)); }
 // purefn uint64 VecToHash(Vector2i vec) { return MurmurHash(uint64(vec.x) | (uint64(vec.y) << 32ull)); }

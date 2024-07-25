@@ -558,11 +558,11 @@ pureconst uint PackColorToUint(float r, float g, float b) {
     return (uint)(r * 255.0f) | ((uint)(g * 255.0f) << 8) | ((uint)(b * 255.0f) << 16);
 }
 
-pureconst uint PackColor3ToUintPtr(float* c) {
+pureconst uint PackColor3PtrToUint(float* c) {
     return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16);
 }
 
-pureconst uint PackColor4ToUintPtr(float* c) {
+pureconst uint PackColor4PtrToUint(float* c) {
     return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16) | ((uint)(c[3] * 255.0f) << 24);
 }
 
