@@ -47,7 +47,7 @@ AX_NAMESPACE
 // Not WangHash actually we can say skeeto hash.
 // developed and highly optimized by Chris Wellons
 // https://github.com/skeeto/hash-prospector https://nullprogram.com/blog/2018/07/31/
-__constexpr purefn uint WangHash(uint x) { 
+pureconst uint WangHash(uint x) { 
 	x ^= x >> 16u; x *= 0x7feb352du;
 	x ^= x >> 15u; x *= 0x846ca68bu;
 	return x ^ (x >> 16u);
@@ -56,19 +56,19 @@ __constexpr purefn uint WangHash(uint x) {
 // given Wang hash returns input value: 
 // WangHash(x) = 234525;
 // x = InverseWangHash(234525);
-__constexpr purefn uint WangHashInverse(uint x)  {
+pureconst uint WangHashInverse(uint x)  {
 	x ^= x >> 16u; x *= 0x7feb352du;
 	x ^= x >> 15u; x *= 0x846ca68bu;
 	return x ^ (x >> 16u);
 }
 
-__constexpr purefn uint64_t MurmurHash(uint64_t x) {
+pureconst uint64_t MurmurHash(uint64_t x) {
 	x ^= x >> 30ULL; x *= 0xbf58476d1ce4e5b9ULL;
 	x ^= x >> 27ULL; x *= 0x94d049bb133111ebULL;
 	return x ^ (x >> 31ULL);
 }
 
-__constexpr purefn uint64_t MurmurHashInverse(uint64_t x) {
+pureconst uint64_t MurmurHashInverse(uint64_t x) {
 	x ^= x >> 31ULL ^ x >> 62ULL; x *= 0x319642b2d24d8ec3ULL;
 	x ^= x >> 27ULL ^ x >> 54ULL; x *= 0x96de1b173f119089ULL;
 	return x ^ (x >> 30ULL ^ x >> 60ULL);
@@ -165,26 +165,26 @@ namespace Random
 		return (word >> 22u) ^ word;
 	}
 
-	purefn void PCGInitialize(PCG& pcg, uint64_t initstate, uint64_t seed)
+	forceinline void PCGInitialize(PCG& pcg, uint64_t initstate, uint64_t seed)
 	{
 		pcg.inc = (seed << 1u) | 1u;
 		pcg.state = initstate;
-		PCGNext(pcg);
+        [[maybe_unused]] int rnd = PCGNext(pcg);
 	}
 
-	purefn void PCGInitialize(PCG& pcg, uint64_t seed) 
+	forceinline void PCGInitialize(PCG& pcg, uint64_t seed) 
 	{
 		pcg.state = 0x853c49e6748fea9bULL;
 		pcg.inc = seed << 1 | 1u;
 	}
 
-	purefn void Xoroshiro128PlusInit(uint64_t s[2])
+	forceinline void Xoroshiro128PlusInit(uint64_t s[2])
 	{
 		s[0] += Seed64(); s[1] += Seed64();
 		s[0] |= 1; // non zero
 	}
 	
-	purefn void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t  seed)
+	forceinline void Xoroshiro128PlusSeed(uint64_t s[2], uint64_t  seed)
 	{
 		seed |= 1; // non zero
 		s[0] = MurmurHash(seed); 
@@ -298,7 +298,7 @@ inline uint64_t MurmurHash64(const void * key, int len, uint64_t seed)
 // hardcodes seed and the secret, reformattes the code, and clang-tidy fixes.
 namespace WYHash
 {
-	purefn void mum(uint64_t * RESTRICT a, uint64_t * RESTRICT b)
+	forceinline void mum(uint64_t * RESTRICT a, uint64_t * RESTRICT b)
 	{
 #if defined(__SIZEOF_INT128__)
 		__uint128_t r = *a;
@@ -410,7 +410,7 @@ __constexpr inline uint PathToHash(const char* str)
 
 template<typename T> struct  Hasher
 {
-	static purefn uint64_t Hash(const T& x)
+	purefn static uint64_t Hash(const T& x)
 	{
 		if_constexpr (sizeof(T) == 4) return uint64(WangHash(BitCast<uint32>(x))) * 0x9ddfea08eb382d69ull;
 		else if      (sizeof(T) == 8) return MurmurHash(BitCast<uint64>(x));
@@ -426,12 +426,12 @@ template<typename T> struct NoHasher
 
 template<> struct NoHasher<uint64_t>
 {
-	static purefn uint64_t Hash(uint64_t x) { return x; }
+	purefn static uint64_t Hash(uint64_t x) { return x; }
 };
 
 template<> struct NoHasher<uint32_t>
 {
-	static purefn uint64_t Hash(uint32_t x) { return (uint64_t)x * 0x9ddfea08eb382d69ull; }
+	purefn static uint64_t Hash(uint32_t x) { return (uint64_t)x * 0x9ddfea08eb382d69ull; }
 };
 
 AX_END_NAMESPACE 

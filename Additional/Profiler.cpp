@@ -111,29 +111,36 @@ profile_block::~profile_block(void)
     ++Anchor->HitCount;
 
     /* NOTE(casey): This write happens every time solely because there is no
-       straightforward way in C++ to have the same ease-of-use. In a better programming
-       language, it would be simple to have the anchor points gathered and labeled at compile
-       time, and this repetative write would be eliminated. */
+    straightforward way in C++ to have the same ease-of-use. In a better programming
+    language, it would be simple to have the anchor points gathered and labeled at compile
+    time, and this repetative write would be eliminated. */
     Anchor->Label = Label;
 }
 
 #ifndef AX_PROFILER_DISABLE
 
+static void(*PrintPerfFn)(const char*);
+
+void BeginProfile(void(*printFn)(const char* text))
+{
+    GlobalProfiler.StartTSC = ReadCPUTimer();
+    PrintPerfFn = printFn;
+}
+
 void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor)
 {
     double Percent = 100.0 * ((double)Anchor->TSCElapsedExclusive / (double)TotalTSCElapsed);
-    printf("  %s[%llu]: %llu (%.2f%%", Anchor->Label, Anchor->HitCount, Anchor->TSCElapsedExclusive, Percent);
-    if (Anchor->TSCElapsedInclusive != Anchor->TSCElapsedExclusive)
+    
+    char buffer[512];
+    double PercentWithChildren = -1.0f;
+    
+    if(Anchor->TSCElapsedInclusive != Anchor->TSCElapsedExclusive)
     {
-        double PercentWithChildren = 100.0 * ((double)Anchor->TSCElapsedInclusive / (double)TotalTSCElapsed);
-        printf(", %.2f%% w/children", PercentWithChildren);
+        PercentWithChildren = 100.0 * ((double)Anchor->TSCElapsedInclusive / (double)TotalTSCElapsed);
     }
-    printf(")\n");
-}
-
-void BeginProfile()
-{
-    GlobalProfiler.StartTSC = ReadCPUTimer();
+    
+    sprintf(buffer, "  %s[%llu]: %llu (%.2f%%, %.2f%% w/children)", Anchor->Label, Anchor->HitCount, Anchor->TSCElapsedExclusive, Percent, PercentWithChildren);
+    PrintPerfFn(buffer);
 }
 
 void EndAndPrintProfile()
@@ -145,7 +152,9 @@ void EndAndPrintProfile()
 
     if (CPUFreq)
     {
-        printf("\nTotal time: %0.4fms (CPU freq %llu)\n", 1000.0 * (double)TotalCPUElapsed / (double)CPUFreq, CPUFreq);
+        char buffer[512];
+        sprintf(buffer, "Total time: %0.4fms (CPU freq %llu)", 1000.0 * (double)TotalCPUElapsed / (double)CPUFreq, CPUFreq);
+        PrintPerfFn(buffer);
     }
 
     const uint32_t numAnchors = sizeof(GlobalProfiler.Anchors) / sizeof(profile_anchor);
@@ -157,6 +166,7 @@ void EndAndPrintProfile()
         {
             PrintTimeElapsed(TotalCPUElapsed, Anchor);
         }
+        Anchor->HitCount = 0;
     }
     memset(&GlobalProfiler, 0, sizeof(profiler));
     GlobalProfilerParent = 0;
@@ -167,7 +177,7 @@ void EndAndPrintProfile()
 void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor) {}
 
 
-void BeginProfile() {}
+void BeginProfile(void(*printFn)(const char* text)) {}
 
 void EndAndPrintProfile() {}
 

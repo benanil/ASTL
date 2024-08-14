@@ -703,7 +703,7 @@ public:
 
 template<> struct Hasher<String>
 {
-    static purefn uint64_t Hash(const String& x)
+    purefn static uint64_t Hash(const String& x)
     {
         return WYHash::Hash(x.CStr(), x.Length());
         // return MurmurHash64(x.CStr(), x.Length(), 0xa0761d6478bd642full);

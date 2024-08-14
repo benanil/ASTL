@@ -51,6 +51,7 @@ struct Matrix3
         M.vec[2] = bitangent;
         return M;
     }
+
     static Matrix3 Identity()
     {
         return Make(1.0f, 0.0f, 0.0f,
@@ -107,7 +108,7 @@ struct Matrix3
     }
 };
 
-static vec_t VECTORCALL Vector4Transform(vec_t v, const vec_t r[4])
+purefn vec_t VECTORCALL Vector4Transform(vec_t v, const vec_t r[4])
 {
     vec_t m0;
     m0 = VecMul(r[0], VecSplatX(v));
@@ -117,7 +118,7 @@ static vec_t VECTORCALL Vector4Transform(vec_t v, const vec_t r[4])
     return m0;
 }
 
-static vec_t VECTORCALL Vector3Transform(vec_t vec, const vec_t r[4])
+purefn vec_t VECTORCALL Vector3Transform(vec_t vec, const vec_t r[4])
 {
     vec_t m0;
     m0 = VecMul(r[0], VecSplatX(vec));
@@ -388,7 +389,7 @@ struct alignas(16) Matrix4
     
     static Matrix4 RotationFromEuler(float x, float y, float z)
     {
-      return FromQuaternion(QFromEuler(x, y, z));
+        return FromQuaternion(QFromEuler(x, y, z));
     }
     
     static Matrix3 VECTORCALL ConvertToMatrix3(const Matrix4 M)
@@ -404,19 +405,19 @@ struct alignas(16) Matrix4
     // we use vec_t to represent 2x2 matrix as A = | A0  A1 |
     //                                             | A2  A3 |
     // 2x2 row major Matrix multiply A*B
-    static purefn vec_t VECTORCALL Mat2Mul(vec_t vec1, vec_t vec2)
+    purefn static vec_t VECTORCALL Mat2Mul(vec_t vec1, vec_t vec2)
     {
         return VecAdd(VecMul(vec1, VecSwizzle(vec2, 0, 3, 0, 3)), 
                       VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
     }
     // 2x2 row major Matrix adjugate multiply (A#)*B
-    static purefn vec_t VECTORCALL Mat2AdjMul(vec_t vec1, vec_t vec2)
+    purefn static vec_t VECTORCALL Mat2AdjMul(vec_t vec1, vec_t vec2)
     {
         return VecSub(VecMul(VecSwizzle(vec1, 3, 3, 0, 0), vec2),
                       VecMul(VecSwizzle(vec1, 1, 1, 2, 2), VecSwizzle(vec2, 2, 3, 0, 1)));
     }
     // 2x2 row major Matrix multiply adjugate A*(B#)
-    static purefn vec_t VECTORCALL Mat2MulAdj(vec_t vec1, vec_t vec2)
+    purefn static vec_t VECTORCALL Mat2MulAdj(vec_t vec1, vec_t vec2)
     {
         return VecSub(VecMul(vec1, VecSwizzle(vec2, 3, 0, 3, 0)),
                       VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
@@ -693,10 +694,7 @@ struct alignas(16) Matrix4
  
 struct FrustumPlanes
 {
-    union {
-        vec_t planes[6];
-        float x[6 * 4];
-    };
+    vec_t planes[6];
 };
 
 inline FrustumPlanes CreateFrustumPlanes(const Matrix4& viewProjection)

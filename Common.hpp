@@ -40,11 +40,19 @@ typedef uint32_t uint;
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
-    #define purefn __attribute__((pure)) [[clang::always_inline]]
+    #define purefn [[clang::always_inline]] __attribute__((pure)) 
 #elif defined(_MSC_VER)
     #define purefn __forceinline __declspec(noalias)
 #else
     #define purefn inline __attribute__((always_inline))
+#endif
+
+#if defined(__clang__) || defined(__GNUC__)
+    #define forceinline [[clang::always_inline]]
+#elif defined(_MSC_VER)
+    #define forceinline __forceinline 
+#else
+    #define forceinline inline __attribute__((always_inline))
 #endif
 
 #ifdef _MSC_VER
@@ -264,7 +272,6 @@ typedef uint32_t uint;
 #if defined(__ANDROID__)
     #define PLATFORM_ANDROID 1
 #endif
-
 
 //------------------------------------------------------------------------
 // CPP version macros
@@ -503,6 +510,9 @@ pureconst To BitCast(const From& _Val)
 //------------------------------------------------------------------------
 // Basic Math Logical Operations, min, max, clamp, abs, 
 
+#define MacroMin(a, b) ((a) < (b) ? (a) : (b))
+#define MacroMax(a, b) ((a) > (b) ? (a) : (b))
+
 #ifndef MIN
     #if AX_CPP_VERSION >= AX_CPP17
     template<typename T> pureconst T MIN(T a, T b) { return a < b ? a : b; }
@@ -530,15 +540,15 @@ pureconst T Max3(T a, T b, T c) {
 
 template<typename T> 
 pureconst T Clamp(T x, T a, T b) {
-    return MAX(a, MIN(b, x));
+    return MAX(a, MacroMin(b, x));
 }
 
 pureconst float Clamp01(float x) {
-    return MAX(0.0f, MIN(1.0f, x));
+    return MAX(0.0f, MacroMin(1.0f, x));
 }
 
 pureconst double Clamp01(double x) {
-    return MAX(0.0, MIN(1.0, x));
+    return MAX(0.0, MacroMin(1.0, x));
 }
 
 pureconst int64_t Abs(int64_t x) {

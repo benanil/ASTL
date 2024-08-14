@@ -18,6 +18,7 @@
 #include "../IO.hpp"
 #include "../Array.hpp"
 #include "../Math/Matrix.hpp"
+#include "../Math/Color.hpp"
 #include "../String.hpp"
 
 #define __private static

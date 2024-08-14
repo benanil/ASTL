@@ -83,10 +83,11 @@ typedef __m128i vecu_t;
 #define VecGetZ(v) _mm_cvtss_f32(VecSplatZ(v))  /* return v.z */
 #define VecGetW(v) _mm_cvtss_f32(VecSplatW(v))  /* return v.w */
 
-#define VecSetX(v, x) _mm_move_ss(v, _mm_set_ss(x))
-#define VecSetY(v, y) _mm_insert_ps(v, _mm_set_ss(y), 0x10)
-#define VecSetZ(v, z) _mm_insert_ps(v, _mm_set_ss(z), 0x20)
+#define VecSetX(v, x) ((v) = _mm_move_ss  ((v), _mm_set_ss(x)))
+#define VecSetY(v, y) ((v) = _mm_insert_ps((v), _mm_set_ss(y), 0x10))
+#define VecSetZ(v, z) ((v) = _mm_insert_ps((v), _mm_set_ss(z), 0x20))
 #define VecSetW(v, w) ((v) = _mm_insert_ps((v), _mm_set_ss(w), 0x30))
+
 purefn vec_t VECTORCALL Vec3Load(void const* x) {
     vec_t v = _mm_loadu_ps((float const*)x); 
     VecSetW(v, 0.0); return v;
@@ -140,6 +141,7 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecSelect1100 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
 #define VecSelect1110 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
 #define VecSelect1011 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))
+#define VecSelect1111 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))
 
 #define VecIdentityR0 _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f)
 #define VecIdentityR1 _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f)
@@ -167,12 +169,14 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecRev(v) VecShuffle((v), (v), 3, 2, 1, 0)
 
 // Logical
+#define VecNot(a)       _mm_andnot_ps(a, VecSelect1111)
 #define VecAnd(a, b)    _mm_and_ps(a, b)
 #define VecOr(a, b)     _mm_or_ps(a, b)
 #define VecXor(a, b)    _mm_xor_ps(a, b)
 #define VecMask(a, msk) _mm_and_ps(a, msk)
 
 // Int
+#define VeciNot(a)       _mm_andnot_si128(a, _mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))
 #define VeciAnd(a, b)    _mm_and_si128(a, b)
 #define VeciOr(a, b)     _mm_or_si128(a, b)
 #define VeciXor(a, b)    _mm_xor_si128(a, b)
@@ -185,11 +189,12 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecCmpGe(a, b) _mm_cmpge_ps(a, b) /* greater or equal */
 #define VecCmpLt(a, b) _mm_cmplt_ps(a, b) /* less than */
 #define VecCmpLe(a, b) _mm_cmple_ps(a, b) /* less or equal */
-#define VecMovemask(a) _mm_movemask_ps(a)
+#define VecMovemask(a) _mm_movemask_ps(a) /* */
 
 #define VecSelect(V1, V2, Control)  _mm_blendv_ps(V1, V2, Control);
 #define VecBlend(a, b, c) _mm_blendv_ps(a, b, c)
 #define VeciBlend(a, b, c) _mm_blendv_ps(a, b, _mm_cvtepi32_ps(c))
+
 
 #elif defined(AX_ARM)
 /*//////////////////////////////////////////////////////////////////////////*/
@@ -305,11 +310,13 @@ typedef uint32x4_t vecu_t;
 #define VecShuffle_2323(vec1, vec2) vcombine_f32(vget_high_f32(vec1), vget_high_f32(vec2))
 #define VecRev(v) ARMVectorRev(v)
 
+#define VecNot(a)     vreinterpretq_f32_u32(vmvnq_u32(vreinterpretq_u32_f32(a)))
 #define VecAnd(a, b) vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), b))
 #define VecOr(a, b)  vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(a), b))
 #define VecXor(a, b) vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a), b))
 
 // Logical
+#define VeciNot(a)  vmvnq_u32(a)
 #define VeciAnd(a, b)  vandq_u32(a, b)
 #define VeciOr(a, b)   vorrq_u32(a, b)
 #define VeciXor(a, b)  veorq_u32(a, b)
@@ -560,6 +567,7 @@ purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecSplatY(V1) MakeVec4(V1.y)
 #define VecSplatZ(V1) MakeVec4(V1.z)
 #define VecSplatW(V1) MakeVec4(V1.w)
+#define VecGetN(v, n) v[n]
 
 #define VecSetX(v, val) v.x = val
 #define VecSetY(v, val) v.y = val
@@ -689,6 +697,34 @@ purefn vec_t NoVectorSelect(vec_t a, vec_t b, veci_t c) {
 }
 #endif
 
+#if defined(AX_SUPPORT_SSE) || defined(AX_ARM)
+// very ugly :(
+purefn float VECTORCALL VecGetN(vec_t v, int n)
+{
+    switch (n)
+    {
+        case 0: return VecGetX(v);
+        case 1: return VecGetY(v);
+        case 2: return VecGetZ(v);
+        case 3: return VecGetW(v);
+    };
+    AX_UNREACHABLE();
+    return 1.0f;
+}
+
+forceinline void VECTORCALL VecSetN(vec_t& v, int n, float f)
+{
+    switch (n)
+    {
+        case 0: VecSetX(v, f); return;
+        case 1: VecSetY(v, f); return;
+        case 2: VecSetZ(v, f); return;
+        case 3: VecSetW(v, f); return;
+    };
+    AX_UNREACHABLE();
+}
+#endif 
+
 purefn float VECTORCALL Min3(vec_t ab)
 {
     vec_t xy = VecMin(VecSplatX(ab), VecSplatY(ab));
@@ -710,7 +746,7 @@ purefn vec_t VECTORCALL VecClamp(vec_t v, vec_t vmin, vec_t vmax)
     return v;
 }
 
-purefn void VECTORCALL Vec3Store(float* f, vec_t v)
+forceinline void VECTORCALL Vec3Store(float* f, vec_t v)
 {
     f[0] = VecGetX(v);
     f[1] = VecGetY(v);
@@ -775,7 +811,6 @@ purefn vec_t VECTORCALL VecFract(vec_t x)
     return VecSub(x, VecFloor(x));
 }
 
-#if 1 // defined(__GNUC__) || defined(__clang__)
 
 inline vec_t VECTORCALL VecSin(vec_t x)
 { 
@@ -837,22 +872,44 @@ inline vec_t VECTORCALL VecAtan2(vec_t y, vec_t x)
     return VecCopySign(th, y);
 }
 
-inline vec_t VECTORCALL VecSinCos(vec_t* cv, vec_t x)
+purefn vec_t VECTORCALL VecSinCos(vec_t* cv, vec_t x)
 {
     vec_t s = VecSin(x);
     *cv = VecCos(x);
     return s;
 }
 
-#else //__clang__ || __gnu
+purefn float VECTORCALL Min3v(vec_t ab)
+{
+    vec_t xy = VecMin(VecSplatX(ab), VecSplatY(ab));
+    return VecGetX(VecMin(xy, VecSplatZ(ab)));
+}
 
-#define VecSin(x)         _mm_sin_ps(x)
-#define VecCos(x)         _mm_cos_ps(x)
-#define VecAtan(x)        _mm_atan_ps(x)
-#define VecAtan2(y, x)    _mm_atan2_ps(y, x)
-#define VecSinCos(dst, x) _mm_sincos_ps(dst, x)
+purefn float VECTORCALL Max3v(vec_t ab)
+{
+    vec_t xy = VecMax(VecSplatX(ab), VecSplatY(ab));
+    return VecGetX(VecMax(xy, VecSplatZ(ab)));
+}
 
-#endif //__clang__ || __gnu
+purefn bool IsPointInsideAABB(vec_t point, vec_t aabbMin, vec_t aabbMax)
+{
+    vec_t cmpMin = VecCmpGe(point, aabbMin);
+    vec_t cmpMax = VecCmpLe(point, aabbMax);
+    vec_t result = VecAnd(cmpMin, cmpMax);
+    return (VecMovemask(result) & 0x7) == 0x7;
+}
+
+purefn float IntersectAABB(vec_t origin, const vec_t invDir, const vec_t aabbMin, const vec_t aabbMax, float minSoFar)
+{
+    if (IsPointInsideAABB(origin, aabbMin, aabbMax)) return 0.1f;
+    vec_t tmin = VecMul(VecSub(aabbMin, origin), invDir);
+    vec_t tmax = VecMul(VecSub(aabbMax, origin), invDir);
+    float tnear = Max3v(VecMin(tmin, tmax));
+    float tfar  = Min3v(VecMax(tmin, tmax));
+    // return tnear < tfar && tnear > 0.0f && tnear < minSoFar;
+    if (tnear < tfar && tnear > 0.0f && tnear < minSoFar)
+        return tnear; else return 1e30f;
+}
 
 
 #ifdef AX_SUPPORT_AVX2

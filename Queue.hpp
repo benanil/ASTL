@@ -66,7 +66,7 @@ public:
 	using iterator = Iterator; // stl compatible
 	using const_iterator = ConstIterator;
 	
-	static __constexpr int InitialSize()
+	static __constexpr uint InitialSize()
 	{
 		return IsPowerOfTwo(AllocatorT::InitialSize) == false ?
            NextPowerOf2(AllocatorT::InitialSize) : AllocatorT::InitialSize;
@@ -221,7 +221,7 @@ public:
 	void Enqueue(const ValueT& value)
 	{
 		GrowIfNecessary(1);
-		ptr[front] = value;
+		ptr[front & (capacity - 1)] = value;
 		front = IncrementIndex(front);
 		size++;
 	}
@@ -229,7 +229,7 @@ public:
 	void Enqueue(const ValueT* begin, uint count)
 	{
 		GrowIfNecessary(count);
-		uint f = front, e = capacity-1;
+		uint f = front & (capacity - 1), e = capacity-1;
 		for (uint i = 0; i < count; i++)
 		{
 			ptr[f++] = begin[i];
@@ -335,8 +335,8 @@ private:
 		}
 		capacity = newCapacity;
 
-		rear     = newCapacity - size; 
-		front    = 0;
+		rear     = 0;
+		front    = newCapacity - size;
 		capacity = newCapacity;
 	}
 };

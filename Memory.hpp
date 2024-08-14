@@ -235,6 +235,26 @@ inline void MemCpy(void* dst, const void* RESTRICT src, uint64_t sizeInBytes)
         MemCpyAligned64(dst, src, sizeInBytes);
     else if (alignment == 4)
         MemCpyAligned32((uint32_t*)dst, (const uint32_t*)src, sizeInBytes);
+    else if (alignment == 16)
+    {
+        #if defined(AX_SUPPORT_SSE) 
+        const __m128* srcV = (__m128* )src;
+        __m128* dstV = (__m128* )dst;
+        #elif defined(AX_ARM)
+        const uint32x4_t* srcV = (uint32x4_t* )src;
+        uint32x4_t* dstV = (uint32x4_t* )dst;
+        #else
+        struct vType { uint64_t a, b; };
+        const vType* srcV = (vType* )src;
+        vType* dstV = (vType* )dst;
+        #endif
+
+        while (sizeInBytes >= 16)
+        {
+            *dstV++ = *srcV++;
+            sizeInBytes -= 16;
+        }
+    }
     else
     {
         const char* cend = (char*)((char*)src + sizeInBytes);

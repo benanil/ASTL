@@ -124,7 +124,8 @@ typedef struct APrimitive_
     // pointers to binary file to lookup position, texture, normal..
     void* indices; 
     void* vertices;
-    
+    unsigned  bvhNodeIndex;
+
     unsigned attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
     int indexType; // GraphicType_UnsignedInt, GraphicType_UnsignedShort.. 
     int numIndices;
@@ -149,10 +150,11 @@ typedef struct APrimitive_
     // texCoords = (Vector2f*)vertexAttribs[1]; // note that tangent is vec4
     // ...
     void* vertexAttribs[AAttribType_Count]; 
+    
     // AABB min and max
     alignas(16) float min[4];
     alignas(16) float max[4];
-
+    
     AMorphTarget* morphTargets; // num morph targets is equal to mesh.num numMorphWeights
 } APrimitive;
 
@@ -288,7 +290,7 @@ typedef struct SceneBundle_
 
     GLTFBuffer* buffers;
 
-    AMesh *     meshes;
+    AMesh*      meshes;
     ANode*      nodes;
     AMaterial*  materials;
     ATexture*   textures;

@@ -49,19 +49,19 @@ struct Vector2
         return v;
     }
     
-    static purefn float Distance(Vector2 a, Vector2 b) {
+    purefn static float Distance(Vector2 a, Vector2 b) {
         float diffx = (float)(a.x - b.x);
         float diffy = (float)(a.y - b.y);
         return Sqrt(diffx * diffx + diffy * diffy);
     }
     
-    static purefn float DistanceSq(Vector2 a, Vector2 b) {
+    purefn static float DistanceSq(Vector2 a, Vector2 b) {
         float diffx = (float)(a.x - b.x);
         float diffy = (float)(a.y - b.y);
         return diffx * diffx + diffy * diffy;
     }
     
-    static purefn Vector2 Rotate(Vector2 vec, float angle)
+    purefn static Vector2 Rotate(Vector2 vec, float angle)
     {
         float s = Sin(angle), c = Cos(angle);
         return Vector2(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
@@ -262,12 +262,17 @@ purefn float Dot(Vector3f a, Vector3f b)
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-purefn float2 ConvertToFloat2(const half* h) {
-	float2 res; ConvertHalfToFloat(&res.x, h, 2); return res;
+purefn float2 ConvertToFloat2(half2 h) {
+	float2 res;
+    res.x = ConvertHalfToFloat((half)(h & 0xFFFF));
+    res.y = ConvertHalfToFloat((half)((h >> 16) & 0xFFFF));
+    return res;
 }
 
 purefn float3 ConvertToFloat3(const half* h) {
-	float3 res; ConvertHalfToFloat(&res.x, h, 3); return res;
+	float3 res; 
+    ConvertHalfToFloat(&res.x, h, 3); 
+    return res;
 }
 
 purefn half2 ConvertToHalf2(const float* h) {
@@ -283,14 +288,16 @@ purefn half2 ConvertToHalf2(Vector2f f) {
 	res |= uint32_t(ConvertFloatToHalf(f.y)) << 16;
 	return res;
 }
-// recommended to use simd instructions instead. this functions are slow in hot loops
-template<typename T> purefn Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y), MIN(a.z, b.z) }; }
-template<typename T> purefn Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y), MAX(a.z, b.z) }; }
-template<typename T> purefn Vector2<T> Min(const Vector2<T>& a, const Vector2<T>& b) { return { MIN(a.x, b.x), MIN(a.y, b.y)}; }
-template<typename T> purefn Vector2<T> Max(const Vector2<T>& a, const Vector2<T>& b) { return { MAX(a.x, b.x), MAX(a.y, b.y)}; }
 
-template<typename T> purefn T Max3(const Vector3<T>& a) { return MAX(MAX(a.x, a.y), a.z); }
-template<typename T> purefn T Min3(const Vector3<T>& a) { return MIN(MIN(a.x, a.y), a.z); }
+// macro min and macro max used for more inlining (even in debug mode)
+// recommended to use simd instructions instead. this functions are slow in hot loops
+template<typename T> purefn Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MacroMin(a.x, b.x), MacroMin(a.y, b.y), MacroMin(a.z, b.z) }; }
+template<typename T> purefn Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MacroMax(a.x, b.x), MacroMax(a.y, b.y), MacroMax(a.z, b.z) }; }
+template<typename T> purefn Vector2<T> Min(const Vector2<T>& a, const Vector2<T>& b) { return { MacroMin(a.x, b.x), MacroMin(a.y, b.y)}; }
+template<typename T> purefn Vector2<T> Max(const Vector2<T>& a, const Vector2<T>& b) { return { MacroMax(a.x, b.x), MacroMax(a.y, b.y)}; }
+
+template<typename T> purefn T Max3(const Vector3<T>& a) { return MAX(MacroMax(a.x, a.y), a.z); }
+template<typename T> purefn T Min3(const Vector3<T>& a) { return MIN(MacroMin(a.x, a.y), a.z); }
 
 purefn Vector2s ToVector2s(const Vector2f& vec) { return {(short)vec.x, (short)vec.y }; }
 purefn Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (float)vec.y }; }
@@ -301,20 +308,6 @@ pureconst bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
 {
     return point.x <= max.x && point.y <= max.y &&
            point.x >= min.x && point.y >= min.y;
-}
-
-pureconst Vector3f HUEToRGB(float h) {
-    float r = Clamp01(Abs(h * 6.0f - 3.0f) - 1.0f);
-    float g = Clamp01(2.0f - Abs(h * 6.0f - 2.0f));
-    float b = Clamp01(2.0f - Abs(h * 6.0f - 4.0f));
-    return { r, g, b };
-}
-
-// converts hue to rgb color
-pureconst uint32 HUEToRGBU32(float h) {
-    Vector3f v3 = HUEToRGB(h);
-    uint32 res  = PackColor3PtrToUint(v3.arr);
-    return res | 0xFF000000u; // make the alpha 255
 }
 
 pureconst uint32 GreaterThan(Vector2f a, Vector2f b)

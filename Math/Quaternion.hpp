@@ -176,9 +176,9 @@ inline void QuaternionFromMatrix(float* Orientation, const float* m) {
     
     if (trace > 0.0f)
     {
-        root = Sqrt(trace + 1.0f);
-        Orientation[3] = 0.5f * root;
-        root = 0.5f / root;
+        root = RSqrt(trace + 1.0f);
+        Orientation[3] = 0.5f / root;
+        root = 0.5f * root;
         Orientation[0] = root * (m[1 * numCol + 2] - m[2 * numCol + 1]);
         Orientation[1] = root * (m[2 * numCol + 0] - m[0 * numCol + 2]);
         Orientation[2] = root * (m[0 * numCol + 1] - m[1 * numCol + 0]);
@@ -192,10 +192,10 @@ inline void QuaternionFromMatrix(float* Orientation, const float* m) {
         j = Next[i];
         k = Next[j];
         
-        root = Sqrt(m[i * numCol + i] - m[j * numCol + j] - m[k * numCol + k] + 1.0f);
+        root = RSqrt(m[i * numCol + i] - m[j * numCol + j] - m[k * numCol + k] + 1.0f);
         
-        Orientation[i] = 0.5f * root;
-        root = 0.5f / root;
+        Orientation[i] = 0.5f / root;
+        root = 0.5f * root;
         Orientation[j] = root * (m[i * numCol + j] + m[j * numCol + i]);
         Orientation[k] = root * (m[i * numCol + k] + m[k * numCol + i]);
         Orientation[3] = root * (m[j * numCol + k] - m[k*numCol+j]);

@@ -369,7 +369,7 @@ pureconst float CosR(float x) {
     return Cos(FMod(x + PI, TwoPI) - PI);
 }
 
-pureconst void SinCos(float x, float* sp, float* cp) 
+forceinline void SinCos(float x, float* sp, float* cp) 
 {
     *sp = Sin(x);
     *cp = Cos(x);
@@ -420,17 +420,17 @@ constexpr half HalfFP16 = 14336; // fp16 0.5
 constexpr half Sqrt2FP16 = 15784; // fp16 sqrt(2)
 #define HALF2XY(x, y) ((x) | ((y) << 16));
 
-purefn float ConvertHalfToFloat(half x) {
-#if defined(AX_SUPPORT_SSE) 
-    return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(x))); 
-#elif defined(__ARM_NEON__)
-    return _cvtsh_ss(x); 
-#else
+purefn float ConvertHalfToFloat(half h) {
+    #if defined(AX_SUPPORT_SSE) 
+    return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(h))); 
+    #elif defined(__ARM_NEON__)
+    return _cvtsh_ss(h); 
+    #else
     uint h_e = h & 0x00007c00u;
     uint h_m = h & 0x000003ffu;
     uint h_s = h & 0x00008000u;
     uint h_e_f_bias = h_e + 0x0001c000u;
-    uint h_m_nlz = LeadingZeroCount(h_m) - (32u - 10u); // Assuming 32-bit integer
+    uint h_m_nlz = LeadingZeroCount32(h_m) - (32u - 10u); // Assuming 32-bit integer
 
     uint f_s = h_s << 0x00000010u;
     uint f_e = h_e_f_bias << 0x0000000du;
@@ -463,7 +463,7 @@ purefn float ConvertHalfToFloat(half x) {
     uint f_nan_result = (msk & f_em_nan) | (~msk & f_inf_result);
     uint f_result = f_s | f_nan_result;
     return BitCast<float>(f_result);
-#endif
+    #endif
 }
 // faster but not always safe version. taken from: https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
 // const uint e = (x & 0x7C00) >> 10; // exponent
@@ -474,7 +474,7 @@ purefn float ConvertHalfToFloat(half x) {
 // return BitCast<float>(a); // sign : normalized : denormalized
 
 // maybe write 4 quantity version that is faster 
-purefn void ConvertHalfToFloat(float* res, const half* x, short n) 
+forceinline void ConvertHalfToFloat(float* res, const half* x, short n) 
 {   
     for (int i = 0; i < n; i++)
         res[i] = ConvertHalfToFloat(x[i]);
@@ -504,7 +504,7 @@ purefn half ConvertFloatToHalf(float Value) {
 }
 
 // converts maximum 4 half
-purefn void ConvertFloatToHalfN(half* res, const float* x, short n) {
+forceinline void ConvertFloatToHalfN(half* res, const float* x, short n) {
 #if defined(AX_SUPPORT_SSE)
     alignas(16) half a[8];
     float b[8]; 
@@ -517,7 +517,7 @@ purefn void ConvertFloatToHalfN(half* res, const float* x, short n) {
 #endif
 }
 
-purefn void ConvertFloatToHalf4(half* res, const float* x) {
+forceinline void ConvertFloatToHalf4(half* res, const float* x) {
     res[0] = ConvertFloatToHalf(x[0]);
     res[1] = ConvertFloatToHalf(x[1]);
     res[2] = ConvertFloatToHalf(x[2]);
@@ -540,45 +540,6 @@ pureconst short PackUnorm16(float x) {
 
 pureconst float UnpackUnorm16(short x) {
     return (float)x / (float)UINT16_MAX;
-}
-
-/*//////////////////////////////////////////////////////////////////////////*/
-/*                            Color                                         */
-/*//////////////////////////////////////////////////////////////////////////*/
-
-pureconst uint PackColorToUint(uint8 r, uint8 g, uint8 b, uint8 a) {
-    return r | (uint(g) << 8) | (uint(b) << 16) | (uint(a) << 24);
-}
-
-pureconst uint PackToRGBAGrayScale(uint8 gray) {
-    return uint(gray) * 0x01010101u;
-}
-
-pureconst uint PackColorToUint(float r, float g, float b) {
-    return (uint)(r * 255.0f) | ((uint)(g * 255.0f) << 8) | ((uint)(b * 255.0f) << 16);
-}
-
-pureconst uint PackColor3PtrToUint(float* c) {
-    return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16);
-}
-
-pureconst uint PackColor4PtrToUint(float* c) {
-    return (uint)(*c * 255.0f) | ((uint)(c[1] * 255.0f) << 8) | ((uint)(c[2] * 255.0f) << 16) | ((uint)(c[3] * 255.0f) << 24);
-}
-
-pureconst void UnpackColor3Uint(unsigned color, float* colorf) {
-    const float toFloat = 1.0f / 255.0f;
-    colorf[0] = float(color >> 0  & 0xFF) * toFloat;
-    colorf[1] = float(color >> 8  & 0xFF) * toFloat;
-    colorf[2] = float(color >> 16 & 0xFF) * toFloat;
-}
-
-pureconst void UnpackColor4Uint(unsigned color, float* colorf) {
-    const float toFloat = 1.0f / 255.0f;
-    colorf[0] = float(color >> 0  & 0xFF) * toFloat;
-    colorf[1] = float(color >> 8  & 0xFF) * toFloat;
-    colorf[2] = float(color >> 16 & 0xFF) * toFloat;
-    colorf[3] = float(color >> 24) * toFloat;
 }
 
 /*//////////////////////////////////////////////////////////////////////////*/

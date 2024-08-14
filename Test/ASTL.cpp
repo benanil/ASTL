@@ -4,9 +4,14 @@
 #include "AdventOfCode2022.cpp"
 #include "AdventOfCode2023.cpp"
 
+static void PrintPerf(const char* text)
+{
+    printf(text);
+}
+
 int main()
 {
-    BeginProfile();
+    BeginProfile(PrintPerf);
     
     // AdventOfCodeTests21();
     // AdventOfCodeTests22();

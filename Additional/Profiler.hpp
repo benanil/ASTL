@@ -2,7 +2,7 @@
 
 // from Casey Muratori's Computer Enhance course
 
-// #define AX_PROFILER_DISABLE
+#define AX_PROFILER_DISABLE
 
 #include "../Common.hpp"
 
@@ -46,9 +46,8 @@ struct profile_block
     uint32_t AnchorIndex;
 };
 
-
 void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor);
 
-void BeginProfile();
+void BeginProfile(void(*printFn)(const char* text));
 
 void EndAndPrintProfile();
