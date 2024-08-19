@@ -50,7 +50,7 @@ pureconst double SqrtConstexpr(double a) {
     // double version is also here: https://gist.github.com/benanil/9d1668c0befb24263e27bd04dfa2e90f#file-mathfunctionswithoutstl-c-L230
     const double A = 0.417319242, B = 0.5901788532;
     union { double fp; struct { unsigned lo, hi; }; } x {};
-    if (a <= 0.001) return 0.0f;
+    if (a <= 0.001) return 0.0;
     x.fp = (double)a;
     // grab the exponent
     unsigned expo = (x.hi >> 20u) - 0x3fe;
@@ -74,8 +74,20 @@ pureconst double SqrtConstexpr(double a) {
     return x.fp;
 }
 
-pureconst float SqrtConstexpr(float a) {
-    return (float)SqrtConstexpr((double)a);
+pureconst float SqrtConstexpr(float x) {
+    float y = BitCast<float>(532545536u + (BitCast<uint32_t>(x) >> 1u));
+    y = 0.5f * (y + x / y);
+    y = 0.5f * (y + x / y);
+    return y;
+}
+
+// cbrt, std::cbrt
+pureconst float CubeRootConstexpr(float x)
+{
+    float y = BitCast<float>(709973695u + BitCast<uint32_t>(x)/3u);
+    y = y * (2.0f / 3.0f) + (1.0f / 3.0f) * x / (y * y);
+    y = y * (2.0f / 3.0f) + (1.0f / 3.0f) * x / (y * y);
+    return y;
 }
 
 purefn float Sqrt(float a) {
@@ -98,7 +110,7 @@ purefn float RSqrt(float x) {
     //       vrsqrtss        xmm0, xmm0, xmm0
     //       ret
     return _mm_cvtss_f32(_mm_rsqrt_ps(_mm_set_ps1(x)));
-#elif defined(AX_ARM)
+#elif defined(AX_SUPPORT_NEON)
     return vget_lane_f32(vrsqrte_f32(vdup_n_f32(x)), 0);
 #else
     float f = x;
@@ -285,7 +297,7 @@ purefn float ASin(float z) {
     return ATan2(z, Sqrt(1.0f-(z * z)));
 }
 
-// Valid in the range -1..1.
+// Valid input range -1..1 output is -pi..pi
 purefn float ACos(float x)   
 {
     // Lagarde 2014, "Inverse trigonometric functions GPU optimization for AMD GCN architecture"
@@ -407,122 +419,6 @@ purefn    float ASinPI(float z) { return ASin(z) / PI; }
 purefn    float ACosPI(float x) { return ACos(x) / PI; }
 pureconst float CosPI(float x)  { return Cos(x) / PI; }
 pureconst float SinPI(float x)  { return Sin(x) / PI; }
-
-/*//////////////////////////////////////////////////////////////////////////*/
-/*                             Half                                         */
-/*//////////////////////////////////////////////////////////////////////////*/
-
-typedef ushort half;
-constexpr half OneFP16 = 15360;
-constexpr half MinusOneFP16 = 48128;
-constexpr half ZeroFP16 = 0;
-constexpr half HalfFP16 = 14336; // fp16 0.5
-constexpr half Sqrt2FP16 = 15784; // fp16 sqrt(2)
-#define HALF2XY(x, y) ((x) | ((y) << 16));
-
-purefn float ConvertHalfToFloat(half h) {
-    #if defined(AX_SUPPORT_SSE) 
-    return _mm_cvtss_f32(_mm_cvtph_ps(_mm_set1_epi16(h))); 
-    #elif defined(__ARM_NEON__)
-    return _cvtsh_ss(h); 
-    #else
-    uint h_e = h & 0x00007c00u;
-    uint h_m = h & 0x000003ffu;
-    uint h_s = h & 0x00008000u;
-    uint h_e_f_bias = h_e + 0x0001c000u;
-    uint h_m_nlz = LeadingZeroCount32(h_m) - (32u - 10u); // Assuming 32-bit integer
-
-    uint f_s = h_s << 0x00000010u;
-    uint f_e = h_e_f_bias << 0x0000000du;
-    uint f_m = h_m << 0x0000000du;
-    uint f_em = f_e | f_m;
-        
-    uint h_f_m_sa = h_m_nlz - 0x00000008u;
-    uint f_e_denorm_unpacked = 0x0000007eu - h_f_m_sa;
-    uint h_f_m = h_m << h_f_m_sa;
-    uint f_m_denorm = h_f_m & 0x007fffffu;
-    uint f_e_denorm = f_e_denorm_unpacked << 0x00000017u;
-    uint f_em_denorm = f_e_denorm | f_m_denorm;
-    uint f_em_nan = 0x7f800000u | f_m;
-        
-    uint is_e_eqz_msb = h_e - 1u;
-    uint is_m_nez_msb = ~h_m + 1u;
-    uint is_e_flagged_msb = 0x00007bffu - h_e;
-    uint is_zero_msb = ~(is_e_eqz_msb & is_m_nez_msb);
-    uint is_inf_msb = ~(is_e_flagged_msb & is_m_nez_msb);
-    uint is_denorm_msb = is_m_nez_msb & is_e_eqz_msb;
-    uint is_nan_msb = is_e_flagged_msb & is_m_nez_msb;
-        
-    uint is_zero = is_zero_msb >> 31u;
-    uint f_zero_result = f_em & ~is_zero;
-    uint msk = is_denorm_msb >> 31;
-    uint f_denorm_result = (msk & f_em_denorm) | (~msk & f_zero_result);
-    msk = is_inf_msb >> 31;
-    uint f_inf_result = (msk & 0x7f800000u) | (~msk & f_denorm_result);
-    msk = is_nan_msb >> 31;
-    uint f_nan_result = (msk & f_em_nan) | (~msk & f_inf_result);
-    uint f_result = f_s | f_nan_result;
-    return BitCast<float>(f_result);
-    #endif
-}
-// faster but not always safe version. taken from: https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
-// const uint e = (x & 0x7C00) >> 10; // exponent
-// const uint m = (x & 0x03FF) << 13; // mantissa
-// const uint v = BitCast<uint>((float)m) >> 23; // evil log2 bit hack to count leading zeros in denormalized format
-// uint a = (x & 0x8000) << 16 | (e != 0) * ((e + 112) << 23 | m);
-// a |= ((e == 0) & (m != 0)) * ((v - 37) << 23 | ((m << (150 - v)) & 0x007FE000));
-// return BitCast<float>(a); // sign : normalized : denormalized
-
-// maybe write 4 quantity version that is faster 
-forceinline void ConvertHalfToFloat(float* res, const half* x, short n) 
-{   
-    for (int i = 0; i < n; i++)
-        res[i] = ConvertHalfToFloat(x[i]);
-}
-
-purefn half ConvertFloatToHalf(float Value) {
-#if defined(AX_SUPPORT_SSE)
-    return _mm_extract_epi16(_mm_cvtps_ph(_mm_set_ss(Value), 0), 0);
-#elif defined(__ARM_NEON__)
-    return _cvtss_sh(Value, 0);
-#else
-    uint32_t Result; // branch removed version of DirectxMath function
-    uint32_t IValue = BitCast<uint32_t>(Value);
-    uint32_t Sign = (IValue & 0x80000000u) >> 16U;
-    IValue = IValue & 0x7FFFFFFFu;      // Hack off the sign
-    // if (IValue > 0x47FFEFFFu) { 
-    //     return 0x7FFFU | Sign; // The number is too large to be represented as a half.  Saturate to infinity.
-    // }
-    uint32_t mask = 0u - (IValue < 0x38800000u);
-    uint32_t b = IValue + 0xC8000000U;
-    uint32_t a = (0x800000u | (IValue & 0x7FFFFFu)) >> (113u - (IValue >> 23u));
-    
-    IValue = (mask & a) | (~mask & b);
-    Result = ((IValue + 0x0FFFu + ((IValue >> 13u) & 1u)) >> 13u) & 0x7FFFu; 
-    return (half)(Result | Sign);
-#endif
-}
-
-// converts maximum 4 half
-forceinline void ConvertFloatToHalfN(half* res, const float* x, short n) {
-#if defined(AX_SUPPORT_SSE)
-    alignas(16) half a[8];
-    float b[8]; 
-    SmallMemCpy(b, x, n * sizeof(float));
-    _mm_store_si128((__m128i*)a, _mm_cvtps_ph(_mm_loadu_ps(x), 0)); // MSVC does not have scalar instructions.
-    SmallMemCpy(res, a, n * sizeof(half));
-#else
-    for (int i = 0; i < n; i++)
-        res[i] = ConvertFloatToHalf(x[i]);
-#endif
-}
-
-forceinline void ConvertFloatToHalf4(half* res, const float* x) {
-    res[0] = ConvertFloatToHalf(x[0]);
-    res[1] = ConvertFloatToHalf(x[1]);
-    res[2] = ConvertFloatToHalf(x[2]);
-    res[3] = ConvertFloatToHalf(x[3]);
-}
 
 // packs -1,1 range float to short
 pureconst short PackSnorm16(float x) {

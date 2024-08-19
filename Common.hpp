@@ -40,7 +40,7 @@ typedef uint32_t uint;
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
-    #define purefn [[clang::always_inline]] __attribute__((pure)) 
+    #define purefn inline __attribute__((pure))
 #elif defined(_MSC_VER)
     #define purefn __forceinline __declspec(noalias)
 #else
@@ -48,7 +48,7 @@ typedef uint32_t uint;
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
-    #define forceinline [[clang::always_inline]]
+    #define forceinline inline
 #elif defined(_MSC_VER)
     #define forceinline __forceinline 
 #else
@@ -197,6 +197,11 @@ typedef uint32_t uint;
     #define AX_X86
 #elif defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
     #define AX_ARM
+#endif
+
+#if defined( _M_ARM64 ) || defined( __aarch64__ ) || defined( __arm64__ ) || defined(__ARM_NEON__)
+    #define AX_SUPPORT_NEON
+    #include <arm_fp16.h>
 #endif
 
 #if defined(AX_ARM)

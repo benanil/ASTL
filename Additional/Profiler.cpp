@@ -39,6 +39,8 @@ static uint64_t  ReadOSTimer(void)
 }
 #endif
 
+#ifndef AX_PROFILER_DISABLE
+
 /* NOTE(casey): This does not need to be "inline", it could just be "static"
    because compilers will inline it anyway. But compilers will warn about
    static functions that aren't used. So "inline" is just the simplest way
@@ -117,7 +119,6 @@ profile_block::~profile_block(void)
     Anchor->Label = Label;
 }
 
-#ifndef AX_PROFILER_DISABLE
 
 static void(*PrintPerfFn)(const char*);
 
@@ -171,15 +172,6 @@ void EndAndPrintProfile()
     memset(&GlobalProfiler, 0, sizeof(profiler));
     GlobalProfilerParent = 0;
 }
-#else
-
-
-void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor) {}
-
-
-void BeginProfile(void(*printFn)(const char* text)) {}
-
-void EndAndPrintProfile() {}
 
 #endif
 

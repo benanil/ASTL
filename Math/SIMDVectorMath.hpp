@@ -50,18 +50,20 @@ typedef __m128  vec_t;
 typedef __m128  veci_t;
 typedef __m128i vecu_t;
 
-#define VecZero()           _mm_setzero_ps()
-#define VecOne()            _mm_set1_ps(1.0f)
-#define VecNegativeOne()    _mm_setr_ps( -1.0f, -1.0f, -1.0f, -1.0f)
-#define VecSet1(x)          _mm_set1_ps(x)
-#define VeciSet1(x)         _mm_set1_epi32(x)
-#define VecSet(x, y, z, w)  _mm_set_ps(x, y, z, w)  /* -> {w, z, y, x} */
-#define VecSetR(x, y, z, w) _mm_setr_ps(x, y, z, w) /* -> {x, y, z, w} */
-#define VecLoad(x)          _mm_loadu_ps(x)
-#define VecLoadA(x)         _mm_load_ps(x)
+#define VecZero()            _mm_setzero_ps()
+#define VecOne()             _mm_set1_ps(1.0f)
+#define VecNegativeOne()     _mm_setr_ps( -1.0f, -1.0f, -1.0f, -1.0f)
+#define VecSet1(x)           _mm_set1_ps(x)
+
+#define VecSet(x, y, z, w)   _mm_set_ps(x, y, z, w)  /* -> {w, z, y, x} */
+#define VecSetR(x, y, z, w)  _mm_setr_ps(x, y, z, w) /* -> {x, y, z, w} */
+#define VecLoad(x)           _mm_loadu_ps(x)
+#define VecLoadA(x)          _mm_load_ps(x)
+
 // #define Vec3Load(x)         VecSetW(_mm_loadu_ps(x), 0.0f)
 
-#define VecStore(ptr, x)       _mm_store_ps(ptr, x)
+#define VecStore(ptr, x)       _mm_storeu_ps(ptr, x)
+#define VecStoreA(ptr, x)      _mm_store_ps(ptr, x)
 #define VecFromInt(x, y, z, w) _mm_castsi128_ps(_mm_setr_epi32(x, y, z, w))
 #define VecFromInt1(x)         _mm_castsi128_ps(_mm_set1_epi32(x))
 #define VecToInt(x) x
@@ -72,6 +74,7 @@ typedef __m128i vecu_t;
 #define VecCvtF32U32(x) _mm_cvtps_epi32(x)
 #define VecCvtU32F32(x) _mm_cvtepi32_ps(x)
 
+// _mm_permute_ps is avx only
 // Get Set
 #define VecSplatX(v) _mm_permute_ps(v, MakeShuffleMask(0, 0, 0, 0)) /* { v.x, v.x, v.x, v.x} */
 #define VecSplatY(v) _mm_permute_ps(v, MakeShuffleMask(1, 1, 1, 1)) /* { v.y, v.y, v.y, v.y} */
@@ -83,6 +86,7 @@ typedef __m128i vecu_t;
 #define VecGetZ(v) _mm_cvtss_f32(VecSplatZ(v))  /* return v.z */
 #define VecGetW(v) _mm_cvtss_f32(VecSplatW(v))  /* return v.w */
 
+// SSE4.1
 #define VecSetX(v, x) ((v) = _mm_move_ss  ((v), _mm_set_ss(x)))
 #define VecSetY(v, y) ((v) = _mm_insert_ps((v), _mm_set_ss(y), 0x10))
 #define VecSetZ(v, z) ((v) = _mm_insert_ps((v), _mm_set_ss(z), 0x20))
@@ -98,12 +102,6 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecSub(a, b) _mm_sub_ps(a, b)
 #define VecMul(a, b) _mm_mul_ps(a, b)
 #define VecDiv(a, b) _mm_div_ps(a, b)
-
-// int 
-#define VeciAdd(a, b) _mm_add_epi32(a, b)
-#define VeciSub(a, b) _mm_sub_epi32(a, b)
-#define VeciMul(a, b) _mm_mul_epi32(a, b)
-#define VeciDiv(a, b) _mm_div_epi32(a, b)
 
 #define VecAddf(a, b) _mm_add_ps(a, VecSet1(b))
 #define VecSubf(a, b) _mm_sub_ps(a, VecSet1(b))
@@ -121,6 +119,8 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecRcp(a) _mm_rcp_ps(a) /* 1.0f / a */
 #define VecSqrt(a) _mm_sqrt_ps(a)
 
+#define VeciNeg(a) _mm_sub_epi32(_mm_set1_epi32(0), a) /* -a */
+
 // Vector Math
 #define VecDot(a, b)  _mm_dp_ps(a, b, 0xff)
 #define VecDotf(a, b) _mm_cvtss_f32(_mm_dp_ps(a, b, 0xff))
@@ -137,16 +137,11 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define Vec3Len(v)     _mm_sqrt_ps(_mm_dp_ps(v, v, 0x7f))
 
 // Swizzling Masking
-#define VecSelect1000 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000))
-#define VecSelect1100 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
-#define VecSelect1110 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
-#define VecSelect1011 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))
-#define VecSelect1111 _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))
-
-#define VecIdentityR0 _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f)
-#define VecIdentityR1 _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f)
-#define VecIdentityR2 _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f)
-#define VecIdentityR3 _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
+#define VecSelect1000  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000))
+#define VecSelect1100  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
+#define VecSelect1110  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
+#define VecSelect1011  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))
+#define VecSelect1111  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))
 
 #define VecMaskXY _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000))
 #define VecMask3  _mm_castsi128_ps(_mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000))
@@ -175,12 +170,6 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecXor(a, b)    _mm_xor_ps(a, b)
 #define VecMask(a, msk) _mm_and_ps(a, msk)
 
-// Int
-#define VeciNot(a)       _mm_andnot_si128(a, _mm_setr_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))
-#define VeciAnd(a, b)    _mm_and_si128(a, b)
-#define VeciOr(a, b)     _mm_or_si128(a, b)
-#define VeciXor(a, b)    _mm_xor_si128(a, b)
-
 #define VecMax(a, b) _mm_max_ps(a, b)
 #define VecMin(a, b) _mm_min_ps(a, b)
 #define VecFloor(a)  _mm_floor_ps(a)
@@ -191,9 +180,56 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 #define VecCmpLe(a, b) _mm_cmple_ps(a, b) /* less or equal */
 #define VecMovemask(a) _mm_movemask_ps(a) /* */
 
-#define VecSelect(V1, V2, Control)  _mm_blendv_ps(V1, V2, Control);
+#define VecSelect(V1, V2, Control)  _mm_blendv_ps(V1, V2, Control)
 #define VecBlend(a, b, c) _mm_blendv_ps(a, b, c)
-#define VeciBlend(a, b, c) _mm_blendv_ps(a, b, _mm_cvtepi32_ps(c))
+
+//------------------------------------------------------------------------
+// Veci
+#define VeciZero()            _mm_set1_epi32(0)
+#define VeciSet1(x)          _mm_set1_epi32(x)
+#define VeciSet(x, y, z, w)  _mm_set_epi32(x, y, z, w)
+#define VeciSetR(x, y, z, w) _mm_setr_epi32(x, y, z, w)
+#define VeciLoadA(x)         _mm_load_epi32(x)
+#define VeciLoad(x)          _mm_loadu_epi32(x)
+#define VeciLoad64(qword)    _mm_loadu_si64(qword)     /* loads 64bit integer to first 8 bytes of register */
+
+// SSE4.1
+#define VeciSetX(v, x) ((v) = _mm_insert_epi32((v), 0, x))
+#define VeciSetY(v, y) ((v) = _mm_insert_epi32((v), 1, y))
+#define VeciSetZ(v, z) ((v) = _mm_insert_epi32((v), 2, z))
+#define VeciSetW(v, w) ((v) = _mm_insert_epi32((v), 3, w))
+
+#define VeciSelect1111 _mm_set1_epi32(0xFFFFFFFF)
+
+#define VecIdentityR0 _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f)
+#define VecIdentityR1 _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f)
+#define VecIdentityR2 _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f)
+#define VecIdentityR3 _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
+
+#define VeciAdd(a, b) _mm_add_epi32(a, b)
+#define VeciSub(a, b) _mm_sub_epi32(a, b)
+#define VeciMul(a, b) _mm_mul_epi32(a, b)
+
+#define VeciNot(a)             _mm_andnot_si128(a, _mm_set1_epi32(0xFFFFFFFF))
+#define VeciAnd(a, b)          _mm_and_si128(a, b)
+#define VeciOr(a, b)           _mm_or_si128(a, b)
+#define VeciXor(a, b)          _mm_xor_si128(a, b)
+
+#define VeciAndNot(a, b)       _mm_andnot_si128(a, b)  /* ~a  & b */
+#define VeciSrl(a, b)          _mm_srlv_epi32(a, b)    /*  a >> b */
+#define VeciSll(a, b)          _mm_sllv_epi32(a, b)    /*  a << b */
+#define VeciSrl32(a, b)        _mm_srli_epi32(a, b)    /*  a >> b */
+#define VeciSll32(a, b)        _mm_slli_epi32(a, b)    /*  a << b */
+#define VeciToVecf(a)          _mm_castsi128_ps(a)     /*  a << b */
+
+#define VeciCmpLt(a, b) _mm_cmplt_epi32(a, b)
+#define VeciCmpLe(a, b) _mm_cmple_epi32(a, b)
+#define VeciCmpGt(a, b) _mm_cmpgt_epi32(a, b)
+#define VeciCmpGe(a, b) _mm_cmpge_epi32(a, b)
+
+#define VeciUnpackLow(a, b)   _mm_unpacklo_epi32(a, b)  /*  [a.x, a.y, b.x, b.y] */
+#define VeciUnpackLow16(a, b) _mm_unpacklo_epi16(a, b)  /*  [a.x, a.y, b.x, b.y] */
+#define VeciBlend(a, b, c)    _mm_blendv_epi8(a, b, c)
 
 
 #elif defined(AX_ARM)
@@ -209,7 +245,6 @@ typedef uint32x4_t vecu_t;
 #define VecOne()            vdupq_n_f32(1.0f)
 #define VecNegativeOne()    vdupq_n_f32(-1.0f)
 #define VecSet1(x)          vdupq_n_f32(x)
-#define VeciSet1(x)         vdupq_n_u32(x)
 #define VecSet(x, y, z, w)  ARMCreateVec(w, z, y, x) /* -> {w, z, y, x} */
 #define VecSetR(x, y, z, w) ARMCreateVec(x, y, z, w) /* -> {x, y, z, w} */
 #define VecLoad(x)          vld1q_f32(x)
@@ -217,14 +252,12 @@ typedef uint32x4_t vecu_t;
 #define Vec3Load(x)         ARMVector3Load(x)
 
 #define VecStore(ptr, x)        vst1q_f32(ptr, x)
+#define VecStoreA(ptr, x)       vst1q_f32(ptr, x)
 #define VecFromInt1(x)          vdupq_n_s32(x)
 #define VecFromInt(x, y, z, w)  ARMCreateVecI(x, y, z, w)
 #define VecToInt(x) vreinterpretq_u32_f32(x)
 #define VecCvtF32U32(x) vcvtq_u32_f32(x)
 #define VecCvtU32F32(x) vcvtq_f32_u32(x)
-
-#define VecFromVeci(x) vreinterpretq_f32_u32(x)
-#define VeciFromVec(x) vreinterpretq_u32_f32(x)
 
 // Get Set
 #define VecSplatX(v)  vdupq_lane_f32(vget_low_f32(v), 0)
@@ -248,10 +281,6 @@ typedef uint32x4_t vecu_t;
 #define VecMul(a, b) vmulq_f32(a, b)
 #define VecDiv(a, b) ARMVectorDevide(a, b)
                                           
-#define VeciAdd(a, b) vaddq_u32(a, b)
-#define VeciSub(a, b) vsubq_u32(a, b)
-#define VeciMul(a, b) vmulq_u32(a, b)
-
 #define VecAddf(a, b) vaddq_f32(a, vdupq_n_f32(b))
 #define VecSubf(a, b) vsubq_f32(a, vdupq_n_f32(b))
 #define VecMulf(a, b) vmulq_n_f32(a, b)
@@ -281,24 +310,6 @@ typedef uint32x4_t vecu_t;
 #define Vec3Lenf(v)    VecGetX(ARMVector3Length(v))
 #define Vec3Len(v)     ARMVector3Length(v)
 
-// Swizzling Masking
-#define VecSelect1000 ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0x00000000u, 0x00000000u)
-#define VecSelect1100 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
-#define VecSelect1110 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u)
-#define VecSelect1011 ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0xFFFFFFFFu, 0xFFFFFFFFu)
-
-#define VecIdentityR0 ARMCreateVec(1.0f, 0.0f, 0.0f, 0.0f)
-#define VecIdentityR1 ARMCreateVec(0.0f, 1.0f, 0.0f, 0.0f)
-#define VecIdentityR2 ARMCreateVec(0.0f, 0.0f, 1.0f, 0.0f)
-#define VecIdentityR3 ARMCreateVec(0.0f, 0.0f, 0.0f, 1.0f)
-
-#define VecMaskXY ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
-#define VecMask3 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u)
-#define VecMaskX ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0x00000000u, 0x00000000u)
-#define VecMaskY ARMCreateVecI(0x00000000u, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
-#define VecMaskZ ARMCreateVecI(0x00000000u, 0x00000000u, 0xFFFFFFFFu, 0x00000000u)
-#define VecMaskW ARMCreateVecI(0x00000000u, 0x00000000u, 0x00000000u, 0xFFFFFFFFu)
-
 // vec(0, 1, 2, 3) -> (vec[x], vec[y], vec[z], vec[w])
 #define VecSwizzle(vec, x, y, z, w) ARMVectorSwizzle < x, y, z, w > (vec)
 
@@ -315,12 +326,6 @@ typedef uint32x4_t vecu_t;
 #define VecOr(a, b)  vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(a), b))
 #define VecXor(a, b) vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a), b))
 
-// Logical
-#define VeciNot(a)  vmvnq_u32(a)
-#define VeciAnd(a, b)  vandq_u32(a, b)
-#define VeciOr(a, b)   vorrq_u32(a, b)
-#define VeciXor(a, b)  veorq_u32(a, b)
-
 #define VecMask(a, msk) VecSelect(vdupq_n_f32(0.0f), a, msk)
 
 #define VecMax(a, b) vmaxq_f32(a, b)
@@ -335,6 +340,70 @@ typedef uint32x4_t vecu_t;
 
 #define VecSelect(V1, V2, Control) vbslq_f32(Control, V2, V1)
 #define VecBlend(a, b, Control)    vbslq_f32(Control, b, a)
+
+//------------------------------------------------------------------------
+// Veci
+#define VeciZero()   vdupq_n_u32(0)
+#define VeciSet1(x)  vdupq_n_u32(x)
+#define VeciSetR(x, y, z, w)  ARMCreateVecI(x, y, z, w)
+#define VeciSet(x, y, z, w)   ARMCreateVecI(w, z, y, x)
+#define VeciLoadA(x)          vld1q_u32(x)
+#define VeciLoad(x)           vld1q_u32(x)
+#define VeciLoad64(qword)     vcombine_u32(vcreate_u32(qword), vcreate_u32(0ull)) /* loads 64bit integer to first 8 bytes of register */
+
+#define VeciSetX(v, x) ((v) = vsetq_lane_u32(x, v, 0))
+#define VeciSetY(v, y) ((v) = vsetq_lane_u32(y, v, 1))
+#define VeciSetZ(v, z) ((v) = vsetq_lane_u32(z, v, 2))
+#define VeciSetW(v, w) ((v) = vsetq_lane_u32(w, v, 3))
+
+#define VeciAdd(a, b) vaddq_u32(a, b)
+#define VeciSub(a, b) vsubq_u32(a, b)
+#define VeciMul(a, b) vmulq_u32(a, b)
+
+#define VecFromVeci(x) vreinterpretq_f32_u32(x)
+#define VeciFromVec(x) vreinterpretq_u32_f32(x)
+// Swizzling Masking
+#define VecSelect1000 ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0x00000000u, 0x00000000u)
+#define VecSelect1100 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
+#define VecSelect1110 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u)
+#define VecSelect1011 ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0xFFFFFFFFu, 0xFFFFFFFFu)
+#define VecSelect1111 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu)
+
+#define VeciSelect1111 ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu)
+
+#define VecIdentityR0 ARMCreateVec(1.0f, 0.0f, 0.0f, 0.0f)
+#define VecIdentityR1 ARMCreateVec(0.0f, 1.0f, 0.0f, 0.0f)
+#define VecIdentityR2 ARMCreateVec(0.0f, 0.0f, 1.0f, 0.0f)
+#define VecIdentityR3 ARMCreateVec(0.0f, 0.0f, 0.0f, 1.0f)
+
+#define VecMaskXY ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
+#define VecMask3  ARMCreateVecI(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x00000000u)
+#define VecMaskX  ARMCreateVecI(0xFFFFFFFFu, 0x00000000u, 0x00000000u, 0x00000000u)
+#define VecMaskY  ARMCreateVecI(0x00000000u, 0xFFFFFFFFu, 0x00000000u, 0x00000000u)
+#define VecMaskZ  ARMCreateVecI(0x00000000u, 0x00000000u, 0xFFFFFFFFu, 0x00000000u)
+#define VecMaskW  ARMCreateVecI(0x00000000u, 0x00000000u, 0x00000000u, 0xFFFFFFFFu)
+
+// Logical
+#define VeciNot(a)     vmvnq_u32(a)
+#define VeciAnd(a, b)  vandq_u32(a, b)
+#define VeciOr(a, b)   vorrq_u32(a, b)
+#define VeciXor(a, b)  veorq_u32(a, b)
+
+#define VeciAndNot(a, b) vandq_u32(vmvnq_u32(a), b)  /* ~a & b */
+#define VeciSrl(a, b)    vshlq_u32(a, vnegq_s32(b))  /* a >> b */
+#define VeciSll(a, b)    vshlq_u32(a, b)             /* a << b */
+#define VeciSrl32(a, b)  vshrq_n_u32(a, b)           /* a >> b */
+#define VeciSll32(a, b)  vshlq_n_u32(a, b)           /* a << b */
+#define VeciToVecf(a)    vreinterpretq_f32_s32(a)    /* Reinterpret int as float */
+
+#define VeciCmpLt(a, b) vcltq_u32(a, b)
+#define VeciCmpLe(a, b) vclte_u32(a, b)
+#define VeciCmpGt(a, b) vcgtq_u32(a, b)
+#define VeciCmpGe(a, b) vcgeq_u32(a, b)
+
+#define VeciUnpackLow(a, b)   vzip1q_s32(a, b)   /* [a.x, a.y, b.x, b.y] */
+#define VeciUnpackLow16(a, b) vzip1q_s16(a, b)   /* [a.x, a.y, b.x, b.y] */
+#define VeciBlend(a, b, c)    vbslq_u8(c, b, a)  /* Blend a and b based on mask c */
 
 purefn vec_t ARMVectorRev(vec_t v)
 {
@@ -353,9 +422,8 @@ purefn vec_t ARMCreateVec(float x, float y, float z, float w) {
 }
 
 purefn veci_t ARMCreateVecI(uint x, uint y, uint z, uint w) {
-    uint32x2_t V0 = vcreate_u32(((uint64_t)x) | (((uint64_t)y) << 32));
-    uint32x2_t V1 = vcreate_u32(((uint64_t)z) | (((uint64_t)w) << 32));
-    return vcombine_u32(V0, V1);
+    return vcombine_u32(vcreate_u32(((uint64_t)x) | (((uint64_t)y) << 32)),
+                        vcreate_u32(((uint64_t)z) | (((uint64_t)w) << 32)));
 }
 
 purefn vec_t ARMVector3NormEst(vec_t v) {
@@ -546,7 +614,8 @@ purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecLoad(x)          MakeVec4(x)
 #define VecLoadA(x)         MakeVec4(x)
 
-#define VecStore(ptr, a)       SmallMemCpy(ptr, &a.x, 4 * 4);
+#define VecStore(ptr, a)       SmallMemCpy(ptr, &a.x, 4 * 4)
+#define VecStoreA(ptr, x)      SmallMemCpy(ptr, &a.x, 4 * 4)
 #define VecFromInt1(x)         MakeVec4i(x)
 #define VecFromInt(x, y, z, w) MakeVec4i(x, y, z, w)
 #define VecToInt(x)    BitCast<veci_t>(x)
@@ -659,6 +728,43 @@ purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecSelect(V1, V2, Control)  MakeVec4(Control.x ? V2.x : V1.x, Control.y ? V2.y : V1.y, Control.z ? V2.z : V1.z, Control.w ? V2.w : V1.w)
 #define VecBlend(a, b, c)           NoVectorSelect(a, b, c)
 
+
+//------------------------------------------------------------------------
+// Veci
+#define VeciZero()            MakeVec4i(0)
+#define VeciSet1(x)           MakeVec4i(x)
+#define VeciSetR(x, y, z, w)  MakeVec4i(x, y, z, w)
+#define VeciSet(x, y, z, w)   MakeVec4i(w, z, y, x)
+#define VeciLoadA(x)          MakeVec4i(x[0], x[1], x[2], x[3])
+#define VeciLoad(x)           MakeVec4i(x[0], x[1], x[2], x[3])
+#define VeciLoad64(qword)     MakeVec4i(qword & 0xFFFFFFFFu, qword >> 32, 0, 0) /* loads 64bit integer to first 8 bytes of register */
+
+#define VeciSetX(v, x) (v[0] = x)
+#define VeciSetY(v, y) (v[1] = y)
+#define VeciSetZ(v, z) (v[2] = z)
+#define VeciSetW(v, w) (v[3] = w)
+
+#define VeciAdd(a, b) MakeVec4i(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w)
+#define VeciSub(a, b) MakeVec4i(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w)
+#define VeciMul(a, b) MakeVec4i(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w)
+
+// Logical
+#define VeciNot(a)     MakeVec4i(~a.x, ~a.y, ~a.z, ~a.w)
+#define VeciAnd(a, b)  MakeVec4i(a.x & b.x, a.y & b.y, a.z & b.z, a.w & b.w)
+#define VeciOr(a, b)   MakeVec4i(a.x | b.x, a.y | b.y, a.z | b.z, a.w | b.w)
+#define VeciXor(a, b)  MakeVec4i(a.x ^ b.x, a.y ^ b.y, a.z ^ b.z, a.w ^ b.w)
+
+#define VeciAndNot(a, b) MakeVec4i(~a.x & b.x, ~a.y & b.y, ~a.z & b.z, ~a.w & b.w)  /* ~a & b */
+#define VeciSrl(a, b)    MakeVec4i(a.x >> b.y, a.y >> b.y, a.z >> b.z, a.w >> b.w)  /* a >> b */
+#define VeciSll(a, b)    MakeVec4i(a.x << b.y, a.y << b.y, a.z << b.z, a.w << b.w)  /* a << b */
+#define VeciSrl32(a, b)  MakeVec4i(a.x >> b, a.y >> b, a.z >> b, a.w >> b)          /* a >> b */
+#define VeciSll32(a, b)  MakeVec4i(a.x << b, a.y << b, a.z << b, a.w << b)          /* a << b */
+#define VeciToVecf(a)    MakeVec4i(BitCast<float>(a.x), BitCast<float>(a.y), BitCast<float>(a.z), BitCast<float>(a.w))    /* Reinterpret int as float */
+
+#define VeciUnpackLow(a, b)   MakeVec4i(a.x, a.y, b.x, b.y)   /* [a.x, a.y, b.x, b.y] */
+#define VeciUnpackLow16(a, b) MakeVec4i(a.x & 0xFFFFu | ((b.x & 0xFFFFu) << 16), a.y & 0xFFFFu | ((b.y & 0xFFFFu) << 16), a.z & 0xFFFFu | ((b.z & 0xFFFFu) << 16), a.w & 0xFFFFu | ((b.w & 0xFFFFu) << 16))   /* [a.x, a.y, b.x, b.y] */
+#define VeciBlend(a, b, c)    NoVectorSelecti(a, b, c)  /* Blend a and b based on mask c */
+
 purefn vec_t NoVectorNormEst(vec_t v) {
     float invLen = RSqrt(VecDotf(v));
     return {v.x * invLen, v.y * invLen, v.z * invLen, v.w * invLen};
@@ -694,6 +800,13 @@ purefn vec_t NoVectorSelect(vec_t a, vec_t b, veci_t c) {
     ab.x &= ~c.x; ab.y &= ~c.y; ab.z &= ~c.z; ab.w &= ~c.w;
     veci_t resb = VecSetR(bb.x | ab.x, bb.y | ab.y, bb.z | ab.z, bb.w | ab.w);
     return BitCast<vec_t>(resb);
+}
+
+purefn veci_t NoVectorSelecti(veci_t a, veci_t b, veci_t c) 
+{
+    b.x &=  c.x; b.y &=  c.y; b.z &=  c.z; b.w &=  c.w;
+    a.x &= ~c.x; a.y &= ~c.y; a.z &= ~c.z; a.w &= ~c.w;
+    return VecSetR(b.x | a.x, b.y | a.y, b.z | a.z, b.w | a.w);
 }
 #endif
 
@@ -784,8 +897,10 @@ purefn vec_t VECTORCALL VecHSum(vec_t v) {
 
 #if defined(AX_ARM)
     #define VecFabs(x) vabsq_f32(x)
-#else
+#elif defined(AX_SUPPORT_SSE)
     #define VecFabs(x) VecAnd(x, VecFromInt1(0x7fffffff))
+#else
+    #define VecFabs(v) MakeVec4(Abs(v.x), Abs(v.y), Abs(v.z), Abs(v.w))
 #endif
 
 purefn vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
@@ -899,7 +1014,7 @@ purefn bool IsPointInsideAABB(vec_t point, vec_t aabbMin, vec_t aabbMax)
     return (VecMovemask(result) & 0x7) == 0x7;
 }
 
-purefn float IntersectAABB(vec_t origin, const vec_t invDir, const vec_t aabbMin, const vec_t aabbMax, float minSoFar)
+purefn float VECTORCALL IntersectAABB(vec_t origin, vec_t invDir, vec_t aabbMin, vec_t aabbMax, float minSoFar)
 {
     if (IsPointInsideAABB(origin, aabbMin, aabbMax)) return 0.1f;
     vec_t tmin = VecMul(VecSub(aabbMin, origin), invDir);
@@ -911,16 +1026,54 @@ purefn float IntersectAABB(vec_t origin, const vec_t invDir, const vec_t aabbMin
         return tnear; else return 1e30f;
 }
 
+// calculate popcount of 4 32 bit integer concurrently
+purefn vecu_t VECTORCALL PopCount32_128(vecu_t x)
+{
+    vecu_t y;
+    y = VeciAnd(VeciSrl32(x, 1), VeciSet1(0x55555555));
+    x = VeciSub(x, y);
+    y = VeciAnd(VeciSrl32(x, 2), VeciSet1(0x33333333));
+    x = VeciAdd(VeciAnd(x, VeciSet1(0x33333333)), y);  
+    x = VeciAnd(VeciAdd(x, VeciSrl32(x, 4)), VeciSet1(0x0F0F0F0F));
+    return VeciSrl32(VeciMul(x, VeciSet1(0x01010101)),  24);
+}
+
+// LeadingZeroCount of 4 32 bit integer concurrently
+purefn vecu_t VECTORCALL LeadingZeroCount32_128(vecu_t x)
+{
+    x = VeciOr(x, VeciSrl32(x, 1));
+    x = VeciOr(x, VeciSrl32(x, 2));
+    x = VeciOr(x, VeciSrl32(x, 4));
+    x = VeciOr(x, VeciSrl32(x, 8));
+    x = VeciOr(x, VeciSrl32(x, 16)); 
+    return VeciSub(VeciSet1(sizeof(uint32_t) * 8), PopCount32_128(x));
+}   
 
 #ifdef AX_SUPPORT_AVX2
 
-purefn __m256i VECTORCALL AVXSelect(const __m256i V1, const __m256i V2, const __m256i& Control)
+purefn __m256i VECTORCALL PopCount32_256(__m256i x)
 {
-    return _mm256_blendv_epi8(V1, V2, Control);
+    __m256i y;
+    y = _mm256_and_si256(_mm256_srli_epi32(x, 1), _mm256_set1_epi32(0x55555555));
+    x = _mm256_sub_epi32(x, y);
+    y = _mm256_and_si256(_mm256_srli_epi32(x, 2), _mm256_set1_epi32(0x33333333));
+    x = _mm256_add_epi32(_mm256_and_si256(x, _mm256_set1_epi32(0x33333333)), y);  
+    x = _mm256_and_si256(_mm256_add_epi32(x, _mm256_srli_epi32(x, 4)), _mm256_set1_epi32(0x0F0F0F0F));        
+    return _mm256_srli_epi32(_mm256_mul_epi32(x, _mm256_set1_epi32(0x01010101)), 24);
 }
 
+purefn __m256i VECTORCALL LeadingZeroCount32_256(__m256i x)
+{
+    x = _mm256_or_si256(x, _mm256_srli_epi32(x, 1));
+    x = _mm256_or_si256(x, _mm256_srli_epi32(x, 2));
+    x = _mm256_or_si256(x, _mm256_srli_epi32(x, 4));
+    x = _mm256_or_si256(x, _mm256_srli_epi32(x, 8));
+    x = _mm256_or_si256(x, _mm256_srli_epi32(x, 16));
+    return _mm256_sub_epi32(_mm256_set1_epi32(sizeof(uint32_t) * 8), PopCount32_256(x));
+}   
+
 // from: Faster Population Counts Using AVX2 Instructions resource paper
-purefn int64 VECTORCALL popcount256_epi64(__m256i v)
+purefn int64 VECTORCALL PopCount256_epi64(__m256i v)
 {
     const __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2,
         2, 3, 2, 3, 3, 4, 0, 1, 1, 2, 1, 2, 2, 3,
@@ -935,7 +1088,7 @@ purefn int64 VECTORCALL popcount256_epi64(__m256i v)
     return _mm256_cvtsi256_si32(v) + _mm256_extract_epi64(v, 1) + _mm256_extract_epi64(v, 2) + _mm256_extract_epi64(v, 3);
 }
 
-purefn __m256i VECTORCALL popcnt256si(__m256i v) // returns 4 64 bit integer that contains pop counts
+purefn __m256i VECTORCALL PopCount256si(__m256i v) // returns 4 64 bit integer that contains pop counts
 {
     const __m256i lookup = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
     const __m256i low_mask = _mm256_set1_epi8(0x0f);

@@ -7,14 +7,21 @@
 #include "../Common.hpp"
 
 #ifdef AX_PROFILER_DISABLE
-#    define TimeBlock(Name) 
-#    define TimeFunction 
+    #define TimeBlock(Name)
+    #define TimeFunction
+
+    #define PrintTimeElapsed(TotalTSCElapsed, Anchor)
+
+    #define BeginProfile(printFn)
+
+    #define EndAndPrintProfile()
+
 #else
-#    define NameConcat2(A, B) A##B
-#    define NameConcat(A, B) NameConcat2(A, B)
-#    define TimeBlock(Name) profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
-#    define TimeFunction TimeBlock(__func__)
-#endif
+
+#define NameConcat2(A, B) A##B
+#define NameConcat(A, B) NameConcat2(A, B)
+#define TimeBlock(Name) profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
+#define TimeFunction TimeBlock(__func__)
 
 struct profile_anchor
 {
@@ -51,3 +58,4 @@ void PrintTimeElapsed(uint64_t  TotalTSCElapsed, profile_anchor* Anchor);
 void BeginProfile(void(*printFn)(const char* text));
 
 void EndAndPrintProfile();
+#endif

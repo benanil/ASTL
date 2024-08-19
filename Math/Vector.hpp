@@ -241,14 +241,6 @@ struct Rect2D
     Vector2f size;
 };
 
-typedef uint half2;
-constexpr half2 Half2Up    = OneFP16 << 16u;
-constexpr half2 Half2Down  = MinusOneFP16 << 16u;
-constexpr half2 Half2Left  = MinusOneFP16;
-constexpr half2 Half2Right = OneFP16;
-constexpr half2 Half2One   = OneFP16 | (OneFP16 << 16);
-constexpr half2 Half2Zero  = 0;
-
 purefn Vector2f Normalize(Vector2f v) {
 	return v / Sqrt(v.x * v.x + v.y * v.y);
 }
@@ -260,33 +252,6 @@ purefn Vector3f Normalize(Vector3f v) {
 purefn float Dot(Vector3f a, Vector3f b) 
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-purefn float2 ConvertToFloat2(half2 h) {
-	float2 res;
-    res.x = ConvertHalfToFloat((half)(h & 0xFFFF));
-    res.y = ConvertHalfToFloat((half)((h >> 16) & 0xFFFF));
-    return res;
-}
-
-purefn float3 ConvertToFloat3(const half* h) {
-	float3 res; 
-    ConvertHalfToFloat(&res.x, h, 3); 
-    return res;
-}
-
-purefn half2 ConvertToHalf2(const float* h) {
-	half2 res;
-	res  = ConvertFloatToHalf(*h++);
-	res |= uint32_t(ConvertFloatToHalf(*h)) << 16;
-	return res;
-}
-
-purefn half2 ConvertToHalf2(Vector2f f) {
-	half2 res;
-	res  = ConvertFloatToHalf(f.x);
-	res |= uint32_t(ConvertFloatToHalf(f.y)) << 16;
-	return res;
 }
 
 // macro min and macro max used for more inlining (even in debug mode)
