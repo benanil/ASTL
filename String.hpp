@@ -23,7 +23,7 @@ inline bool StringEqual(const char *a, const char *b, int n)
 // https://github.com/WojciechMula/simd-string/blob/master/strcmp.cpp
 #ifdef AX_SUPPORT_SSE
 
-// returns 0 if equal
+// returns 0 if equal, equivalent to strcmp
 inline int StringCompare(const char* s1, const char* s2)
 {
     if (s1 == s2) 
@@ -89,6 +89,7 @@ inline char* FindCharInString(const char* s, int c)
 
 #else
 
+// equivalent to strcmp
 inline int StringCompare(const char* a, const char* b)
 {
     for (; *a && *b; a++, b++)

@@ -72,7 +72,7 @@ public:
            NextPowerOf2(AllocatorT::InitialSize) : AllocatorT::InitialSize;
 	} 
 
-private:
+public:
 							                                               
 	ValueT* ptr   = nullptr;                                                
 	uint capacity = 0;                                            
@@ -198,6 +198,11 @@ public:
 			capacity = front = rear = size = 0;
 		}
 	}
+
+    void Reset()
+    {
+        front = rear = size = 0u;
+    }
 
 	Iterator begin()              { return { ptr, capacity, rear  }; }
 	Iterator end()                { return { ptr, capacity, front }; }
