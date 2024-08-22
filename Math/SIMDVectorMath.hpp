@@ -555,8 +555,9 @@ purefn vec_t ARMVectorNorm(vec_t v)
 }
 
 purefn int ARMVecMovemask(veci_t v) {
-    int32x4_t shift = ARMCreateVec(0, 1, 2, 3);
-    return vaddvq_u32(vshlq_u32(vshrq_n_u32(v, 31), shift));
+    const int shiftArr[4] = { 0, 1, 2, 3 };
+	int32x4_t shift = vld1q_s32(shiftArr);
+	return vaddvq_u32(vshlq_u32(vshrq_n_u32(v, 31), shift));
 }
 
 template<int E0, int E1, int E2, int E3>
@@ -1008,10 +1009,14 @@ purefn float VECTORCALL Max3v(vec_t ab)
 
 purefn bool IsPointInsideAABB(vec_t point, vec_t aabbMin, vec_t aabbMax)
 {
-    vec_t cmpMin = VecCmpGe(point, aabbMin);
-    vec_t cmpMax = VecCmpLe(point, aabbMax);
-    vec_t result = VecAnd(cmpMin, cmpMax);
-    return (VecMovemask(result) & 0x7) == 0x7;
+    veci_t cmpMin = VecCmpGe(point, aabbMin);
+    veci_t cmpMax = VecCmpLe(point, aabbMax);
+#if defined(AX_ARM)
+    uint32_t movemask = VecMovemask(VeciAnd(cmpMin, cmpMax));
+#else
+    uint32_t movemask = VecMovemask(VecAnd(cmpMin, cmpMax));
+#endif
+    return (movemask & 0b111) == 0b111;
 }
 
 purefn float VECTORCALL IntersectAABB(vec_t origin, vec_t invDir, vec_t aabbMin, vec_t aabbMax, float minSoFar)

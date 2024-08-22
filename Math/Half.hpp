@@ -163,7 +163,6 @@ inline void ConvertHalf4ToFloat4(float* result, const half* half4)
 #endif
 }
 
-// note that no nan, inf and overflow check. only underflow check
 inline void ConvertFloat4ToHalf4(half* result, const float* float4)
 {
 #ifdef AX_SUPPORT_AVX2
