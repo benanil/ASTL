@@ -124,7 +124,7 @@ typedef struct APrimitive_
     // pointers to binary file to lookup position, texture, normal..
     void* indices; 
     void* vertices;
-    unsigned  bvhNodeIndex;
+    unsigned bvhNodeIndex;
 
     unsigned attributes; // AAttribType Position, Normal, TexCoord, Tangent, masks
     int indexType; // GraphicType_UnsignedInt, GraphicType_UnsignedShort.. 
@@ -143,6 +143,7 @@ typedef struct APrimitive_
     unsigned short indiceIndex; // indice index to accessor
     unsigned short material;    // material index
     unsigned short mode;        // 4 is triangle
+    bool hasOutline;
 
     // when we are parsing we use this as an indicator to accessor.
     // after parsing, this will become vertex pointers AAttribType_Position, AAttribType_TexCoord...
