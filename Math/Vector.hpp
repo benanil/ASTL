@@ -256,13 +256,13 @@ purefn float Dot(Vector3f a, Vector3f b)
 
 // macro min and macro max used for more inlining (even in debug mode)
 // recommended to use simd instructions instead. this functions are slow in hot loops
-template<typename T> purefn Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { return { MacroMin(a.x, b.x), MacroMin(a.y, b.y), MacroMin(a.z, b.z) }; }
-template<typename T> purefn Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { return { MacroMax(a.x, b.x), MacroMax(a.y, b.y), MacroMax(a.z, b.z) }; }
-template<typename T> purefn Vector2<T> Min(const Vector2<T>& a, const Vector2<T>& b) { return { MacroMin(a.x, b.x), MacroMin(a.y, b.y)}; }
-template<typename T> purefn Vector2<T> Max(const Vector2<T>& a, const Vector2<T>& b) { return { MacroMax(a.x, b.x), MacroMax(a.y, b.y)}; }
+template<typename T> purefn Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b) { T x = MacroMin(a.x, b.x), y = MacroMin(a.y, b.y), z = MacroMin(a.z, b.z); return { x, y, z }; }
+template<typename T> purefn Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b) { T x = MacroMax(a.x, b.x), y = MacroMax(a.y, b.y), z = MacroMax(a.z, b.z); return { x, y, z }; }
+template<typename T> purefn Vector2<T> Min(const Vector2<T>& a, const Vector2<T>& b) { T x = MacroMin(a.x, b.x), y = MacroMin(a.y, b.y); return { x, y }; }
+template<typename T> purefn Vector2<T> Max(const Vector2<T>& a, const Vector2<T>& b) { T x = MacroMax(a.x, b.x), y = MacroMax(a.y, b.y); return { x, y }; }
 
-template<typename T> purefn T Max3(const Vector3<T>& a) { return MAX(MacroMax(a.x, a.y), a.z); }
-template<typename T> purefn T Min3(const Vector3<T>& a) { return MIN(MacroMin(a.x, a.y), a.z); }
+template<typename T> purefn T Max3(const Vector3<T>& a) { T m = MacroMax(a.x, a.y); return MAX(m, a.z); }
+template<typename T> purefn T Min3(const Vector3<T>& a) { T m = MacroMin(a.x, a.y); return MIN(m, a.z); }
 
 purefn Vector2s ToVector2s(const Vector2f& vec) { return {(short)vec.x, (short)vec.y }; }
 purefn Vector2f ToVector2f(const Vector2s& vec) { return {(float)vec.x, (float)vec.y }; }
