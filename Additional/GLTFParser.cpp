@@ -635,7 +635,7 @@ __private const char* ParseNodes(const char* curr,
             node.translation[2] = matrix[14];
             QuaternionFromMatrix(node.rotation, matrix);
 
-            vec_t v = VecMulf(Matrix4::ExtractScaleV(m), scale);
+            Vector4x32f v = VecMulf(Matrix4::ExtractScaleV(m), scale);
             Vec3Store(node.scale, v);
         }
         else if (StrCMP16(curr, "translation"))

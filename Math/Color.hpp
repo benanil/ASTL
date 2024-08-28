@@ -85,9 +85,9 @@ pureconst Vector3f RGBToHSV(Vector3f rgb)
 
 forceinline void HSVToRGB(Vector3f hsv, float* dst)
 {
-    const vec_t K = VecSetR(1.0f, 2.0f / 3.0f, 1.0f / 3.0f, 3.0f);
-    vec_t p = VecFabs(VecSub(VecMul(VecFract(VecAdd(VecSet1(hsv.x), K)), VecSet1(6.0f)), VecSet1(3.0f)));
-    vec_t kx = VecSplatX(K);
-    vec_t rv = VecMul(VecLerp(kx, VecClamp01(VecSub(p, kx)), hsv.y), VecSet1(hsv.z));
+    const Vector4x32f K = VecSetR(1.0f, 2.0f / 3.0f, 1.0f / 3.0f, 3.0f);
+    Vector4x32f p = VecFabs(VecSub(VecMul(VecFract(VecAdd(VecSet1(hsv.x), K)), VecSet1(6.0f)), VecSet1(3.0f)));
+    Vector4x32f kx = VecSplatX(K);
+    Vector4x32f rv = VecMul(VecLerp(kx, VecClamp01(VecSub(p, kx)), hsv.y), VecSet1(hsv.z));
     Vec3Store(dst, rv);
 }

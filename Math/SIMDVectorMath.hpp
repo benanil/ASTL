@@ -46,9 +46,9 @@ inline int AX_InitSIMD_CPUID()
 /*                                 SSE                                      */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-typedef __m128  vec_t;
-typedef __m128  veci_t;
-typedef __m128i vecu_t;
+typedef __m128  Vector4x32f;
+typedef __m128  Vector4x32i;
+typedef __m128i Vector4x32u;
 
 #define VecZero()            _mm_setzero_ps()
 #define VecOne()             _mm_set1_ps(1.0f)
@@ -92,8 +92,8 @@ typedef __m128i vecu_t;
 #define VecSetZ(v, z) ((v) = _mm_insert_ps((v), _mm_set_ss(z), 0x20))
 #define VecSetW(v, w) ((v) = _mm_insert_ps((v), _mm_set_ss(w), 0x30))
 
-purefn vec_t VECTORCALL Vec3Load(void const* x) {
-    vec_t v = _mm_loadu_ps((float const*)x); 
+purefn Vector4x32f VECTORCALL Vec3Load(void const* x) {
+    Vector4x32f v = _mm_loadu_ps((float const*)x); 
     VecSetW(v, 0.0); return v;
 }
 
@@ -237,9 +237,9 @@ purefn vec_t VECTORCALL Vec3Load(void const* x) {
 /*                                 NEON                                     */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-typedef float32x4_t vec_t;
-typedef uint32x4_t veci_t;
-typedef uint32x4_t vecu_t;
+typedef float32x4_t Vector4x32f;
+typedef uint32x4_t Vector4x32i;
+typedef uint32x4_t Vector4x32u;
 
 #define VecZero()           vdupq_n_f32(0.0f)
 #define VecOne()            vdupq_n_f32(1.0f)
@@ -405,28 +405,28 @@ typedef uint32x4_t vecu_t;
 #define VeciUnpackLow16(a, b) vzip1q_s16(a, b)   /* [a.x, a.y, b.x, b.y] */
 #define VeciBlend(a, b, c)    vbslq_u8(c, b, a)  /* Blend a and b based on mask c */
 
-purefn vec_t ARMVectorRev(vec_t v)
+purefn Vector4x32f ARMVectorRev(Vector4x32f v)
 {
     float32x4_t rev64 = vrev64q_f32(v);
     return vextq_f32(rev64, rev64, 2);
 }
 
-purefn vec_t ARMVector3Load(float* src)
+purefn Vector4x32f ARMVector3Load(float* src)
 {
     return vcombine_f32(vld1_f32(src), vld1_lane_f32(src + 2, vdup_n_f32(0), 0));
 }
 
-purefn vec_t ARMCreateVec(float x, float y, float z, float w) {
+purefn Vector4x32f ARMCreateVec(float x, float y, float z, float w) {
     alignas(16) float v[4] = {x, y, z, w};
     return vld1q_f32(v);
 }
 
-purefn veci_t ARMCreateVecI(uint x, uint y, uint z, uint w) {
+purefn Vector4x32i ARMCreateVecI(uint x, uint y, uint z, uint w) {
     return vcombine_u32(vcreate_u32(((uint64_t)x) | (((uint64_t)y) << 32)),
                         vcreate_u32(((uint64_t)z) | (((uint64_t)w) << 32)));
 }
 
-purefn vec_t ARMVector3NormEst(vec_t v) {
+purefn Vector4x32f ARMVector3NormEst(Vector4x32f v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -437,7 +437,7 @@ purefn vec_t ARMVector3NormEst(vec_t v) {
     return vmulq_f32(v, vcombine_f32(v2, v2)); // Normalize
 }
 
-purefn vec_t ARMVector3Norm(vec_t v) {
+purefn Vector4x32f ARMVector3Norm(Vector4x32f v) {
     // Dot3
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
@@ -454,12 +454,12 @@ purefn vec_t ARMVector3Norm(vec_t v) {
     float32x2_t R1 = vrsqrts_f32(vmul_f32(v1, S1), S1);
     v2 = vmul_f32(S1, R1);
     // Normalize
-    vec_t vResult = vmulq_f32(v, vcombine_f32(v2, v2));
+    Vector4x32f vResult = vmulq_f32(v, vcombine_f32(v2, v2));
     vResult = vbslq_f32(vcombine_u32(VEqualsZero, VEqualsZero), vdupq_n_f32(0), vResult);
     return vResult;
 }
 
-purefn vec_t ARMVector3Dot(vec_t a, vec_t b) {
+purefn Vector4x32f ARMVector3Dot(Vector4x32f a, Vector4x32f b) {
     float32x4_t vTemp = vmulq_f32(a, b);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -469,7 +469,7 @@ purefn vec_t ARMVector3Dot(vec_t a, vec_t b) {
     return vcombine_f32(v1, v1);
 }
 
-purefn vec_t ARMVector3Length(vec_t v) {
+purefn Vector4x32f ARMVector3Length(Vector4x32f v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -484,7 +484,7 @@ purefn vec_t ARMVector3Length(vec_t v) {
     return vcombine_f32(Result, Result);
 }
 
-purefn vec_t ARMVectorLengthEst(vec_t v) {
+purefn Vector4x32f ARMVectorLengthEst(Vector4x32f v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -498,7 +498,7 @@ purefn vec_t ARMVectorLengthEst(vec_t v) {
     return vcombine_f32(Result, Result);
 }
 
-purefn vec_t ARMVectorLength(vec_t v) {
+purefn Vector4x32f ARMVectorLength(Vector4x32f v) {
      // Dot4
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
@@ -520,7 +520,7 @@ purefn vec_t ARMVectorLength(vec_t v) {
     return vcombine_f32(Result, Result);
 }
 
-purefn vec_t ARMVectorDevide(vec_t V1, vec_t V2) {
+purefn Vector4x32f ARMVectorDevide(Vector4x32f V1, Vector4x32f V2) {
     // 2 iterations of Newton-Raphson refinement of reciprocal
     float32x4_t Reciprocal = vrecpeq_f32(V2);
     float32x4_t S = vrecpsq_f32(Reciprocal, V2);
@@ -530,7 +530,7 @@ purefn vec_t ARMVectorDevide(vec_t V1, vec_t V2) {
     return vmulq_f32(V1, Reciprocal);
 }
 
-purefn vec_t ARMVectorDot(vec_t a, vec_t b) {
+purefn Vector4x32f ARMVectorDot(Vector4x32f a, Vector4x32f b) {
     float32x4_t vTemp = vmulq_f32(a, b);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -539,7 +539,7 @@ purefn vec_t ARMVectorDot(vec_t a, vec_t b) {
     return vcombine_f32(v1, v1);
 }
 
-purefn vec_t ARMVectorNormEst(vec_t v) {
+purefn Vector4x32f ARMVectorNormEst(Vector4x32f v) {
     float32x4_t vTemp = vmulq_f32(v, v);
     float32x2_t v1 = vget_low_f32(vTemp);
     float32x2_t v2 = vget_high_f32(vTemp);
@@ -549,19 +549,19 @@ purefn vec_t ARMVectorNormEst(vec_t v) {
     return vmulq_f32(v, vcombine_f32(v2, v2));
 }
 
-purefn vec_t ARMVectorNorm(vec_t v) 
+purefn Vector4x32f ARMVectorNorm(Vector4x32f v) 
 {
     return ARMVectorDevide(v, ARMVectorLength(v));
 }
 
-purefn int ARMVecMovemask(veci_t v) {
+purefn int ARMVecMovemask(Vector4x32i v) {
     const int shiftArr[4] = { 0, 1, 2, 3 };
 	int32x4_t shift = vld1q_s32(shiftArr);
 	return vaddvq_u32(vshlq_u32(vshrq_n_u32(v, 31), shift));
 }
 
 template<int E0, int E1, int E2, int E3>
-purefn vec_t ARMVectorSwizzle(vec_t v)
+purefn Vector4x32f ARMVectorSwizzle(Vector4x32f v)
 {
   float a = vgetq_lane_f32(v, E0); 
   float b = vgetq_lane_f32(v, E1); 
@@ -571,7 +571,7 @@ purefn vec_t ARMVectorSwizzle(vec_t v)
 }
 
 template<int E0, int E1, int E2, int E3>
-purefn vec_t ARMVectorShuffle(vec_t v0, vec_t v1)
+purefn Vector4x32f ARMVectorShuffle(Vector4x32f v0, Vector4x32f v1)
 {
   float a = vgetq_lane_f32(v0, E0);
   float b = vgetq_lane_f32(v0, E1);
@@ -585,26 +585,26 @@ purefn vec_t ARMVectorShuffle(vec_t v0, vec_t v1)
 /*                                 No Vector                                */
 /*//////////////////////////////////////////////////////////////////////////*/
 
-struct vec_t {
+struct Vector4x32f {
     float x, y, z, w;
           float& operator[](int i)       { return ((float*)this)[i]; }
     const float  operator[](int i) const { return ((float*)this)[i]; }
 };
 
-struct veci_t {
+struct Vector4x32i {
     uint x, y, z, w;
           uint& operator[](uint i)       { return ((uint*)this)[i]; }
     const uint  operator[](uint i) const { return ((uint*)this)[i]; }
 };
 
-typedef veci_t vecu_t;
+typedef Vector4x32i Vector4x32u;
 
-purefn vec_t MakeVec4(float x, float y, float z, float w) { return vec_t { x, y, z, w }; }
-purefn vec_t MakeVec4(float x) { return vec_t { x, x, x, x }; }
-purefn vec_t MakeVec4(const float* x) { return vec_t { x[0], x[1], x[2], x[3] }; }
+purefn Vector4x32f MakeVec4(float x, float y, float z, float w) { return Vector4x32f { x, y, z, w }; }
+purefn Vector4x32f MakeVec4(float x) { return Vector4x32f { x, x, x, x }; }
+purefn Vector4x32f MakeVec4(const float* x) { return Vector4x32f { x[0], x[1], x[2], x[3] }; }
 
-purefn veci_t MakeVec4i(uint x, uint y, uint z, uint w) { return veci_t { x, y, z, w }; }
-purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
+purefn Vector4x32i MakeVec4i(uint x, uint y, uint z, uint w) { return Vector4x32i { x, y, z, w }; }
+purefn Vector4x32i MakeVec4i(uint x) { return Vector4x32i { x, x, x, x }; }
 
 #define VecZero()           MakeVec4(0.0f)
 #define VecOne()            MakeVec4(1.0f)
@@ -619,10 +619,10 @@ purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VecStoreA(ptr, x)      SmallMemCpy(ptr, &a.x, 4 * 4)
 #define VecFromInt1(x)         MakeVec4i(x)
 #define VecFromInt(x, y, z, w) MakeVec4i(x, y, z, w)
-#define VecToInt(x)    BitCast<veci_t>(x)
+#define VecToInt(x)    BitCast<Vector4x32i>(x)
 
-#define VecFromVeci(x) BitCast<vec_t>(x)
-#define VeciFromVec(x) BitCast<veci_t>(x)
+#define VecFromVeci(x) BitCast<Vector4x32f>(x)
+#define VeciFromVec(x) BitCast<Vector4x32i>(x)
 
 #define VecCvtF32U32(v) MakeVec4i((uint)v.x, (uint)v.y, (uint)v.z, (uint)v.w)
 #define VecCvtU32F32(v) MakeVec4((float)v.x, (float)v.y, (float)v.z, (float)v.w)
@@ -766,44 +766,44 @@ purefn veci_t MakeVec4i(uint x) { return veci_t { x, x, x, x }; }
 #define VeciUnpackLow16(a, b) MakeVec4i(a.x & 0xFFFFu | ((b.x & 0xFFFFu) << 16), a.y & 0xFFFFu | ((b.y & 0xFFFFu) << 16), a.z & 0xFFFFu | ((b.z & 0xFFFFu) << 16), a.w & 0xFFFFu | ((b.w & 0xFFFFu) << 16))   /* [a.x, a.y, b.x, b.y] */
 #define VeciBlend(a, b, c)    NoVectorSelecti(a, b, c)  /* Blend a and b based on mask c */
 
-purefn vec_t NoVectorNormEst(vec_t v) {
+purefn Vector4x32f NoVectorNormEst(Vector4x32f v) {
     float invLen = RSqrt(VecDotf(v));
     return {v.x * invLen, v.y * invLen, v.z * invLen, v.w * invLen};
 }
 
-purefn vec_t NoVec3NormEst(vec_t v) {
+purefn Vector4x32f NoVec3NormEst(Vector4x32f v) {
     float invLen = RSqrt(Vec3Dotf(v));
     return {v.x * invLen, v.y * invLen, v.z * invLen, v.w * invLen};
 }
 
-purefn vec_t NoVectorAnd(vec_t a, vec_t b) {
-    veci_t aa = BitCast<veci_t>(a), bb = BitCast<veci_t>(b);
+purefn Vector4x32f NoVectorAnd(Vector4x32f a, Vector4x32f b) {
+    Vector4x32i aa = BitCast<Vector4x32i>(a), bb = BitCast<Vector4x32i>(b);
     aa.x &= bb.x; aa.y &= bb.y; aa.z &= bb.z; aa.w &= bb.w;
-    return BitCast<vec_t>(aa);
+    return BitCast<Vector4x32f>(aa);
 }
 
-purefn vec_t NoVectorOr(vec_t a, vec_t b) {
-    veci_t aa = BitCast<veci_t>(a), bb = BitCast<veci_t>(b);
+purefn Vector4x32f NoVectorOr(Vector4x32f a, Vector4x32f b) {
+    Vector4x32i aa = BitCast<Vector4x32i>(a), bb = BitCast<Vector4x32i>(b);
     aa.x |= bb.x; aa.y |= bb.y; aa.z |= bb.z; aa.w |= bb.w;
-    return BitCast<vec_t>(aa);
+    return BitCast<Vector4x32f>(aa);
 }
 
-purefn vec_t NoVectorXor(vec_t a, vec_t b) {
-    veci_t aa = BitCast<veci_t>(a), bb = BitCast<veci_t>(b);
+purefn Vector4x32f NoVectorXor(Vector4x32f a, Vector4x32f b) {
+    Vector4x32i aa = BitCast<Vector4x32i>(a), bb = BitCast<Vector4x32i>(b);
     aa.x ^= bb.x; aa.y ^= bb.y; aa.z ^= bb.z; aa.w ^= bb.w;
-    return BitCast<vec_t>(aa);
+    return BitCast<Vector4x32f>(aa);
 }
 
-purefn vec_t NoVectorSelect(vec_t a, vec_t b, veci_t c) {
-    veci_t ab = BitCast<veci_t>(a);
-    veci_t bb = BitCast<veci_t>(b);
+purefn Vector4x32f NoVectorSelect(Vector4x32f a, Vector4x32f b, Vector4x32i c) {
+    Vector4x32i ab = BitCast<Vector4x32i>(a);
+    Vector4x32i bb = BitCast<Vector4x32i>(b);
     bb.x &=  c.x; bb.y &=  c.y; bb.z &=  c.z; bb.w &=  c.w;
     ab.x &= ~c.x; ab.y &= ~c.y; ab.z &= ~c.z; ab.w &= ~c.w;
-    veci_t resb = VecSetR(bb.x | ab.x, bb.y | ab.y, bb.z | ab.z, bb.w | ab.w);
-    return BitCast<vec_t>(resb);
+    Vector4x32i resb = VecSetR(bb.x | ab.x, bb.y | ab.y, bb.z | ab.z, bb.w | ab.w);
+    return BitCast<Vector4x32f>(resb);
 }
 
-purefn veci_t NoVectorSelecti(veci_t a, veci_t b, veci_t c) 
+purefn Vector4x32i NoVectorSelecti(Vector4x32i a, Vector4x32i b, Vector4x32i c) 
 {
     b.x &=  c.x; b.y &=  c.y; b.z &=  c.z; b.w &=  c.w;
     a.x &= ~c.x; a.y &= ~c.y; a.z &= ~c.z; a.w &= ~c.w;
@@ -813,7 +813,7 @@ purefn veci_t NoVectorSelecti(veci_t a, veci_t b, veci_t c)
 
 #if defined(AX_SUPPORT_SSE) || defined(AX_ARM)
 // very ugly :(
-purefn float VECTORCALL VecGetN(vec_t v, int n)
+purefn float VECTORCALL VecGetN(Vector4x32f v, int n)
 {
     switch (n)
     {
@@ -826,7 +826,7 @@ purefn float VECTORCALL VecGetN(vec_t v, int n)
     return 1.0f;
 }
 
-forceinline void VECTORCALL VecSetN(vec_t& v, int n, float f)
+forceinline void VECTORCALL VecSetN(Vector4x32f& v, int n, float f)
 {
     switch (n)
     {
@@ -839,35 +839,35 @@ forceinline void VECTORCALL VecSetN(vec_t& v, int n, float f)
 }
 #endif 
 
-purefn float VECTORCALL Min3(vec_t ab)
+purefn float VECTORCALL Min3(Vector4x32f ab)
 {
-    vec_t xy = VecMin(VecSplatX(ab), VecSplatY(ab));
+    Vector4x32f xy = VecMin(VecSplatX(ab), VecSplatY(ab));
     return VecGetX(VecMin(xy, VecSplatZ(ab)));
 }
 
-purefn float VECTORCALL Max3(vec_t ab)
+purefn float VECTORCALL Max3(Vector4x32f ab)
 {
-    vec_t xy = VecMax(VecSplatX(ab), VecSplatY(ab));
+    Vector4x32f xy = VecMax(VecSplatX(ab), VecSplatY(ab));
     return VecGetX(VecMax(xy, VecSplatZ(ab)));
 }
 
 #define VecClamp01(v) VecClamp(v, VecZero(), VecOne())
 
-purefn vec_t VECTORCALL VecClamp(vec_t v, vec_t vmin, vec_t vmax)
+purefn Vector4x32f VECTORCALL VecClamp(Vector4x32f v, Vector4x32f vmin, Vector4x32f vmax)
 {
     v = VecSelect(v, vmax, VecCmpGt(v, vmax));
     v = VecSelect(v, vmin, VecCmpLt(v, vmin));
     return v;
 }
 
-forceinline void VECTORCALL Vec3Store(float* f, vec_t v)
+forceinline void VECTORCALL Vec3Store(float* f, Vector4x32f v)
 {
     f[0] = VecGetX(v);
     f[1] = VecGetY(v);
     f[2] = VecGetZ(v);
 }
 
-purefn vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
+purefn Vector4x32f VECTORCALL Vec3Cross(const Vector4x32f vec0, const Vector4x32f vec1)
 {
     #if defined(AX_ARM)
     float32x2_t v1xy = vget_low_f32(vec0);
@@ -877,21 +877,21 @@ purefn vec_t VECTORCALL Vec3Cross(const vec_t vec0, const vec_t vec1)
     float32x2_t v1zz = vdup_lane_f32(vget_high_f32(vec0), 0);
     float32x2_t v2zz = vdup_lane_f32(vget_high_f32(vec1), 0);
     uint32x4_t FlipY = ARMCreateVecI(0x00000000u, 0x80000000u, 0x00000000u, 0x00000000u);
-    vec_t vResult = vmulq_f32(vcombine_f32(v1yx, v1xy), vcombine_f32(v2zz, v2yx));
+    Vector4x32f vResult = vmulq_f32(vcombine_f32(v1yx, v1xy), vcombine_f32(v2zz, v2yx));
     vResult = vmlsq_f32(vResult, vcombine_f32(v1zz, v1yx), vcombine_f32(v2yx, v2xy));
     vResult = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vResult), FlipY));
     return vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vResult), VecMask3));
     #else
-    vec_t tmp0 = VecShuffleR(vec0, vec0, 3,0,2,1);
-    vec_t tmp1 = VecShuffleR(vec1, vec1, 3,1,0,2);
-    vec_t tmp2 = VecMul(tmp0, vec1);
-    vec_t tmp3 = VecMul(tmp0, tmp1);
-    vec_t tmp4 = VecShuffleR(tmp2, tmp2, 3,0,2,1);
+    Vector4x32f tmp0 = VecShuffleR(vec0, vec0, 3,0,2,1);
+    Vector4x32f tmp1 = VecShuffleR(vec1, vec1, 3,1,0,2);
+    Vector4x32f tmp2 = VecMul(tmp0, vec1);
+    Vector4x32f tmp3 = VecMul(tmp0, tmp1);
+    Vector4x32f tmp4 = VecShuffleR(tmp2, tmp2, 3,0,2,1);
     return VecSub(tmp3, tmp4);
     #endif
 }
 
-purefn vec_t VECTORCALL VecHSum(vec_t v) {
+purefn Vector4x32f VECTORCALL VecHSum(Vector4x32f v) {
     v = VecHadd(v, v); // high half -> low half
     return VecHadd(v, v);
 }
@@ -904,34 +904,34 @@ purefn vec_t VECTORCALL VecHSum(vec_t v) {
     #define VecFabs(v) MakeVec4(Abs(v.x), Abs(v.y), Abs(v.z), Abs(v.w))
 #endif
 
-purefn vec_t VECTORCALL VecCopySign(vec_t x, vec_t y)
+purefn Vector4x32f VECTORCALL VecCopySign(Vector4x32f x, Vector4x32f y)
 {
-    vecu_t clearedX = VeciAnd(VeciFromVec(x), VeciSet1(0x7fffffff));
-    vecu_t signY    = VeciAnd(VeciFromVec(y), VeciSet1(0x80000000));
-    vecu_t res      = VeciOr(clearedX, signY);
+    Vector4x32u clearedX = VeciAnd(VeciFromVec(x), VeciSet1(0x7fffffff));
+    Vector4x32u signY    = VeciAnd(VeciFromVec(y), VeciSet1(0x80000000));
+    Vector4x32u res      = VeciOr(clearedX, signY);
     return VecFromVeci(res);
 }
 
-purefn vec_t VECTORCALL VecLerp(vec_t x, vec_t y, float t)
+purefn Vector4x32f VECTORCALL VecLerp(Vector4x32f x, Vector4x32f y, float t)
 {
     return VecFmadd(VecSub(y, x), VecSet1(t), x);
 }
 
-purefn vec_t VECTORCALL VecStep(vec_t edge, vec_t x)
+purefn Vector4x32f VECTORCALL VecStep(Vector4x32f edge, Vector4x32f x)
 {
     return VecBlend(VecZero(), VecOne(), VecCmpGt(x, edge));
 }
 
-purefn vec_t VECTORCALL VecFract(vec_t x)
+purefn Vector4x32f VECTORCALL VecFract(Vector4x32f x)
 {
     return VecSub(x, VecFloor(x));
 }
 
 
-inline vec_t VECTORCALL VecSin(vec_t x)
+inline Vector4x32f VECTORCALL VecSin(Vector4x32f x)
 { 
-    veci_t lz, gtpi; 
-    vec_t vpi = VecSet1(PI);
+    Vector4x32i lz, gtpi; 
+    Vector4x32f vpi = VecSet1(PI);
     lz = VecCmpLt(x, VecZero());
     x  = VecFabs(x);
     gtpi = VecCmpGt(x, vpi);
@@ -946,11 +946,11 @@ inline vec_t VECTORCALL VecSin(vec_t x)
     return x;
 }
 
-inline vec_t VECTORCALL VecCos(vec_t x)
+inline Vector4x32f VECTORCALL VecCos(Vector4x32f x)
 {
-    veci_t lz, gtpi;
-    vec_t a;
-    vec_t vpi = VecSet1(PI);
+    Vector4x32i lz, gtpi;
+    Vector4x32f a;
+    Vector4x32f vpi = VecSet1(PI);
     lz = VecCmpLt(VecZero(), x);
     x = VecFabs(x);
     gtpi = VecCmpGt(x, vpi);
@@ -961,14 +961,14 @@ inline vec_t VECTORCALL VecCos(vec_t x)
     return VecSelect(x, VecNeg(x), gtpi);
 }
 
-purefn vec_t VECTORCALL VecAtan(vec_t x)
+purefn Vector4x32f VECTORCALL VecAtan(Vector4x32f x)
 {
     const float sa1 =  0.99997726f, sa3 = -0.33262347f, sa5  = 0.19354346f,
                 sa7 = -0.11643287f, sa9 =  0.05265332f, sa11 = -0.01172120f;
       
-    const vec_t xx = VecMul(x, x);
+    const Vector4x32f xx = VecMul(x, x);
     // (a9 + x_sq * a11
-    vec_t res = VecSet1(sa11); 
+    Vector4x32f res = VecSet1(sa11); 
     res = VecFmadd(xx, res, VecSet1(sa9));
     res = VecFmadd(xx, res, VecSet1(sa7));
     res = VecFmadd(xx, res, VecSet1(sa5));
@@ -977,40 +977,40 @@ purefn vec_t VECTORCALL VecAtan(vec_t x)
     return VecMul(x, res);
 }
 
-inline vec_t VECTORCALL VecAtan2(vec_t y, vec_t x)
+inline Vector4x32f VECTORCALL VecAtan2(Vector4x32f y, Vector4x32f x)
 {
-    vec_t ay = VecFabs(y), ax = VecFabs(x);
-    veci_t swapMask = VecCmpGt(ay, ax);
-    vec_t z  = VecDiv(VecBlend(ay, ax, swapMask), VecBlend(ax, ay, swapMask));
-    vec_t th = VecAtan(z);
+    Vector4x32f ay = VecFabs(y), ax = VecFabs(x);
+    Vector4x32i swapMask = VecCmpGt(ay, ax);
+    Vector4x32f z  = VecDiv(VecBlend(ay, ax, swapMask), VecBlend(ax, ay, swapMask));
+    Vector4x32f th = VecAtan(z);
     th = VecSelect(th, VecSub(VecSet1(HalfPI), th), swapMask);
     th = VecSelect(th, VecSub(VecSet1(PI), th), VecCmpLt(x, VecZero()));
     return VecCopySign(th, y);
 }
 
-purefn vec_t VECTORCALL VecSinCos(vec_t* cv, vec_t x)
+purefn Vector4x32f VECTORCALL VecSinCos(Vector4x32f* cv, Vector4x32f x)
 {
-    vec_t s = VecSin(x);
+    Vector4x32f s = VecSin(x);
     *cv = VecCos(x);
     return s;
 }
 
-purefn float VECTORCALL Min3v(vec_t ab)
+purefn float VECTORCALL Min3v(Vector4x32f ab)
 {
-    vec_t xy = VecMin(VecSplatX(ab), VecSplatY(ab));
+    Vector4x32f xy = VecMin(VecSplatX(ab), VecSplatY(ab));
     return VecGetX(VecMin(xy, VecSplatZ(ab)));
 }
 
-purefn float VECTORCALL Max3v(vec_t ab)
+purefn float VECTORCALL Max3v(Vector4x32f ab)
 {
-    vec_t xy = VecMax(VecSplatX(ab), VecSplatY(ab));
+    Vector4x32f xy = VecMax(VecSplatX(ab), VecSplatY(ab));
     return VecGetX(VecMax(xy, VecSplatZ(ab)));
 }
 
-purefn bool IsPointInsideAABB(vec_t point, vec_t aabbMin, vec_t aabbMax)
+purefn bool IsPointInsideAABB(Vector4x32f point, Vector4x32f aabbMin, Vector4x32f aabbMax)
 {
-    veci_t cmpMin = VecCmpGe(point, aabbMin);
-    veci_t cmpMax = VecCmpLe(point, aabbMax);
+    Vector4x32i cmpMin = VecCmpGe(point, aabbMin);
+    Vector4x32i cmpMax = VecCmpLe(point, aabbMax);
 #if defined(AX_ARM)
     uint32_t movemask = VecMovemask(VeciAnd(cmpMin, cmpMax));
 #else
@@ -1019,11 +1019,11 @@ purefn bool IsPointInsideAABB(vec_t point, vec_t aabbMin, vec_t aabbMax)
     return (movemask & 0b111) == 0b111;
 }
 
-purefn float VECTORCALL IntersectAABB(vec_t origin, vec_t invDir, vec_t aabbMin, vec_t aabbMax, float minSoFar)
+purefn float VECTORCALL IntersectAABB(Vector4x32f origin, Vector4x32f invDir, Vector4x32f aabbMin, Vector4x32f aabbMax, float minSoFar)
 {
     if (IsPointInsideAABB(origin, aabbMin, aabbMax)) return 0.1f;
-    vec_t tmin = VecMul(VecSub(aabbMin, origin), invDir);
-    vec_t tmax = VecMul(VecSub(aabbMax, origin), invDir);
+    Vector4x32f tmin = VecMul(VecSub(aabbMin, origin), invDir);
+    Vector4x32f tmax = VecMul(VecSub(aabbMax, origin), invDir);
     float tnear = Max3v(VecMin(tmin, tmax));
     float tfar  = Min3v(VecMax(tmin, tmax));
     // return tnear < tfar && tnear > 0.0f && tnear < minSoFar;
@@ -1032,9 +1032,9 @@ purefn float VECTORCALL IntersectAABB(vec_t origin, vec_t invDir, vec_t aabbMin,
 }
 
 // calculate popcount of 4 32 bit integer concurrently
-purefn vecu_t VECTORCALL PopCount32_128(vecu_t x)
+purefn Vector4x32u VECTORCALL PopCount32_128(Vector4x32u x)
 {
-    vecu_t y;
+    Vector4x32u y;
     y = VeciAnd(VeciSrl32(x, 1), VeciSet1(0x55555555));
     x = VeciSub(x, y);
     y = VeciAnd(VeciSrl32(x, 2), VeciSet1(0x33333333));
@@ -1044,7 +1044,7 @@ purefn vecu_t VECTORCALL PopCount32_128(vecu_t x)
 }
 
 // LeadingZeroCount of 4 32 bit integer concurrently
-purefn vecu_t VECTORCALL LeadingZeroCount32_128(vecu_t x)
+purefn Vector4x32u VECTORCALL LeadingZeroCount32_128(Vector4x32u x)
 {
     x = VeciOr(x, VeciSrl32(x, 1));
     x = VeciOr(x, VeciSrl32(x, 2));
@@ -1108,11 +1108,11 @@ purefn __m256i VECTORCALL PopCount256si(__m256i v) // returns 4 64 bit integer t
 
 struct Ray
 {
-    vec_t origin;
-    vec_t direction;
+    Vector4x32f origin;
+    Vector4x32f direction;
 };
 
-inline Ray MakeRay(vec_t o, vec_t d)
+inline Ray MakeRay(Vector4x32f o, Vector4x32f d)
 {
     return { o, d };
 }

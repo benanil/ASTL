@@ -141,20 +141,20 @@ inline void ConvertHalf4ToFloat4(float* result, const half* half4)
     vst1q_f32(result, vcvt_f32_f16(vld1_dup_f16(half4)));
 
 #elif defined(AX_SUPPORT_SSE)
-    vecu_t h4 = VeciLoad64((const uint64_t*)half4);
+    Vector4x32u h4 = VeciLoad64((const uint64_t*)half4);
     h4 = VeciUnpackLow16(h4, VeciZero());   // [half4.xy, half4.xy, half4.zw, half4.zw] 
     
-    vecu_t h_e = VeciAnd(h4, VeciSet1(0x00007c00));
-    vecu_t h_m = VeciAnd(h4, VeciSet1(0x000003ff));
-    vecu_t h_s = VeciAnd(h4, VeciSet1(0x00008000));
-    vecu_t h_e_f_bias = VeciAdd(h_e, VeciSet1(0x0001c000));
+    Vector4x32u h_e = VeciAnd(h4, VeciSet1(0x00007c00));
+    Vector4x32u h_m = VeciAnd(h4, VeciSet1(0x000003ff));
+    Vector4x32u h_s = VeciAnd(h4, VeciSet1(0x00008000));
+    Vector4x32u h_e_f_bias = VeciAdd(h_e, VeciSet1(0x0001c000));
     
-    vecu_t f_s  = VeciSll32(h_s, 0x00000010);
-    vecu_t f_e  = VeciSll32(h_e_f_bias, 0x0000000d);
-    vecu_t f_m  = VeciSll32(h_m, 0x0000000d);
-    vecu_t f_em = VeciOr(f_e, f_m);
+    Vector4x32u f_s  = VeciSll32(h_s, 0x00000010);
+    Vector4x32u f_e  = VeciSll32(h_e_f_bias, 0x0000000d);
+    Vector4x32u f_m  = VeciSll32(h_m, 0x0000000d);
+    Vector4x32u f_em = VeciOr(f_e, f_m);
 
-    vecu_t i_result = VeciOr(f_s, f_em);
+    Vector4x32u i_result = VeciOr(f_s, f_em);
     VecStore(result, VeciToVecf(i_result));
     
 #else // no intrinsics
@@ -175,18 +175,18 @@ inline void ConvertFloat4ToHalf4(half* result, const float* float4)
 
 #elif defined(AX_SUPPORT_SSE)
 
-    vecu_t IValue = VeciLoad((const unsigned int*)float4);
-    vecu_t Sign = VeciSrl32(VeciAnd(IValue, VeciSet1(0x80000000u)), 16);
+    Vector4x32u IValue = VeciLoad((const unsigned int*)float4);
+    Vector4x32u Sign = VeciSrl32(VeciAnd(IValue, VeciSet1(0x80000000u)), 16);
     IValue = VeciAnd(IValue, VeciSet1(0x7FFFFFFFu));      // Hack off the sign
     
-    vecu_t mask = VeciCmpLt(IValue, VeciSet1(0x38800000u));
-    vecu_t b = VeciAdd(IValue, VeciSet1(0xC8000000u));
-    vecu_t a = VeciOr(VeciSet1(0x800000u), VeciAnd(IValue, VeciSet1(0x7FFFFFu)));
+    Vector4x32u mask = VeciCmpLt(IValue, VeciSet1(0x38800000u));
+    Vector4x32u b = VeciAdd(IValue, VeciSet1(0xC8000000u));
+    Vector4x32u a = VeciOr(VeciSet1(0x800000u), VeciAnd(IValue, VeciSet1(0x7FFFFFu)));
     a = VeciSrl(a, VeciSub(VeciSet1(113u), VeciSrl32(IValue, 23u)));
     
     IValue = VeciBlend(b, a, mask);
 
-    vecu_t Result = VeciAdd(IValue, VeciSet1(0x0FFFu));
+    Vector4x32u Result = VeciAdd(IValue, VeciSet1(0x0FFFu));
     Result = VeciAdd(Result, VeciAnd(VeciSrl32(IValue, 13u), VeciSet1(1u)));
     Result = VeciSrl32(Result, 13u);
     Result = VeciAnd(Result, VeciSet1(0x7FFFu));

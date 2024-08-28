@@ -108,9 +108,9 @@ struct Matrix3
     }
 };
 
-purefn vec_t VECTORCALL Vector4Transform(vec_t v, const vec_t r[4])
+purefn Vector4x32f VECTORCALL Vector4Transform(Vector4x32f v, const Vector4x32f r[4])
 {
-    vec_t m0;
+    Vector4x32f m0;
     m0 = VecMul(r[0], VecSplatX(v));
     m0 = VecFmaddLane(r[1], v, m0, 1);
     m0 = VecFmaddLane(r[2], v, m0, 2); 
@@ -118,9 +118,9 @@ purefn vec_t VECTORCALL Vector4Transform(vec_t v, const vec_t r[4])
     return m0;
 }
 
-purefn vec_t VECTORCALL Vector3Transform(vec_t vec, const vec_t r[4])
+purefn Vector4x32f VECTORCALL Vector3Transform(Vector4x32f vec, const Vector4x32f r[4])
 {
-    vec_t m0;
+    Vector4x32f m0;
     m0 = VecMul(r[0], VecSplatX(vec));
     m0 = VecFmaddLane(r[1], vec, m0, 1);
     m0 = VecFmaddLane(r[2], vec, m0, 2); 
@@ -132,14 +132,14 @@ struct alignas(16) Matrix4
 {
     union
     {
-        struct { vec_t r[4]; };
+        struct { Vector4x32f r[4]; };
         struct { float m[4][4]; };
     };
     
-    const vec_t& operator [] (int index) const { return r[index]; }
-          vec_t& operator [] (int index)       { return r[index]; }
+    const Vector4x32f& operator [] (int index) const { return r[index]; }
+          Vector4x32f& operator [] (int index)       { return r[index]; }
     
-    vec_t    VECTORCALL operator *  (vec_t v)          { vec_t x; x = ::Vector4Transform(v, r); return x; };
+    Vector4x32f    VECTORCALL operator *  (Vector4x32f v)          { Vector4x32f x; x = ::Vector4Transform(v, r); return x; };
     Matrix4  VECTORCALL operator *  (const Matrix4 M) { return Matrix4::Multiply(M, *this); };
     Matrix4& VECTORCALL operator *= (const Matrix4 M) { *this = Matrix4::Multiply(M, *this); return *this; };
     
@@ -241,20 +241,21 @@ struct alignas(16) Matrix4
     // creates view matrix
     static Matrix4 VECTORCALL LookAtRH(Vector3f eye, Vector3f center, const Vector3f& up)
     {
-        vec_t EyePosition  = VecLoad(&eye.x);
-        vec_t EyeDirection = VecSub(VecZero(), VecLoad(&center.x));
-        vec_t UpDirection  = VecLoad(&up.x);
+        Vector4x32f EyePosition  = VecLoad(&eye.x);
+        Vector4x32f EyeDirection = VecSub(VecZero(), VecLoad(&center.x));
+        Vector4x32f UpDirection  = VecLoad(&up.x);
         
-        vec_t R0 = Vec3Norm(Vec3Cross(UpDirection, EyeDirection));
-        vec_t R1 = Vec3Norm(Vec3Cross(EyeDirection, R0));
+        Vector4x32f R0 = Vec3Norm(Vec3Cross(UpDirection, EyeDirection));
+        Vector4x32f R1 = Vec3Norm(Vec3Cross(EyeDirection, R0));
         
-        vec_t NegEyePosition = VecSub(VecZero(), EyePosition);
+        Vector4x32f NegEyePosition = VecSub(VecZero(), EyePosition);
         
-        vec_t D0 = Vec3Dot(R0, NegEyePosition);
-        vec_t D1 = Vec3Dot(R1, NegEyePosition);
-        vec_t D2 = Vec3Dot(EyeDirection, NegEyePosition);
+        Vector4x32f D0 = Vec3Dot(R0, NegEyePosition);
+        Vector4x32f D1 = Vec3Dot(R1, NegEyePosition);
+        Vector4x32f D2 = Vec3Dot(EyeDirection, NegEyePosition);
+
         Matrix4 M;
-        veci_t test = VecSelect1110;
+        Vector4x32i test = VecSelect1110;
         M.r[0] = VecSelect(D0, R0, test); // no need select ?
         M.r[1] = VecSelect(D1, R1, test);
         M.r[2] = VecSelect(D2, EyeDirection, test);
@@ -312,7 +313,7 @@ struct alignas(16) Matrix4
         // Export rotation to matrix
         MatrixFromQuaternion<4>(res.GetPtr(), VecLoad(rotation));
         // Scale 3x3 matrix by given scale
-        vec_t vecScale = VecLoad(scale);
+        Vector4x32f vecScale = VecLoad(scale);
         res.r[0] = VecMul(res.r[0], VecSplatX(vecScale));
         res.r[1] = VecMul(res.r[1], VecSplatY(vecScale));
         res.r[2] = VecMul(res.r[2], VecSplatZ(vecScale));
@@ -341,7 +342,7 @@ struct alignas(16) Matrix4
     	return MakeVec3(Vec3Lenf(matrix.r[0]), Vec3Lenf(matrix.r[2]), Vec3Lenf(matrix.r[1]));
     }
         
-    static vec_t VECTORCALL ExtractScaleV(const Matrix4 matrix) 
+    static Vector4x32f VECTORCALL ExtractScaleV(const Matrix4 matrix) 
     {
     	return VecSetR(Vec3Lenf(matrix.r[0]), Vec3Lenf(matrix.r[2]), Vec3Lenf(matrix.r[1]), 0.0f);
     }
@@ -402,22 +403,22 @@ struct alignas(16) Matrix4
     }
     // https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
     // for row major matrix
-    // we use vec_t to represent 2x2 matrix as A = | A0  A1 |
+    // we use Vector4x32f to represent 2x2 matrix as A = | A0  A1 |
     //                                             | A2  A3 |
     // 2x2 row major Matrix multiply A*B
-    purefn static vec_t VECTORCALL Mat2Mul(vec_t vec1, vec_t vec2)
+    purefn static Vector4x32f VECTORCALL Mat2Mul(Vector4x32f vec1, Vector4x32f vec2)
     {
         return VecAdd(VecMul(vec1, VecSwizzle(vec2, 0, 3, 0, 3)), 
                       VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
     }
     // 2x2 row major Matrix adjugate multiply (A#)*B
-    purefn static vec_t VECTORCALL Mat2AdjMul(vec_t vec1, vec_t vec2)
+    purefn static Vector4x32f VECTORCALL Mat2AdjMul(Vector4x32f vec1, Vector4x32f vec2)
     {
         return VecSub(VecMul(VecSwizzle(vec1, 3, 3, 0, 0), vec2),
                       VecMul(VecSwizzle(vec1, 1, 1, 2, 2), VecSwizzle(vec2, 2, 3, 0, 1)));
     }
     // 2x2 row major Matrix multiply adjugate A*(B#)
-    purefn static vec_t VECTORCALL Mat2MulAdj(vec_t vec1, vec_t vec2)
+    purefn static Vector4x32f VECTORCALL Mat2MulAdj(Vector4x32f vec1, Vector4x32f vec2)
     {
         return VecSub(VecMul(vec1, VecSwizzle(vec2, 3, 0, 3, 0)),
                       VecMul(VecSwizzle(vec1, 1, 0, 3, 2), VecSwizzle(vec2, 2, 1, 2, 1)));
@@ -428,22 +429,22 @@ struct alignas(16) Matrix4
     {
         Matrix4 out;
         // transpose 3x3, we know m03 = m13 = m23 = 0
-        vec_t t0 = VecShuffle_0101(inM.r[0], inM.r[1]); // 00, 01, 10, 11
-        vec_t t1 = VecShuffle_2323(inM.r[0], inM.r[1]); // 02, 03, 12, 13
+        Vector4x32f t0 = VecShuffle_0101(inM.r[0], inM.r[1]); // 00, 01, 10, 11
+        Vector4x32f t1 = VecShuffle_2323(inM.r[0], inM.r[1]); // 02, 03, 12, 13
         out.r[0] = VecShuffle(t0, inM.r[2], 0, 2, 0, 3); // 00, 10, 20, 23(=0)
         out.r[1] = VecShuffle(t0, inM.r[2], 1, 3, 1, 3); // 01, 11, 21, 23(=0)
         out.r[2] = VecShuffle(t1, inM.r[2], 0, 2, 2, 3); // 02, 12, 22, 23(=0)
         
         // (SizeSqr(mVec[0]), SizeSqr(mVec[1]), SizeSqr(mVec[2]), 0)
-        vec_t sizeSqr;
+        Vector4x32f sizeSqr;
         sizeSqr = VecMul(out.r[0], out.r[0]);
         sizeSqr = VecFmadd(out.r[1], out.r[1], sizeSqr);
         sizeSqr = VecFmadd(out.r[2], out.r[2], sizeSqr);
         
         // optional test to avoid divide by 0
-        const vec_t one = VecOne();
+        const Vector4x32f one = VecOne();
         // for each component, if(sizeSqr < SMALL_NUMBER) sizeSqr = 1;
-        vec_t rSizeSqr = VecSelect(
+        Vector4x32f rSizeSqr = VecSelect(
             VecDiv(one, sizeSqr), one,
             VecCmpLt(sizeSqr, VecSet1(1.e-8f))
         );
@@ -462,38 +463,38 @@ struct alignas(16) Matrix4
     #if !defined(AX_ARM)
     static Matrix4 VECTORCALL Inverse(Matrix4 m)
     {
-        vec_t A = VecShuffle_0101(m.r[0], m.r[1]);
-        vec_t B = VecShuffle_2323(m.r[0], m.r[1]);
-        vec_t C = VecShuffle_0101(m.r[2], m.r[3]);
-        vec_t D = VecShuffle_2323(m.r[2], m.r[3]);
+        Vector4x32f A = VecShuffle_0101(m.r[0], m.r[1]);
+        Vector4x32f B = VecShuffle_2323(m.r[0], m.r[1]);
+        Vector4x32f C = VecShuffle_0101(m.r[2], m.r[3]);
+        Vector4x32f D = VecShuffle_2323(m.r[2], m.r[3]);
         
-        vec_t detSub = VecSub(
+        Vector4x32f detSub = VecSub(
             VecMul(VecShuffle(m.r[0], m.r[2], 0, 2, 0, 2), VecShuffle(m.r[1], m.r[3], 1, 3, 1, 3)),
             VecMul(VecShuffle(m.r[0], m.r[2], 1, 3, 1, 3), VecShuffle(m.r[1], m.r[3], 0, 2, 0, 2))
         );
-        vec_t detA = VecSplatX(detSub);
-        vec_t detB = VecSplatY(detSub);
-        vec_t detC = VecSplatZ(detSub);
-        vec_t detD = VecSplatW(detSub);
+        Vector4x32f detA = VecSplatX(detSub);
+        Vector4x32f detB = VecSplatY(detSub);
+        Vector4x32f detC = VecSplatZ(detSub);
+        Vector4x32f detD = VecSplatW(detSub);
         
-        vec_t D_C  = Mat2AdjMul(D, C);
-        vec_t A_B  = Mat2AdjMul(A, B);
-        vec_t X_   = VecSub(VecMul(detD, A), Mat2Mul(B, D_C));
-        vec_t W_   = VecSub(VecMul(detA, D), Mat2Mul(C, A_B));
+        Vector4x32f D_C  = Mat2AdjMul(D, C);
+        Vector4x32f A_B  = Mat2AdjMul(A, B);
+        Vector4x32f X_   = VecSub(VecMul(detD, A), Mat2Mul(B, D_C));
+        Vector4x32f W_   = VecSub(VecMul(detA, D), Mat2Mul(C, A_B));
         
-        vec_t detM = VecMul(detA, detD);
-        vec_t Y_   = VecSub(VecMul(detB, C), Mat2MulAdj(D, A_B));
-        vec_t Z_   = VecSub(VecMul(detC, B), Mat2MulAdj(A, D_C));
+        Vector4x32f detM = VecMul(detA, detD);
+        Vector4x32f Y_   = VecSub(VecMul(detB, C), Mat2MulAdj(D, A_B));
+        Vector4x32f Z_   = VecSub(VecMul(detC, B), Mat2MulAdj(A, D_C));
         
         detM = VecFmadd(detB, detC, detM);
         
-        vec_t tr = VecMul(A_B, VecSwizzle(D_C, 0, 2, 1, 3));
+        Vector4x32f tr = VecMul(A_B, VecSwizzle(D_C, 0, 2, 1, 3));
         tr   = VecHadd(tr, tr);
         tr   = VecHadd(tr, tr);
         detM = VecSub(detM, tr);
         
-        const vec_t adjSignMask = VecSetR(1.f, -1.f, -1.f, 1.f);
-        vec_t rDetM = VecDiv(adjSignMask, detM);
+        const Vector4x32f adjSignMask = VecSetR(1.f, -1.f, -1.f, 1.f);
+        Vector4x32f rDetM = VecDiv(adjSignMask, detM);
         X_ = VecMul(X_, rDetM);
         Y_ = VecMul(Y_, rDetM);
         Z_ = VecMul(Z_, rDetM);
@@ -580,7 +581,7 @@ struct alignas(16) Matrix4
     
     static Matrix4 VECTORCALL Multiply(Matrix4 in1, Matrix4 in2)
     {
-        vec_t m0;
+        Vector4x32f m0;
         m0 = VecMul(in1.r[0], VecSplatX(in2.r[0]));
         m0 = VecFmaddLane(in1.r[1], in2.r[0], m0, 1);
         m0 = VecFmaddLane(in1.r[2], in2.r[0], m0, 2); 
@@ -616,15 +617,15 @@ struct alignas(16) Matrix4
         return mat;
         #else
         Matrix4 M;
-        const vec_t  Constant1110 = VecSetR(1.0f, 1.0f, 1.0f, 0.0f);
+        const Vector4x32f  Constant1110 = VecSetR(1.0f, 1.0f, 1.0f, 0.0f);
         
-        vec_t Q0 = VecAdd(q, q);
-        vec_t Q1 = VecMul(q,Q0);
-        vec_t V0 = VecShuffleR(Q1, Q1, 3,0,0,1);
+        Vector4x32f Q0 = VecAdd(q, q);
+        Vector4x32f Q1 = VecMul(q,Q0);
+        Vector4x32f V0 = VecShuffleR(Q1, Q1, 3,0,0,1);
         V0 = VecMask(V0, VecMask3);
-        vec_t V1 = VecShuffleR(Q1, Q1, 3,1,2,2);
+        Vector4x32f V1 = VecShuffleR(Q1, Q1, 3,1,2,2);
         V1 = VecMask(V1, VecMask3);
-        vec_t  R0 = VecSub(Constant1110, V0);
+        Vector4x32f  R0 = VecSub(Constant1110, V0);
         R0 = VecSub(R0, V1);
         
         V0 = VecShuffleR(q, q, 3,1,0,0);
@@ -632,11 +633,11 @@ struct alignas(16) Matrix4
         V0 = VecMul(V0, V1);
         
         V1 = VecShuffleR(q, q, 3,3,3,3);
-        vec_t V2 = VecShuffleR(Q0, Q0, 3,0,2,1);
+        Vector4x32f V2 = VecShuffleR(Q0, Q0, 3,0,2,1);
         V1 = VecMul(V1, V2);
         
-        vec_t R1 = VecAdd(V0, V1);
-        vec_t R2 = VecSub(V0, V1);
+        Vector4x32f R1 = VecAdd(V0, V1);
+        Vector4x32f R2 = VecSub(V0, V1);
         
         V0 = VecShuffleR(R1, R2, 1, 0, 2, 1);
         V0 = VecShuffleR(V0, V0, 1, 3, 2, 0);
@@ -674,10 +675,10 @@ struct alignas(16) Matrix4
         mResult.r[2] = T1.val[0];
         mResult.r[3] = T1.val[1];
         #else
-        vec_t vTemp1 = VecShuffleR(M.r[0], M.r[1], 1, 0, 1, 0);
-        vec_t vTemp3 = VecShuffleR(M.r[0], M.r[1], 3, 2, 3, 2);
-        vec_t vTemp2 = VecShuffleR(M.r[2], M.r[3], 1, 0, 1, 0);
-        vec_t vTemp4 = VecShuffleR(M.r[2], M.r[3], 3, 2, 3, 2);
+        Vector4x32f vTemp1 = VecShuffleR(M.r[0], M.r[1], 1, 0, 1, 0);
+        Vector4x32f vTemp3 = VecShuffleR(M.r[0], M.r[1], 3, 2, 3, 2);
+        Vector4x32f vTemp2 = VecShuffleR(M.r[2], M.r[3], 1, 0, 1, 0);
+        Vector4x32f vTemp4 = VecShuffleR(M.r[2], M.r[3], 3, 2, 3, 2);
         mResult.r[0] = VecShuffleR(vTemp1, vTemp2, 2, 0, 2, 0);
         mResult.r[1] = VecShuffleR(vTemp1, vTemp2, 3, 1, 3, 1);
         mResult.r[2] = VecShuffleR(vTemp3, vTemp4, 2, 0, 2, 0);
@@ -686,7 +687,7 @@ struct alignas(16) Matrix4
         return mResult;
     }
     
-    static vec_t VECTORCALL Vector4Transform(vec_t V, const Matrix4& M)
+    static Vector4x32f VECTORCALL Vector4Transform(Vector4x32f V, const Matrix4& M)
     {
         return ::Vector4Transform(V, M.r);
     }
@@ -694,7 +695,7 @@ struct alignas(16) Matrix4
  
 struct FrustumPlanes
 {
-    vec_t planes[6];
+    Vector4x32f planes[6];
 };
 
 inline FrustumPlanes CreateFrustumPlanes(const Matrix4& viewProjection)
@@ -710,16 +711,16 @@ inline FrustumPlanes CreateFrustumPlanes(const Matrix4& viewProjection)
     return result;
 }
 
-purefn vec_t VECTORCALL MaxPointAlongNormal(vec_t min, vec_t max, vec_t n) 
+purefn Vector4x32f VECTORCALL MaxPointAlongNormal(Vector4x32f min, Vector4x32f max, Vector4x32f n) 
 {
     return VecSelect(min, max, VecCmpGe(n, VecZero()));
 }
 
-inline bool VECTORCALL CheckAABBCulled(vec_t min, vec_t max, const FrustumPlanes& frustum, const Matrix4& model)
+inline bool VECTORCALL CheckAABBCulled(Vector4x32f min, Vector4x32f max, const FrustumPlanes& frustum, const Matrix4& model)
 {
     for (uint i = 0u; i < 5u; ++i) // make < 6 if you want far plane 
     {
-        vec_t p = MaxPointAlongNormal(min, max, frustum.planes[i]);
+        Vector4x32f p = MaxPointAlongNormal(min, max, frustum.planes[i]);
         p = VecSelect(VecOne(), p, VecSelect1110);
         if (VecDotf(frustum.planes[i], p) < 0.0f) return false;
     }
@@ -728,7 +729,7 @@ inline bool VECTORCALL CheckAABBCulled(vec_t min, vec_t max, const FrustumPlanes
 
 inline bool isPointCulled(const FrustumPlanes& frustum, const Vector3f& _point, const Matrix4& matrix)
 {
-    vec_t point = Vector3Transform(VecLoad(&_point.x), matrix.r);
+    Vector4x32f point = Vector3Transform(VecLoad(&_point.x), matrix.r);
     if (VecDotf(frustum.planes[0], point) < 0.0f) return false;
     if (VecDotf(frustum.planes[1], point) < 0.0f) return false;
     if (VecDotf(frustum.planes[2], point) < 0.0f) return false;
@@ -739,8 +740,8 @@ inline bool isPointCulled(const FrustumPlanes& frustum, const Vector3f& _point, 
 
 inline Vector2f WorldToNDC(Matrix4 viewProj, Vector3f worldPos)
 {
-    vec_t pos = VecLoad(worldPos.arr);
-    vec_t clipCoords = ::Vector3Transform(pos, viewProj.r);
+    Vector4x32f pos = VecLoad(worldPos.arr);
+    Vector4x32f clipCoords = ::Vector3Transform(pos, viewProj.r);
     pos = VecDiv(clipCoords, VecSplatW(clipCoords));
     Vec3Store(worldPos.arr, pos);
     return { worldPos.x, worldPos.y };

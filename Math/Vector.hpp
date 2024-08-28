@@ -7,7 +7,7 @@
 *      call MakeVecX to create vector.                           *
 *   Be Aware:                                                    *
 *      Vector4x is not exist, because we want to have-           *
-*      better use of hardware, use vec_t or veci_t instead.      *
+*      better use of hardware, use Vector4x32f or Vector4x32i instead.      *
 *      Declared in SIMDVectorMath.hpp                            *
 *   Author : Anilcan Gulkaya 2023 anilcangulkaya7@gmail.com      *
 *****************************************************************/
@@ -295,8 +295,8 @@ pureconst uint32 LessThan(Vector3f a, Vector3f b)
     return uint32(a.x < b.x) | (uint32(a.y < b.y) << 1) | (uint32(a.y < b.y) << 2);
 }
 
-pureconst uint32 All2(uint32 msk) { return msk == 0x11u; }
-pureconst uint32 All3(uint32 msk) { return msk == 0x111u; }
+pureconst uint32 All2(uint32 msk) { return msk == 0b11u; }
+pureconst uint32 All3(uint32 msk) { return msk == 0b111u; }
 
 pureconst uint32 Any2(uint32 msk) { return msk > 0; }
 pureconst uint32 Any3(uint32 msk) { return msk > 0; }
