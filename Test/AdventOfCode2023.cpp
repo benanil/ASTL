@@ -133,7 +133,7 @@ void AOC2023Day3()
             total += number;
             
             // find starting point
-            while (map.Contains(MakeVec2(pos.x-1, pos.y)))
+            while (map.Contains(Vec2(pos.x-1, pos.y)))
                 pos.x--;
 
             // erase the number since we found it

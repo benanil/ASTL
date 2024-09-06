@@ -231,8 +231,8 @@ struct PerlinNoise2D
 
     float inoise(float2 p)
     {
-        float2 P = MakeVec2(FMod(Floor(p.x), 256.0f), FMod(Floor(p.y), 256.0f));	// FIND UNIT SQUARE THAT CONTAINS POINT
-        p -= MakeVec2(Floor(p.x), Floor(p.y)); // FIND RELATIVE X,Y OF POINT IN SQUARE.
+        float2 P = Vec2(FMod(Floor(p.x), 256.0f), FMod(Floor(p.y), 256.0f));	// FIND UNIT SQUARE THAT CONTAINS POINT
+        p -= Vec2(Floor(p.x), Floor(p.y)); // FIND RELATIVE X,Y OF POINT IN SQUARE.
         float2 f = fade(p);                    // COMPUTE FADE CURVES FOR EACH OF X,Y.
 			
         P = P / 256.0f;
@@ -244,9 +244,9 @@ struct PerlinNoise2D
 			 
         // AND ADD BLENDED RESULTS FROM 4 CORNERS OF SQUARE
         return Lerp(Lerp(grad(perm(A      ), p ),  
-                         grad(perm(B      ), p + MakeVec2(-1.0f,  0.0f)), f.x),
-                    Lerp(grad(perm(A + one), p + MakeVec2( 0.0f, -1.0f)),
-                         grad(perm(B + one), p + MakeVec2(-1.0f, -1.0f)), f.x), f.y);                
+                         grad(perm(B      ), p + Vec2(-1.0f,  0.0f)), f.x),
+                    Lerp(grad(perm(A + one), p + Vec2( 0.0f, -1.0f)),
+                         grad(perm(B + one), p + Vec2(-1.0f, -1.0f)), f.x), f.y);                
     }
 			
     // fractal sum, range -1.0 - 1.0

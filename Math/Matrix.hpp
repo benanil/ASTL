@@ -339,7 +339,7 @@ struct alignas(16) Matrix4
     
     static Vector3f VECTORCALL ExtractScale(const Matrix4 matrix) 
     {
-    	return MakeVec3(Vec3Lenf(matrix.r[0]), Vec3Lenf(matrix.r[2]), Vec3Lenf(matrix.r[1]));
+    	return Vec3(Vec3Lenf(matrix.r[0]), Vec3Lenf(matrix.r[2]), Vec3Lenf(matrix.r[1]));
     }
         
     static Vector4x32f VECTORCALL ExtractScaleV(const Matrix4 matrix) 
@@ -570,7 +570,7 @@ struct alignas(16) Matrix4
                           vget_low_f32(vzipq_f32(v2, v3).val[0]));
 
         Matrix4 dest;
-        x0 = VecRcp(VecHSum(vmulq_f32(x0, mat.r[0])));
+        x0 = VecRcp(VecHSum(vmulq_f32(x0, mat.r[0]))); // dot?
         dest.r[0] = vmulq_f32(v0, x0);
         dest.r[1] = vmulq_f32(v1, x0);
         dest.r[2] = vmulq_f32(v2, x0);

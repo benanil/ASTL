@@ -8,7 +8,7 @@ pureconst uint PackColorToUint(uint8 r, uint8 g, uint8 b, uint8 a) {
     return r | (uint(g) << 8) | (uint(b) << 16) | (uint(a) << 24);
 }
 
-pureconst uint PackToRGBAGrayScale(uint8 gray) {
+pureconst uint MakeRGBAGrayScale(uint8 gray) {
     return uint(gray) * 0x01010101u;
 }
 

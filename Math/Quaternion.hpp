@@ -6,7 +6,10 @@
 AX_NAMESPACE
 
 typedef Vector4x32f Quaternion;
-struct xyzw { float x, y, z, w; };
+struct xyzw 
+{ 
+    float x, y, z, w; 
+};
 
 #define QIdentity()  VecSetR(0.0f, 0.0f, 0.0f, 1.0f)
 #define QNorm(q)     VecNorm(q)

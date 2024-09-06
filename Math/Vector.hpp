@@ -40,7 +40,7 @@ struct Vector2
     
     T& operator[] (int index) { return arr[index]; }
     T  operator[] (int index) const { return arr[index]; }
-    
+
     static Vector2 Lerp(const Vector2& a, const Vector2& b, float t)
     {
         Vector2 v;
@@ -73,6 +73,10 @@ struct Vector2
     static Vector2 NormalizeEst(const Vector2& a) {
         return a * RSqrt(a.x * a.x + a.y * a.y);
     }
+
+    Vector2 XAdd(float t) { x += t; return *this; }
+    Vector2 YAdd(float t) { y += t; return *this; }
+    Vector2 ZAdd(float t) { z += t; return *this; }
     
     Vector2 operator - () { return { -x, -y }; }
     Vector2 operator + (Vector2 other) const { return {x + other.x, y + other.y}; }
@@ -108,7 +112,7 @@ struct Vector2
 };
 
 template<typename T> purefn Vector2<T> MakeVec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
-template<typename T> purefn Vector2<T> MakeVec2(T a, T b) { Vector2<T> v; v.x = a; v.y = b;  return v; }
+template<typename T> purefn Vector2<T> Vec2(T a, T b) { Vector2<T> v; v.x = a; v.y = b;  return v; }
 
 template<typename T>
 struct Vector3
@@ -181,6 +185,10 @@ struct Vector3
     static Vector3 NormalizeEst(const Vector3& a) {
         return a * RSqrt(Vector3::Dot(a, a));
     }
+
+    Vector3& XAdd(float t) { x += t; return *this; }
+    Vector3& YAdd(float t) { y += t; return *this; }
+    Vector3& ZAdd(float t) { z += t; return *this; }
     
     Vector3 operator- () { return { -x, -y, -z }; }
     Vector3 operator + (const Vector3& other) const { return { x + other.x, y + other.y, z + other.z }; }
@@ -193,15 +201,15 @@ struct Vector3
     Vector3 operator / (T other) const { return { x / other, y / other, z / other }; }
     Vector3 operator - (T other) const { return { x - other, y - other, z - other }; }
     
-    Vector3 operator += (const Vector3& o) { x += o.x; y += o.y; z += o.z; return *this; }
-    Vector3 operator *= (const Vector3& o) { x *= o.x; y *= o.y; z *= o.z; return *this; }
-    Vector3 operator /= (const Vector3& o) { x /= o.x; y /= o.y; z /= o.z; return *this; }
-    Vector3 operator -= (const Vector3& o) { x -= o.x; y -= o.y; z -= o.z; return *this; }
+    Vector3& operator += (const Vector3& o) { x += o.x; y += o.y; z += o.z; return *this; }
+    Vector3& operator *= (const Vector3& o) { x *= o.x; y *= o.y; z *= o.z; return *this; }
+    Vector3& operator /= (const Vector3& o) { x /= o.x; y /= o.y; z /= o.z; return *this; }
+    Vector3& operator -= (const Vector3& o) { x -= o.x; y -= o.y; z -= o.z; return *this; }
     
-    Vector3 operator += (T o) { x += o; y += o; z += o; return *this; }
-    Vector3 operator *= (T o) { x *= o; y *= o; z *= o; return *this; }
-    Vector3 operator /= (T o) { x /= o; y /= o; z /= o; return *this; }
-    Vector3 operator -= (T o) { x -= o; y -= o; z -= o; return *this; }
+    Vector3& operator += (T o) { x += o; y += o; z += o; return *this; }
+    Vector3& operator *= (T o) { x *= o; y *= o; z *= o; return *this; }
+    Vector3& operator /= (T o) { x /= o; y /= o; z /= o; return *this; }
+    Vector3& operator -= (T o) { x -= o; y -= o; z -= o; return *this; }
     
     Vector3 xxx() const { return {x, x, x}; }
     Vector3 yyy() const { return {y, y, y}; }
@@ -217,10 +225,10 @@ struct Vector3
     static const Vector3 Backward(){ return { 0.0,  0.0, -1.0}; }
 };
 
-template<typename T> purefn Vector3<T> MakeVec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; }
-template<typename T> purefn Vector3<T> MakeVec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; }
-template<typename T> purefn Vector3<T> MakeVec3(T a, T b, T c) { Vector3<T> v; v.x = a; v.y = b; v.z = c; return v; }
-template<typename T> purefn Vector3<T> MakeVec3(T* p) { Vector3<T> v; v.x = p[0]; v.y = p[1]; v.z = p[2]; return v; }
+template<typename T> purefn Vector3<T> Vec3()              { Vector3<T> v; v.x = v.y = v.z = T(0);    return v; }
+template<typename T> purefn Vector3<T> Vec3(T scale)       { Vector3<T> v; v.x = v.y = v.z = scale;   return v; }
+template<typename T> purefn Vector3<T> Vec3(T a, T b, T c) { Vector3<T> v; v.x = a; v.y = b; v.z = c; return v; }
+template<typename T> purefn Vector3<T> Vec3(T* p)          { Vector3<T> v; v.x = p[0]; v.y = p[1]; v.z = p[2]; return v; }
 
 using Vector2d = Vector2<double>;
 using Vector2f = Vector2<float>;

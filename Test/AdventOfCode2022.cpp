@@ -65,7 +65,7 @@ static void Day15() // result 5511201
         beaconPos.x = ParseNumber(curr);
         beaconPos.y = ParseNumber(curr);
 
-        Vector2i distance = MakeVec2(Abs(sensorPos.x - beaconPos.x), Abs(sensorPos.y - beaconPos.y)); // ManhattanDistance
+        Vector2i distance = Vec2(Abs(sensorPos.x - beaconPos.x), Abs(sensorPos.y - beaconPos.y)); // ManhattanDistance
         sensors[sensorPos] = distance.x + distance.y;
         beaconXs.Insert(beaconPos.y == 2000000 ? beaconPos.x : INT32_MIN);
         boundsMIN = Min(boundsMIN, beaconPos - distance);
@@ -76,7 +76,7 @@ static void Day15() // result 5511201
     // check each column if it contains # or not
     for (int j = boundsMIN.x; j <= boundsMAX.x; ++j)
     {
-        Vector2i columnPos = MakeVec2(j, 2000000);
+        Vector2i columnPos = Vec2(j, 2000000);
         if (sensors.Contains(columnPos)
             || beaconXs.Contains(columnPos.x)) continue; // if this beacon is sensor we will not count this
 
@@ -354,7 +354,7 @@ int Day22()
 		{
 			for (int x = 0; x < mapBounds.x; ++x)
 			{
-				Vector2i pos = MakeVec2(x, y);
+				Vector2i pos = Vec2(x, y);
 				auto const find = map.ConstFind(pos);
 				if (pos == currentPosition) printf("X");
 				else if (find == map.cend()) printf(" ");
