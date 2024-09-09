@@ -520,7 +520,7 @@ purefn float Step(float edge, float x)
 purefn float LineDistance(float x0, float y0, float x1, float y1, float x2, float y2)
 {
     float a = ((x2 - x1) * (y0 - y1)) - ((x0 - x1) * (y2 - y1));
-    return Abs(a) / Sqrt(Sqr(x2 - x1) + Sqr(y2 - y1));
+    return Abs(a) * RSqrt(Sqr(x2 - x1) + Sqr(y2 - y1));
 }
 
 AX_END_NAMESPACE 

@@ -32,7 +32,7 @@ struct Vector2
     using ElemType = T;
     
     float Length()        const { return Sqrt(LengthSquared()); }
-    float LengthSafe()    const { float sq = LengthSquared(); return sq < 0.01f ? 0.0f : Sqrt(sq); }
+    float LengthSafe()    const { float sq = LengthSquared(); return sq < 0.003f ? 0.0f : Sqrt(sq); }
     float LengthSquared() const { return x * x + y * y; }
     
     static float Length(Vector2 v)        { return Sqrt(v.LengthSquared()); }
@@ -61,6 +61,14 @@ struct Vector2
         return diffx * diffx + diffy * diffy;
     }
     
+    purefn static float AngleBetween(Vector2 from, Vector2 to)
+    {
+        // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
+        float denominator = RSqrt(LengthSquared(from) * LengthSquared(to));
+        float dot = Clamp(Dot(from, to) * denominator, -1.0f, 1.0f);
+        return ACos(dot);
+    }
+
     purefn static Vector2 Rotate(Vector2 vec, float angle)
     {
         float s = Sin(angle), c = Cos(angle);
@@ -130,32 +138,33 @@ struct Vector3
     T  operator[] (int index) const { return arr[index]; }
     
                 float Length() const { return Sqrt(LengthSquared()); }
+                float LengthSafe() const { float sqr = LengthSquared(); return sqr < 0.003f ? 0.0f : Sqrt(sqr); }
     __constexpr float LengthSquared() const { return x * x + y * y + z * z; }
     
     Vector3& Normalized() { *this /= Length(); return *this; }
     void NormalizeSelf() { *this /= Length(); }
     
-    static float Distance(const Vector3& a, const Vector3& b)
+    purefn static float Distance(const Vector3& a, const Vector3& b)
     {
         Vector3 diff = a - b; diff *= diff;
         return Sqrt(diff.x + diff.y + diff.z);
     }
     
     // distance squared for comparing distances, faster than distance 
-    static float DistanceSq(const Vector3& a, const Vector3& b)
+    purefn static float DistanceSq(const Vector3& a, const Vector3& b)
     {
         Vector3 diff = a - b; diff *= diff;
         return diff.x + diff.y + diff.z;
     }
     
-    static float Length(const Vector3& vec) { return vec.Length(); }
+    purefn static float Length(const Vector3& vec) { return vec.Length(); }
     
     purefn static float Dot(const Vector3& a, const Vector3& b)
     {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
     
-    static Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
+    purefn static Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
     {
         Vector3 v;
         v.x = a.x + (b.x - a.x) * t;
@@ -164,7 +173,7 @@ struct Vector3
         return v;
     }
     
-    static Vector3 Cross(const Vector3& a, const Vector3& b)
+    purefn static Vector3 Cross(const Vector3& a, const Vector3& b)
     {
         Vector3 v;
         v.x = a.y * b.z - b.y * a.z;
@@ -173,16 +182,23 @@ struct Vector3
         return v;
     }
     
-    static Vector3 Reflect(const Vector3& in, const Vector3& normal)
+    purefn static float AngleBetween(Vector3 a, Vector3 b)
+    {
+        float dot = Dot(a, b) * RSqrt(Dot(a, a) * Dot(b, b));
+        dot = Clamp(dot, -1.0f, 1.0f);
+        return ACos(dot);
+    }
+
+    purefn static Vector3 Reflect(const Vector3& in, const Vector3& normal)
     {
         return in - normal * Vector3::Dot(normal, in) * 2.0f;
     }
     
-    static Vector3 Normalize(const Vector3& a) {
+    purefn static Vector3 Normalize(const Vector3& a) {
         return a / Sqrt(Vector3::Dot(a, a));
     }
     
-    static Vector3 NormalizeEst(const Vector3& a) {
+    purefn static Vector3 NormalizeEst(const Vector3& a) {
         return a * RSqrt(Vector3::Dot(a, a));
     }
 
