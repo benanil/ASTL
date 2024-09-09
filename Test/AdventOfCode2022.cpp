@@ -51,7 +51,7 @@ static void Day15() // result 5511201
     char line[120];
     HashMap<Vector2i, int> sensors{};
     Set<int> beaconXs{};
-    Vector2i boundsMIN = MakeVec2(INT32_MAX), boundsMAX = MakeVec2(INT32_MIN);
+    Vector2i boundsMIN = Vec2(INT32_MAX), boundsMAX = Vec2(INT32_MIN);
 
     while (fgets(line, sizeof(line), file))
     {
@@ -174,10 +174,10 @@ static int Day12() // result should be 534
 			}
 		};
 
-		processNeighbor(currentPoint + MakeVec2<short>(1, 0));
-		processNeighbor(currentPoint + MakeVec2<short>(0, 1));
-		processNeighbor(currentPoint + MakeVec2<short>(0, -1));
-		processNeighbor(currentPoint + MakeVec2<short>(-1, 0));
+		processNeighbor(currentPoint + Vec2<short>(1, 0));
+		processNeighbor(currentPoint + Vec2<short>(0, 1));
+		processNeighbor(currentPoint + Vec2<short>(0, -1));
+		processNeighbor(currentPoint + Vec2<short>(-1, 0));
 	}
 
 	Vector2s currentPoint = targetPos;
@@ -207,7 +207,7 @@ static int Day17() // result should be 3157
 	};
 	const int shapeSizes[5] = { 4,5,5,4,4 }; // num pixels
 
-	Vector2s mapBounds = MakeVec2<short>(7, -1);
+	Vector2s mapBounds = Vec2<short>(7, -1);
 	HashSet<Vector2s> blocks;
 
 	auto const CheckColission = [&](const Vector2s* shape, int shapeSize, Vector2s position) 
@@ -229,7 +229,7 @@ static int Day17() // result should be 3157
 		const int blockIndex = currBlock++ % 5;
 		const int shapeSize = shapeSizes[blockIndex];
 		const Vector2s* shape = shapes[blockIndex];
-		Vector2s position = MakeVec2<short>(2, mapBounds.y + 4);
+		Vector2s position = Vec2<short>(2, mapBounds.y + 4);
 
 		auto const visualize = [&]()
 		{
@@ -241,7 +241,7 @@ static int Day17() // result should be 3157
 			{
 				for (int j = 0; j < mapBounds.x; ++j)
 				{
-					if (blocks.Contains(MakeVec2<short>(j, i))) printf("#");
+					if (blocks.Contains(Vec2<short>(j, i))) printf("#");
 					else printf(".");
 				}
 				printf("\n");

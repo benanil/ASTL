@@ -262,7 +262,7 @@ inline int CodepointFromUtf8(unsigned int* out_unicode, const char* in_text, con
         // Invalid or incomplete input may consume less bytes than wanted, therefore every byte has to be inspected in s.
         int get = !!s[0] + !!s[1] + !!s[2] + !!s[3];
         wanted = MIN(wanted, get);
-        *out_unicode = (unsigned int)'A';
+        *out_unicode = (unsigned int)'!';
     }
 
     return wanted;

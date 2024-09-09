@@ -111,7 +111,7 @@ struct Vector2
     static __constexpr Vector2 Right()    { return {T( 1), T( 0)}; }
 };
 
-template<typename T> purefn Vector2<T> MakeVec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
+template<typename T> purefn Vector2<T> Vec2(T scale = 0) { Vector2<T> v; v.x = v.y = scale; return v; }
 template<typename T> purefn Vector2<T> Vec2(T a, T b) { Vector2<T> v; v.x = a; v.y = b;  return v; }
 
 template<typename T>
@@ -279,6 +279,13 @@ purefn Vector2i ToVector2i(const Vector2f& vec) { return { (int)vec.x , (int)vec
 
 pureconst bool PointBoxIntersection(Vector2f min, Vector2f max, Vector2f point)
 {
+    return point.x <= max.x && point.y <= max.y &&
+           point.x >= min.x && point.y >= min.y;
+}
+
+pureconst bool RectPointIntersect(Vector2f min, Vector2f scale, Vector2f point)
+{
+    Vector2f max = { min.x + scale.x, min.y + scale.y };
     return point.x <= max.x && point.y <= max.y &&
            point.x >= min.x && point.y >= min.y;
 }

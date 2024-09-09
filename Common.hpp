@@ -578,6 +578,11 @@ pureconst double Abs(double x)
     return BitCast<double>(ix);
 }
 
+inline bool InRange(float x, float start, float length)
+{
+    return x > start && x < start + length;
+}
+
 template<typename T>
 pureconst bool IsPowerOfTwo(T x) { 
     return (x != 0) && ((x & (x - 1)) == 0); 
@@ -662,6 +667,14 @@ purefn int StringLength(char const* s)
     }
 }
 #endif
+
+inline constexpr const char* GetFileName(const char* path)
+{
+    int length = StringLength(path);
+    while (path[length-1] != '\\' && path[length-1] != '/' && length > 0) 
+        length--;
+    return path + length;
+}
 
 template<typename A, typename B>
 struct Pair

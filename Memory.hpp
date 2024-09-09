@@ -431,11 +431,25 @@ struct FixedSizeGrowableAllocator
 
     void CheckFixGrow(int count)
     {
-        if (current->size + count >= currentCapacity)
+        int64_t newSize = current->size + count;
+        if (newSize >= currentCapacity)
         {
-            while (currentCapacity < current->size + count)
+            while (currentCapacity < newSize)
                 currentCapacity <<= 1;
+            
+            // already allocated
+            if (current->next != nullptr)
+            {
+                // try to find an memory that fits
+                while (current->next && current->next->size <= newSize)
+                    current->next = current->next->next;
 
+                if (current->next != nullptr) {
+                    current = current->next;
+                    current->size = 0;
+                    return;
+                }
+            }
             current->next = new Fragment{};
             current = current->next;
             current->next = nullptr;

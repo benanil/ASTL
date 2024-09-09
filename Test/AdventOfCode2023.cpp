@@ -93,7 +93,7 @@ void AOC2023Day3()
 
     HashMap<Vector2i, long> map(64u);
     HashMap<Vector2i, char> symbolSet(32u);
-    Vector2i currPos = MakeVec2<int>(0,0);
+    Vector2i currPos = Vec2<int>(0,0);
     
     // Generate & Parse map
     while (*curr)

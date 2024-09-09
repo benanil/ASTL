@@ -27,8 +27,10 @@
 // void   VisitFolder(path, visitFn);
 // void   GetCurrentDirectory(buffer, bufferSize);
 // void   AbsolutePath(path, outBuffer, bufferSize);
+// void   CombinePaths(dst, a, b);
+// bool   HasAnySubdir(path);
 
-#include "Algorithms.hpp"
+#include "Memory.hpp"
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/stat.h>
@@ -456,21 +458,53 @@ inline void AbsolutePath(const char* path, char* outBuffer, int bufferSize)
     outBuffer[currLength] = '\n';
 }
 
-typedef void(*FolderVisitFn)(const char* path);
+inline void CombinePaths(char* dst, const char* a, const char* b)
+{
+    int parentLen = StringLength(a);
+    SmallMemCpy(dst, a, parentLen);
+    dst[parentLen] = ASTL_FILE_SEPERATOR;
+    SmallMemCpy(dst + parentLen + 1, b, StringLength(b));
+}
+
+// data is user defined, whatever data you need, and nullable
+typedef void(*FolderVisitFn)(const char* path, void* data);
 
 // thanks to https://github.com/tronkko/dirent this is windows and linux compatible
-inline bool VisitFolder(const char* path, FolderVisitFn visitFn)
+inline bool VisitFolder(const char* path, FolderVisitFn visitFn, void* data)
 {
     DIR* dir;
     dirent* ent;
     if ((dir = opendir(path)) != NULL) 
     {
-        while ((ent = readdir (dir)) != NULL)  
+        char combined[512];
+        while ((ent = readdir(dir)) != NULL)  
         {
-            visitFn(ent->d_name);
+            MemsetZero(combined, 512);
+            CombinePaths(combined, path, ent->d_name);
+            if (ent->d_name[0] != '.') visitFn(combined, data);
         }
         closedir(dir);
         return true;
+    }
+    return false;
+}
+
+inline bool HasAnySubdir(const char* path)
+{
+    DIR* dir;
+    dirent* ent;
+    if ((dir = opendir(path)) != NULL) 
+    {
+        char combined[512];
+        int pathLen = StringLength(path);
+        while ((ent = readdir(dir)) != NULL)  
+        {
+            MemsetZero(combined, 512);
+            ASSERTR(pathLen + StringLength(ent->d_name) < 511, continue);
+            CombinePaths(combined, path, ent->d_name);
+            if (ent->d_name[0] != '.' && IsDirectory(combined)) return true;
+        }
+        closedir(dir);
     }
     return false;
 }
