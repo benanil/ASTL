@@ -45,6 +45,7 @@
     #include <sys/types.h>
     #include <fcntl.h>
     #include <dirent.h>
+    #define _rmdir rmdir
     #define _mkdir mkdir
     #define _fileno fileno
     #define _filelengthi64 filelength
@@ -192,6 +193,10 @@ inline bool CreateFolder(const char* folderName)
                , 0777
                #endif 
                ) == 0;
+}
+
+inline bool RemoveFile(const char* file) {
+    return remove(file);
 }
 
 inline bool IsDirectory(const char* path)
@@ -508,3 +513,16 @@ inline bool HasAnySubdir(const char* path)
     }
     return false;
 }
+
+inline void RemoveFolder(const char* path, void* unused = nullptr) 
+{
+    VisitFolder(path, RemoveFolder, nullptr);
+    if (IsDirectory(path)) {
+        _rmdir(path);
+    }
+    else {
+        RemoveFile(path);
+    }
+}
+
+
