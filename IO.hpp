@@ -21,7 +21,8 @@
 // uint64 FileSize(file);
 // bool   RenameFile(oldFile, newFile);
 // bool   MoveFile(oldLocation, newLocation);
-// bool   DeleteFile(file);
+// bool   RemoveFile(file); // < deletes the file
+// void   RemoveFolder(path, unused); // < deletes the folder
 // char*  ReadAllFile(fileName, buffer, numCharacters);
 // void   CopyFile(source, dst, buffer);
 // void   VisitFolder(path, visitFn);
@@ -516,7 +517,7 @@ inline bool HasAnySubdir(const char* path)
 
 inline void RemoveFolder(const char* path, void* unused = nullptr) 
 {
-    VisitFolder(path, RemoveFolder, nullptr);
+    VisitFolder(path, RemoveFolder, nullptr); // recursive delete all subfolders and files
     if (IsDirectory(path)) {
         _rmdir(path);
     }

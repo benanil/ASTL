@@ -84,7 +84,6 @@ struct Vector2
 
     Vector2 XAdd(float t) { x += t; return *this; }
     Vector2 YAdd(float t) { y += t; return *this; }
-    Vector2 ZAdd(float t) { z += t; return *this; }
     
     Vector2 operator - () { return { -x, -y }; }
     Vector2 operator + (Vector2 other) const { return {x + other.x, y + other.y}; }
