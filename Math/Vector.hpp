@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Math.hpp"
+#include "../Random.hpp"
 
 AX_NAMESPACE
 
@@ -80,6 +81,11 @@ struct Vector2
     static Vector2 Normalize(Vector2 x) { return x / x.Length(); }
     static Vector2 NormalizeEst(const Vector2& a) {
         return a * RSqrt(a.x * a.x + a.y * a.y);
+    }
+
+    bool operator < (const Vector2& other)
+    {
+        return WYHash::Hash(this, sizeof(Vector2)) < WYHash::Hash(other.arr, sizeof(Vector2));
     }
 
     Vector2 XAdd(float t) { x += t; return *this; }
@@ -199,6 +205,11 @@ struct Vector3
     
     purefn static Vector3 NormalizeEst(const Vector3& a) {
         return a * RSqrt(Vector3::Dot(a, a));
+    }
+
+    bool operator< (const Vector3& other)
+    {
+        return WYHash::Hash(this, sizeof(Vector3)) < WYHash::Hash(other.arr, sizeof(Vector3));
     }
 
     Vector3& XAdd(float t) { x += t; return *this; }

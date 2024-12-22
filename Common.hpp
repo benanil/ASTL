@@ -13,8 +13,8 @@
 #pragma once
 
 #define __STDC_LIMIT_MACROS
-#include <stdint.h>
-#include <float.h>
+#include <cstdint>
+#include <cfloat>
 
 typedef unsigned char      uint8;
 typedef unsigned short     uint16;
@@ -685,11 +685,11 @@ struct Pair
     Pair(){}
     Pair(A x, B y) : first((A&&)x), second((B&&)y) {}
 
-    bool operator == (const Pair& other) {
+    bool operator == (const Pair& other) const {
         return first == other.first && second == other.second;
     }
 
-    bool operator != (const Pair& other) {
+    bool operator != (const Pair& other) const {
         return first != other.first || second != other.second;
     }
 };
@@ -703,19 +703,19 @@ struct KeyValuePair
     KeyValuePair() {}
     KeyValuePair(KeyT ky, ValueT val) : key((KeyT&&)ky), value((ValueT&&)val) {}
 
-    bool operator > (const KeyValuePair& other) {
+    bool operator > (const KeyValuePair& other) const {
         return key > other.key;
     }
 
-    bool operator < (const KeyValuePair& other) {
+    bool operator < (const KeyValuePair& other) const {
         return key < other.key;
     }
 
-    bool operator == (const KeyValuePair& other) {
+    bool operator == (const KeyValuePair& other) const {
         return key == other.key && value == other.value;
     }
 
-    bool operator != (const KeyValuePair& other) {
+    bool operator != (const KeyValuePair& other) const {
         return key != other.key || value != other.value;
     }
 };

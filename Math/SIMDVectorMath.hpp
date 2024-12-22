@@ -152,7 +152,7 @@ purefn Vector4x32f VECTORCALL Vec3Load(void const* x) {
 
 #define MakeShuffleMask(x,y,z,w)     (x | (y<<2) | (z<<4) | (w<<6)) /* internal use only */
 // vec(0, 1, 2, 3) -> (vec[x], vec[y], vec[z], vec[w])
-#define VecSwizzleMask(vec, mask)    _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(vec), mask))
+#define VecSwizzleMask(vec, msk)     _mm_shuffle_ps(vec, vec, msk)
 #define VecSwizzle(vec, x, y, z, w)  VecSwizzleMask(vec, MakeShuffleMask(x,y,z,w))
 
 // return (vec1[x], vec1[y], vec2[z], vec2[w])
@@ -926,7 +926,6 @@ purefn Vector4x32f VECTORCALL VecFract(Vector4x32f x)
 {
     return VecSub(x, VecFloor(x));
 }
-
 
 inline Vector4x32f VECTORCALL VecSin(Vector4x32f x)
 { 

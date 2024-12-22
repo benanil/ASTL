@@ -395,6 +395,8 @@ public:
     uint32 size()  const { return m_keys.Size(); }
 
     void Clear() { m_keys.Clear(); m_buckets.Resize(16); }
+    
+    void Reset() { m_keys.Reset(); m_buckets.Resize(16); m_num_buckets = 0; }
 
     void Insert(ConstIterator first, ConstIterator last) 
     {

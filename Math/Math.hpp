@@ -1,6 +1,7 @@
 
 // most of the functions are accurate and faster than stl 
 // convinient for game programming, be aware of speed and preciseness tradeoffs because cstd has more accurate functions
+// https://seblagarde.wordpress.com/2014/12/01/inverse-trigonometric-functions-gpu-optimization-for-amd-gcn-architecture/
 
 // Sections of this file are:
 // Essential    : square, sqrt, exp, pow...
@@ -82,13 +83,22 @@ pureconst float SqrtConstexpr(float x) {
 }
 
 // cbrt, std::cbrt
-pureconst float CubeRootConstexpr(float x)
+pureconst float CubeRootConstexpr(float val)
 {
-    float y = BitCast<float>(709973695u + BitCast<uint32_t>(x)/3u);
-    y = y * (2.0f / 3.0f) + (1.0f / 3.0f) * x / (y * y);
-    y = y * (2.0f / 3.0f) + (1.0f / 3.0f) * x / (y * y);
-    return y;
+    const float fPower = 0.25f;
+    const float fScale = 1.0f;
+    const float oneRepresentationAsFloat = float(0x3f800000);
+    float magicValue = float((*((const unsigned int*)&fScale))) - (oneRepresentationAsFloat * fPower);
+    float tmp = (float)*((unsigned int*)&val);
+    tmp = (tmp * fPower) + magicValue;
+    unsigned int tmp2 = (unsigned int)tmp;
+    return *(float*)&tmp2;
+    // float y = BitCast<float>(709973695u + BitCast<uint32_t>(x)/3u);
+    // y = y * (2.0f / 3.0f) + (1.0f / 3.0f) * x / (y * y);
+    // y = y * (2.0f / 3.0f) + (1.0f / 3.0f) * x / (y * y);
+    // return y;
 }
+
 
 purefn float Sqrt(float a) {
 #ifdef AX_SUPPORT_SSE
@@ -119,6 +129,62 @@ purefn float RSqrt(float x) {
     f = BitCast<float>(i);
     return 0.703952253f * f * (2.38924456f - x * f * f);
 #endif
+}
+
+pureconst bool IsZero(float x) {
+    return Abs(x) <= 0.0001f; 
+}
+
+pureconst bool AlmostEqual(float x, float  y) {
+    return Abs(x-y) <= 0.001f;
+}
+
+pureconst float Sign(float x) {
+    int res = BitCast<int>(1.0f);
+    res |= BitCast<int>(x) & 0x80000000;
+    return BitCast<float>(res);
+} 
+
+pureconst int Sign(int x) {
+    return x < 0 ? -1 : 1; // equal to above float version
+} 
+
+pureconst float CopySign(float x, float y) {
+    int ix = BitCast<int>(x) & 0x7fffffff;
+    int iy = BitCast<int>(y) & 0x80000000;
+    return BitCast<float>(ix | iy);
+}
+
+pureconst bool IsNan(float f) {
+    uint32 intValue = BitCast<uint32>(f);
+    uint32 exponent = (intValue >> 23) & 0xFF;
+    uint32 fraction = intValue & 0x7FFFFF;
+    return (exponent == 0xFF) && (fraction != 0);
+}
+
+template<typename T>
+pureconst T FMod(T x, T y) {
+    T quotient = x / y;
+    T whole = (T)((int)quotient);  // truncate quotient to integer
+    T remainder = x - whole * y;
+    remainder += (remainder < (T)0.0) * y;
+    return remainder;
+}
+
+template<typename T>
+pureconst T Floor(T x) {
+    T whole = (T)(int)x;  // truncate quotient to integer
+    return x - (x-whole);
+}
+
+template<typename T>
+pureconst T Ceil(T x) {
+    T whole = (T)(int)x;  // truncate quotient to integer
+    return whole + float(x > whole);
+}
+
+pureconst float Fract(float a) {
+    return a - int(a); 
 }
 
 // https://github.com/id-Software/DOOM-3/blob/master/neo/idlib/math/Math.h
@@ -187,9 +253,16 @@ pureconst float Log10(float x) {
     return Log(x) / 2.30258509299f; // ln(x) / ln(10)
 } 
 
-// you might look at this link as well: https://tech.ebayinc.com/engineering/fast-approximate-logarithms-part-i-the-basics/
-pureconst float Log2(float x) {
-    return Log(x) / 0.6931471805599453094f; // ln(x) / ln(2) 
+// you might look at this link as well: 
+// https://tech.ebayinc.com/engineering/fast-approximate-logarithms-part-i-the-basics/
+// A Collection of Float Tricks pdf
+pureconst float Log2(float val) {
+    float result = (float)*((int*)&val);
+    result *= 1.0f / (1 << 23);
+    result = result - 127.0f;
+    float tmp = result - Floor(result);
+    tmp = (tmp - tmp*tmp) * 0.346607f;
+    return tmp + result; // ln(x) / ln(2) 
 }
 
 // https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
@@ -215,62 +288,6 @@ pureconst unsigned int Log10(unsigned int v) {
     return t - (v < PowersOf10[t]);                                                      
 }                                                                                        
 
-pureconst bool IsZero(float x) {
-    return Abs(x) <= 0.0001f; 
-}
-
-pureconst bool AlmostEqual(float x, float  y) {
-    return Abs(x-y) <= 0.001f;
-}
-
-pureconst float Sign(float x) {
-    int res = BitCast<int>(1.0f);
-    res |= BitCast<int>(x) & 0x80000000;
-    return BitCast<float>(res);
-} 
-
-pureconst int Sign(int x) {
-    return x < 0 ? -1 : 1; // equal to above float version
-} 
-
-pureconst float CopySign(float x, float y) {
-    int ix = BitCast<int>(x) & 0x7fffffff;
-    int iy = BitCast<int>(y) & 0x80000000;
-    return BitCast<float>(ix | iy);
-}
-
-pureconst bool IsNan(float f) {
-    uint32 intValue = BitCast<uint32>(f);
-    uint32 exponent = (intValue >> 23) & 0xFF;
-    uint32 fraction = intValue & 0x7FFFFF;
-    return (exponent == 0xFF) && (fraction != 0);
-}
-
-template<typename T>
-pureconst T FMod(T x, T y) {
-    T quotient = x / y;
-    T whole = (T)((int)quotient);  // truncate quotient to integer
-    T remainder = x - whole * y;
-    remainder += (remainder < (T)0.0) * y;
-    return remainder;
-}
-
-template<typename T>
-pureconst T Floor(T x) {
-    T whole = (T)(int)x;  // truncate quotient to integer
-    return x - (x-whole);
-}
-
-template<typename T>
-pureconst T Ceil(T x) {
-    T whole = (T)(int)x;  // truncate quotient to integer
-    return whole + float(x > whole);
-}
-
-pureconst float Fract(float a) {
-    return a - int(a); 
-}
-
 /*//////////////////////////////////////////////////////////////////////////*/
 /*                      Trigonometric Functions                             */
 /*//////////////////////////////////////////////////////////////////////////*/
@@ -293,10 +310,6 @@ pureconst float ATan2(float y, float x) {
     return CopySign(angle, y);
 }
 
-purefn float ASin(float z) {
-    return ATan2(z, Sqrt(1.0f-(z * z)));
-}
-
 // Valid input range -1..1 output is -pi..pi
 purefn float ACos(float x)   
 {
@@ -312,6 +325,12 @@ purefn float ACosPositive(float x)
 {
     float p = -0.1565827f * x + 1.570796f;
     return p * Sqrt(1.0f - x);
+}
+
+// Same cost as Acos + 1 FR Same error
+// input [-1, 1] and output [-PI/2, PI/2]
+purefn float ASin(float x) {
+    return HalfPI - ACos(x);
 }
 
 // https://en.wikipedia.org/wiki/Sine_and_cosine
@@ -457,8 +476,9 @@ pureconst float EaseInOut(float x) {
 }
 
 // integral symbol shaped interpolation, similar to EaseInOut
-pureconst float SmoothStep(float x) {
-    return x * x * (3.0f - x * 2.0f);
+pureconst float SmoothStep(float edge0, float edge1, float x) {
+    float t = Clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+    return t * t * (3.0f - t * 2.0f);
 }
 
 pureconst float EaseInSine(float x) {

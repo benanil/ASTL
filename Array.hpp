@@ -270,6 +270,11 @@ struct Array
 		return arr[m_count++];
 	}
 
+    void Reset()
+    {
+        m_count = 0;
+    }
+
 	void Clear()
 	{
 		if (arr != nullptr)

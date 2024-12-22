@@ -23,13 +23,16 @@
 typedef float16_t half;
 #else
 typedef ushort half;
+#endif
+
+typedef uint half2;
+
 constexpr half OneFP16 = 15360;
 constexpr half MinusOneFP16 = 48128;
 constexpr half ZeroFP16 = 0;
 constexpr half HalfFP16 = 14336; // fp16 0.5
 constexpr half Sqrt2FP16 = 15784; // fp16 sqrt(2)
 
-typedef uint half2;
 constexpr half2 Half2Up    = OneFP16 << 16u;
 constexpr half2 Half2Down  = MinusOneFP16 << 16u;
 constexpr half2 Half2Left  = MinusOneFP16;
@@ -40,9 +43,6 @@ constexpr half2 Half2Zero  = 0;
 #define MakeHalf2(x, y) ((x) | ((y) << 16))
 #define Half2SetX(v, x) (v &= 0xFFFF0000u, v |= x;)
 #define Half2SetY(v, y) (v &= 0x0000FFFFu, v |= y;)
-#endif
-
-typedef uint half2;
 
 // todo better check for half support
 purefn float ConvertHalfToFloat(half x) 
@@ -260,4 +260,9 @@ purefn float3 ConvertHalf3ToFloat3(half* h) {
     ConvertHalf2ToFloat2(&res.x, *(uint32_t*)h); 
     res.z = ConvertHalfToFloat(h[2]); 
     return res;
+}
+
+inline void ConvertFloat3ToHalf3(float* f, half* res) {
+    *(uint32_t*)res = ConvertFloat2ToHalf2(f); 
+    res[2] = ConvertFloatToHalf(f[2]); 
 }

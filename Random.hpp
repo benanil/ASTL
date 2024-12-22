@@ -83,7 +83,7 @@ pureconst uint64_t MurmurHashInverse(uint64_t x) {
 
 namespace Random
 {
-    // these random seeds slower than PCG and MTwister but good choice for random seed
+    // these random seeds waay more slower than PCG and MTwister but good choice for random seed
     // also seeds are cryptographic 
     purefn uint Seed32() {
         uint32 result;

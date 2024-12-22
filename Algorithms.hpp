@@ -90,12 +90,12 @@ inline void QuickSortFn(T* arr, int left, int right, bool(*compareFn)(const T&, 
             
         if ((i - 1 - left) <= (right - i - 1))
         {
-            QuickSort(arr, left, i - 1);
+            QuickSortFn(arr, left, i - 1, compareFn);
             left = i + 1;
         }
         else
         {
-            QuickSort(arr, i + 1, right);
+            QuickSortFn(arr, i + 1, right, compareFn);
             right = i - 1;
         }
     }
@@ -338,7 +338,8 @@ inline bool StartsWith(const char*& curr, const char* str)
     const char* currStart = curr;
     while (IsWhitespace(*curr)) curr++;
     if (*curr != *str) return false;
-    while (*str && *curr++ == *str++);
+    while (*str && *curr == *str)
+        curr++, str++;
     bool isEqual = *str == 0;
     if (!isEqual) curr = currStart;
     return isEqual;
