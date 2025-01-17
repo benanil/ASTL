@@ -159,6 +159,25 @@ inline int ParseNumber(const char*& ptr)
     return negative ? -val : val;
 }
 
+inline long long ParseNumberLong(const char*& ptr)
+{
+    const char* curr = ptr;
+    while (*curr && (*curr != '-' && !IsNumber(*curr))) 
+        curr++; // skip whitespace
+    
+    long long val = 0ll;
+    bool negative = false;
+    
+    if (*curr == '-') 
+        curr++, negative = true;
+    
+    while (*curr > '\n' && IsNumber(*curr))
+        val = val * 10 + (*curr++ - '0');
+    
+    ptr = curr;
+    return negative ? -val : val;
+}
+
 inline int ParsePositiveNumber(const char*& ptr)
 {
     const char* curr = ptr;

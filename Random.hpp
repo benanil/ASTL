@@ -139,7 +139,7 @@ namespace Random
 	{
 		uint64_t state = 0x853c49e6748fea9bULL;
 		uint64_t inc = 0xda3e39cb94b95bdbULL;
-	};            
+	};
 	
 	// usage:
 	// RandomNextFloat01(PCGNext(pcg))
